@@ -1,0 +1,6 @@
+/* Ops dialog additions (docs/ux.md §14). Only --k-* tokens. */
+.ops-flux {
+  display: flex; flex-direction: column; gap: var(--k-luft-1);
+  padding: var(--k-luft-15); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius);
+  color: var(--k-text);
+}

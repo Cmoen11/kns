@@ -1,0 +1,13 @@
+{
+  "input": {
+    "text": "{\"level\":\"info\",\"password\":\"json-pw\",\"user\":\"app\",\"apiKey\": \"json-key\"}"
+  },
+  "expected": "{\"level\":\"info\",\"password\":\"•••\",\"user\":\"app\",\"apiKey\": \"•••\"}",
+  "rules": {
+    "json": 2
+  },
+  "mustNotContain": [
+    "json-pw",
+    "json-key"
+  ]
+}

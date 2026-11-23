@@ -1,0 +1,32 @@
+# merged / structured logs and patterns: plain, JSON and logfmt lines, an error every 7 s
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logsy
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: logsy }
+  template:
+    metadata:
+      labels: { app: logsy }
+    spec:
+      containers:
+        - name: logsy
+          image: busybox:1.37.0
+          command:
+            - sh
+            - -c
+            - |
+              i=0
+              while true; do
+                i=$((i+1))
+                echo "plain line $i from $HOSTNAME"
+                echo "{\"level\":\"info\",\"msg\":\"request done\",\"path\":\"/api/items/$i\",\"ms\":$((i % 97))}"
+                echo "level=warn msg=\"slow query\" table=items id=$i ms=$((i % 500))"
+                if [ $((i % 7)) -eq 0 ]; then echo "{\"level\":\"error\",\"msg\":\"upstream timeout\",\"upstream\":\"web\"}"; fi
+                sleep 1
+              done
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits: { memory: 16Mi }

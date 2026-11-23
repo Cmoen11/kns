@@ -1,0 +1,83 @@
+/* Tool views: home, aliases, messages, settings, help (docs/ux.md §11.10). Only --k-* tokens. */
+
+.tl { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); }
+.tl-head {
+  display: flex; align-items: center; gap: var(--k-luft-2); flex: none;
+  height: var(--k-h-col-header); padding-inline: var(--k-luft-15);
+  background: var(--k-bg-header); color: var(--k-text-3);
+}
+.tl-scroll { flex: 1; min-height: 0; overflow: auto; position: relative; contain: strict; }
+.tl-scroll:focus-visible { outline: none; }
+.tl-inner { position: relative; width: 100%; }
+
+.tl-row {
+  position: absolute; left: 0; right: 0; height: var(--k-h-row);
+  display: flex; align-items: center; gap: var(--k-luft-2);
+  padding-inline: var(--k-luft-15); white-space: nowrap; color: var(--k-text-2);
+}
+.tl-row.row:hover { background: var(--k-row-hover); }
+/* cursor row: background step plus the 2px bar (§9.4); the idle step when the pane is not focused */
+.tl-row[data-focus] { background: var(--k-row-focus-idle); color: var(--k-text); }
+.tl[data-active] .tl-row[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 0 var(--k-focus); }
+.tl-group { color: var(--k-text-3); align-items: flex-end; padding-bottom: var(--k-luft-05); }
+.tl-cell { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tl-row .muted { color: var(--k-text-muted); }
+.tl-value { flex: none; color: var(--k-text); font-variant-numeric: tabular-nums; }
+.tl-row .k-keys { flex: none; }
+
+/* Row buttons (mouse parity). Their space is always there, so nothing shifts; they show on the
+   hovered row and on the cursor row. A value that can change is a button itself. */
+.tl-reveal { visibility: hidden; }
+.tl-row:hover .tl-reveal, .tl-row[data-focus] .tl-reveal { visibility: visible; }
+.tl-acts { display: inline-flex; align-items: center; gap: var(--k-luft-05); flex: none; }
+.tl-row .k-abtn[data-act="prev"], .tl-row .k-abtn[data-act="next"] { margin-inline: calc(-1 * var(--k-luft-1)); }
+.tl-valuebtn, .tl-keybtn {
+  display: inline-flex; align-items: center; gap: var(--k-luft-1); flex: none;
+  height: var(--k-h-chip); padding-inline: var(--k-luft-1); border-radius: var(--k-radius); cursor: pointer;
+}
+.tl-valuebtn { justify-content: center; min-width: var(--k-luft-8); }
+.tl-row:hover .tl-valuebtn, .tl-row:hover .tl-keybtn { background: var(--k-bg-chip); }
+.tl-valuebtn:hover, .tl-keybtn:hover { color: var(--k-text); box-shadow: inset 0 0 0 var(--k-hair) var(--k-frame); }
+.tl-nokey { color: var(--k-text-3); }
+/* on / off: the square of the mark gutter, filled when on (shape first, the word says it too) */
+.tl-switch { width: var(--k-glyph-quiet); height: var(--k-glyph-quiet); box-shadow: inset 0 0 0 var(--k-hair) var(--k-text-3); flex: none; }
+.tl-switch[data-on] { background: var(--k-mark); box-shadow: none; }
+.tl-scroll[data-click="open"] .tl-row.row, .tl-row[data-toggle] { cursor: pointer; }
+/* settings: one value column. A choice keeps room for its "next" arrow after the value; rows
+   without one (on / off, plain values) leave the same room, so every value sits on one axis. */
+.tl[data-view="settings"] .tl-value:last-child { margin-right: var(--k-luft-35); }
+.tl-value { text-align: center; }
+.tl[data-view="settings"] span.tl-value { min-width: var(--k-luft-8); padding-inline: var(--k-luft-1); }
+
+/* home: name, then a narrow muted column */
+.tl[data-view="home"] .tl-cell + .tl-cell { flex: 0 1 auto; max-width: 50%; }
+/* messages: fixed time column, then the text */
+.tl[data-view="messages"] .tl-cell:first-of-type { flex: none; color: var(--k-text-muted); font-variant-numeric: tabular-nums; }
+.tl[data-view="messages"] .tl-cell + .tl-cell { color: inherit; }
+/* settings: the name keeps its width, the description gives way first */
+.tl[data-view="settings"] .tl-cell:first-of-type { flex: 0 1 auto; }
+
+/* ── help overlay: the dialog surface at 720 wide, two columns of 20px rows ── */
+.help .k-dialog { width: 720px; max-width: 90%; max-height: 80%; overflow: hidden; }
+/* the list is the scroller here (the search field stays), not the dialog body */
+.help .k-dialog-body { min-height: 0; flex: 1; overflow: hidden; margin-right: 0; padding-right: 0; }
+.help .k-dialog-body > .help-list { flex: 0 1 auto; }
+.help-list { overflow: auto; min-height: 0; columns: 2; column-gap: var(--k-luft-4); padding-right: var(--k-luft-1); }
+/* no content-visibility here: inside a multi-column box it stacks the groups on top of each other */
+.help-group { break-inside: avoid; margin-bottom: var(--k-luft-2); }
+.help-group-label { display: flex; align-items: flex-end; height: var(--k-h-row); color: var(--k-text-3); }
+.help-row { display: flex; align-items: center; gap: var(--k-luft-15); height: var(--k-h-row); white-space: nowrap; color: var(--k-text-2); }
+.help-row[data-disabled] { color: var(--k-disabled); }
+.help-label { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.help-reason { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--k-text-muted); }
+.help-keys { display: inline-flex; gap: var(--k-luft-1); margin-left: auto; flex: none; }
+.help-missing { column-span: all; color: var(--k-text-muted); white-space: normal; margin-top: var(--k-luft-2); }
+.help-missing h3 { color: var(--k-text-3); margin-bottom: var(--k-luft-1); }
+
+/* ── rebind dialog ── */
+.rebind-keys { display: flex; align-items: center; gap: var(--k-luft-15); min-height: var(--k-h-row); color: var(--k-text-2); }
+.rebind-note { color: var(--k-text-2); }
+.rebind-note[data-kind="warn"] { color: var(--k-st-warn); }
+.rebind-note[data-kind="error"] { color: var(--k-st-error); }
+/* aliases: the column labels line up with rows that reserve room for their two buttons */
+.tl[data-view="aliases"] .tl-head { padding-right: calc(var(--k-luft-15) + var(--k-luft-2) + 2 * var(--k-h-chip) + var(--k-luft-05)); }

@@ -1,0 +1,19 @@
+# :why: ImagePullBackOff (the tag does not exist)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pullfail
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: pullfail }
+  template:
+    metadata:
+      labels: { app: pullfail }
+    spec:
+      containers:
+        - name: pullfail
+          image: busybox:0.0.0-kns-does-not-exist
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits: { memory: 16Mi }

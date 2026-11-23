@@ -1,0 +1,15 @@
+{
+  "input": {
+    "text": "app:\n  name: orders\n  password: |\n    block-secret-1\n    block-secret-2\n\n  token: >-\n    folded-secret\n  url: http://x\nlist:\n  - apiKey: |\n      list-secret\n  - name: keep\n"
+  },
+  "expected": "app:\n  name: orders\n  password: |\n    •••\n    •••\n\n  token: >-\n    •••\n  url: http://x\nlist:\n  - apiKey: |\n      •••\n  - name: keep\n",
+  "rules": {
+    "line": 3
+  },
+  "mustNotContain": [
+    "block-secret-1",
+    "block-secret-2",
+    "folded-secret",
+    "list-secret"
+  ]
+}

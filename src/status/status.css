@@ -1,0 +1,13 @@
+/* Status colours package: the namespace badge (context sidebar) and the titlebar summary. Only
+   --k-* tokens. The word / count keeps the status hue on b1-b2 only (§9.3): on a focused row the
+   count turns --k-text and only the glyph keeps its hue. */
+.ns-badge, .health-summary {
+  display: inline-flex; align-items: center; gap: var(--k-luft-05);
+  height: var(--k-h-chip); padding-inline: var(--k-luft-05);
+  border-radius: var(--k-radius); flex: none; white-space: nowrap;
+}
+.ns-badge[data-state="error"], .health-summary[data-state="error"] { color: var(--k-st-error); }
+.ns-badge[data-state="warn"], .health-summary[data-state="warn"] { color: var(--k-st-warn); }
+.ns-badge:hover, .health-summary:hover { background: var(--k-row-marked); text-decoration: underline; text-underline-offset: 3px; }
+.side-row[data-focus] .ns-badge { color: var(--k-text); }
+.health-summary { height: var(--k-h-row); padding-inline: var(--k-luft-1); gap: var(--k-luft-1); }

@@ -1,0 +1,11 @@
+# :why on a Service with no endpoints (nothing matches the selector); a dev-set dependency that is down
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector: { app: db-none }
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432

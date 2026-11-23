@@ -1,0 +1,42 @@
+{
+  "input": {
+    "gvr": {
+      "group": "",
+      "version": "v1",
+      "resource": "configmaps"
+    },
+    "object": {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "envdemo",
+        "namespace": "kns-spike"
+      },
+      "data": {
+        "application.yaml": "spring:\n  datasource:\n    url: jdbc:postgresql://db:5432/app\n    username: app\n    password: cm-yaml-pw\n",
+        "app.properties": "db.user=app\ndb.password=cm-props-pw\n",
+        "LOG_LEVEL": "info"
+      }
+    }
+  },
+  "expected": {
+    "apiVersion": "v1",
+    "kind": "ConfigMap",
+    "metadata": {
+      "name": "envdemo",
+      "namespace": "kns-spike"
+    },
+    "data": {
+      "application.yaml": "spring:\n  datasource:\n    url: jdbc:postgresql://db:5432/app\n    username: app\n    password: •••\n",
+      "app.properties": "db.user=app\ndb.password=•••\n",
+      "LOG_LEVEL": "info"
+    }
+  },
+  "rules": {
+    "line": 2
+  },
+  "mustNotContain": [
+    "cm-yaml-pw",
+    "cm-props-pw"
+  ]
+}

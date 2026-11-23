@@ -1,0 +1,60 @@
+/* Port-forward manager (docs/ux.md §13.5); row and header metrics from §11.2, §11.3, states from §9.4. */
+.pf-view {
+  --pf-cols: minmax(0, 3fr) minmax(0, 2fr) minmax(0, 3fr) minmax(0, 2fr) calc(2 * var(--k-luft-11)) var(--k-luft-11) calc(var(--k-luft-11) + var(--k-luft-3)) var(--k-luft-9) calc(4 * 20px + 3 * var(--k-luft-05) + 2 * var(--k-luft-1)); /* actions: 4 row buttons (B2 added copy connection string) */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--k-bg-pane);
+}
+.pf-head, .pf-row {
+  display: grid;
+  grid-template-columns: var(--pf-cols);
+  align-items: center;
+  /* mark gutter 12 (cursor bar 2 + 8 + 2), right inset 8 */
+  padding: 0 var(--k-luft-15) 0 var(--k-luft-2);
+  white-space: nowrap;
+}
+.pf-head {
+  flex: none;
+  height: var(--k-h-col-header);
+  background: var(--k-bg-header);
+  border-bottom: var(--k-hair) solid var(--k-line);
+  color: var(--k-text-3);
+}
+.pf-head > span, .pf-cell { padding-inline: var(--k-luft-1); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pf-error { flex: none; padding: var(--k-luft-05) var(--k-luft-15); color: var(--k-st-error); }
+.pf-scroll { flex: 1; min-height: 0; overflow: auto; }
+.pf-rows { position: relative; width: 100%; }
+.pf-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--k-h-row);
+  color: var(--k-text-2);
+}
+.pf-row:hover { background: var(--k-row-hover); }
+.pf-row[data-focus] { background: var(--k-row-focus-idle); }
+.pf-view[data-pane-focused] .pf-row[data-focus] {
+  background: var(--k-row-focus);
+  box-shadow: inset var(--k-ring) 0 0 var(--k-accent);
+}
+.pf-name { color: var(--k-text); }
+.pf-age { color: var(--k-text-muted); }
+.pf-row[data-focus] .pf-age { color: var(--k-text-3); }
+.pf-state { display: flex; align-items: center; gap: var(--k-luft-1); }
+.pf-broken { color: var(--k-st-error); }
+.pf-waiting { color: var(--k-text-3); }
+.pf-owner { color: var(--k-text-3); }
+.pf-resolved { color: var(--k-text-3); }
+.pf-row[data-focus] .pf-broken { color: var(--k-text); }
+/* start dialog: the two ports share a row */
+.pf-ports { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--k-luft-2); align-items: start; }
+.pf-ports input::placeholder { color: var(--k-text-muted); }
+
+/* row buttons (open in browser, copy address, stop): the column is always there, so nothing shifts;
+   the buttons show on the hovered row and on the cursor row */
+.pf-acts { display: flex; align-items: center; justify-content: flex-end; gap: var(--k-luft-05); overflow: visible; }
+.pf-acts .k-abtn { visibility: hidden; }
+.pf-row:hover .pf-acts .k-abtn, .pf-row[data-focus] .pf-acts .k-abtn { visibility: visible; }

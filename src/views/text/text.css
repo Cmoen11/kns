@@ -1,0 +1,37 @@
+/* Generic text view (docs/plan-features.md §2.8). Only --k-* tokens. */
+
+.txt { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); color: var(--k-text-2); }
+.txt-scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--k-luft-2) var(--k-luft-15); }
+.txt-section { padding-bottom: var(--k-luft-3); }
+.txt-section + .txt-section { border-top: var(--k-hair) solid var(--k-line); padding-top: var(--k-luft-2); }
+.txt-section-title { color: var(--k-text-3); padding-bottom: var(--k-luft-1); }
+.txt-pre {
+  margin: 0; padding: var(--k-luft-1) 0; font-family: var(--k-font-mono);
+  white-space: pre-wrap; overflow-wrap: anywhere; color: var(--k-text);
+}
+.txt-md { max-width: 80ch; }
+.txt-md .txt-heading { margin: var(--k-luft-2) 0 var(--k-luft-1); color: var(--k-text); font-size: inherit; font-weight: 600; }
+.txt-md .txt-paragraph { margin: 0 0 var(--k-luft-1); }
+.txt-md .txt-list { margin: 0 0 var(--k-luft-1); padding-inline-start: var(--k-luft-3); }
+.txt-md code { font-family: var(--k-font-mono); color: var(--k-text); }
+.txt-md .txt-pre { background: var(--k-bg-header); padding: var(--k-luft-1); border-radius: var(--k-radius); }
+
+/* G: section cursor, dropped/folded sections, size line and redaction legend (§3 G). */
+.txt-measure {
+  flex: none; padding: var(--k-luft-1) var(--k-luft-15); border-bottom: var(--k-hair) solid var(--k-line);
+  background: var(--k-bg-header); display: flex; flex-direction: column; gap: 2px;
+}
+.txt-size { color: var(--k-text); font-variant-numeric: tabular-nums; }
+.txt-size-dropped { color: var(--k-text-3); }
+.txt-legend { display: flex; flex-wrap: wrap; gap: var(--k-luft-1) var(--k-luft-15); color: var(--k-text-3); }
+.txt-legend code { font-family: var(--k-font-mono); color: var(--k-text-2); }
+.txt-legend-rule { border-bottom: var(--k-hair) dotted var(--k-text-muted); cursor: default; }
+.txt-section { position: relative; margin-inline: calc(-1 * var(--k-luft-15)); padding-inline: var(--k-luft-15); }
+.txt-section[data-cursor] { box-shadow: inset 2px 0 0 0 var(--k-line); }
+.txt[data-active] .txt-section[data-cursor] { box-shadow: inset 2px 0 0 0 var(--k-focus); }
+.txt-section-title { display: flex; align-items: center; gap: var(--k-luft-1); min-height: 20px; }
+.txt-section-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.txt-section-note { color: var(--k-text-muted); }
+.txt-section-drop { flex: none; visibility: hidden; }
+.txt-section:hover .txt-section-drop, .txt-section[data-cursor] .txt-section-drop, .txt-section[data-dropped] .txt-section-drop { visibility: visible; }
+.txt-section[data-dropped] .txt-section-name { color: var(--k-text-muted); text-decoration: line-through; }

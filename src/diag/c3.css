@@ -1,0 +1,17 @@
+/* relations and reach views, reach dialog (docs/plan-features.md §3 C3). Only --k-* tokens; the
+   list, row and header classes are shared with the C2 views (c2.css). */
+
+.c3-fold { flex: none; width: 2ch; display: inline-flex; justify-content: center; color: var(--k-text-muted); }
+button.c3-fold { padding: 0; }
+.c3-rel-word { flex: none; width: 8ch; }
+.c3-rel-kind { flex: none; min-width: 10ch; color: var(--k-text-3); }
+.c3-rel .c2-detail[data-sev="error"], .c3-rel .c2-detail[data-sev="warn"] { color: var(--k-text); }
+
+.c3-step-name { flex: none; width: 20ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--k-text-3); }
+.c3-reach-row[data-type="probe"] .c3-step-name, .c3-reach-row[data-type="debug"] .c3-step-name { color: var(--k-text); }
+.c3-reach-row[aria-disabled="true"] .c2-what { color: var(--k-text-muted); }
+.c3-verdict { display: inline-flex; align-items: center; gap: var(--k-luft-05); color: var(--k-text-2); overflow: hidden; text-overflow: ellipsis; }
+.c3-foot { flex: none; padding: var(--k-luft-05) var(--k-luft-15); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.c3-dialog-from { margin-block: var(--k-luft-1); }
+.c3-dialog-note { color: var(--k-text-muted); }

@@ -1,0 +1,48 @@
+{
+  "input": {
+    "gvr": {
+      "group": "",
+      "version": "v1",
+      "resource": "configmaps"
+    },
+    "object": {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "meta",
+        "annotations": {
+          "example.com/author": "Ada",
+          "example.com/authority": "https://login.example.com"
+        }
+      },
+      "data": {
+        "author": "Ada Lovelace",
+        "authority": "https://login.example.com",
+        "AUTHOR_NAME": "ada",
+        "notes.txt": "author: Ada\nauthority: login\n"
+      }
+    }
+  },
+  "expected": {
+    "apiVersion": "v1",
+    "kind": "ConfigMap",
+    "metadata": {
+      "name": "meta",
+      "annotations": {
+        "example.com/author": "Ada",
+        "example.com/authority": "https://login.example.com"
+      }
+    },
+    "data": {
+      "author": "Ada Lovelace",
+      "authority": "https://login.example.com",
+      "AUTHOR_NAME": "ada",
+      "notes.txt": "author: Ada\nauthority: login\n"
+    }
+  },
+  "count": 0,
+  "mustContain": [
+    "Ada Lovelace",
+    "https://login.example.com"
+  ]
+}

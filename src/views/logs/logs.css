@@ -1,0 +1,125 @@
+/* Logs view (docs/ux.md §13.3, §9.4). Only --k-* tokens. Lines are mono 12/16 on --k-bg-pane. */
+
+.logs { position: relative; height: 100%; min-height: 0; background: var(--k-bg-pane); }
+
+.logs-scroll {
+  position: absolute; inset: 0;
+  overflow-x: hidden; overflow-y: auto;
+  overflow-anchor: none;               /* the list places itself; the browser must not re-anchor */
+  overscroll-behavior: contain;
+  color: var(--k-text-2);
+  contain: strict;
+}
+.logs-space { position: relative; width: 100%; overflow: hidden; }
+.logs-probe { position: absolute; visibility: hidden; display: inline-block; white-space: pre; pointer-events: none; }
+
+.logs-row { position: absolute; top: 0; left: 0; width: 100%; }
+
+/* ── a log line: [timestamp] [pod/container] text ── */
+.logs-line {
+  display: flex; align-items: flex-start;
+  min-height: var(--k-h-line);
+  padding-inline: var(--k-luft-15);
+  white-space: pre;
+}
+.logs-ts { flex: none; margin-right: 1ch; color: var(--k-text-muted); }
+.logs-src { flex: none; width: var(--logs-gutter); margin-right: 1ch; overflow: hidden; color: var(--k-text-3); }
+.logs-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.logs-line[data-wrapped] .logs-text { text-overflow: clip; }
+.logs-vline { height: var(--k-h-line); overflow: hidden; }
+
+/* ANSI tones: text levels and the two status hues, never raw ANSI colours */
+.logs-line .tone-hi { color: var(--k-text); }
+.logs-line .tone-muted { color: var(--k-text-muted); }
+.logs-line .tone-warn, .logs-line .level-warn { color: var(--k-st-warn); }
+.logs-line .tone-error, .logs-line .level-error { color: var(--k-st-error); }
+.logs-ul { text-decoration: underline; text-underline-offset: 2px; }
+
+/* search hit: background step + underline (§9.4); the current hit steps once more */
+.logs-hit { background: var(--k-match); color: var(--k-text); text-decoration: underline; text-underline-offset: 2px; }
+.logs-line[data-match-current] .logs-hit { background: var(--k-match-current); }
+.logs-line[data-match-current] { box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+
+/* selected lines: the marked-row surface plus a frame-coloured bar */
+.logs-line[data-selected] { background: var(--k-row-marked); box-shadow: inset var(--k-ring) 0 0 var(--k-frame); }
+
+/* cursor line: idle surface in an unfocused pane, b4 plus the accent bar in the focused one */
+.logs-line[data-cursor], .logs-mark[data-cursor], .logs-note[data-cursor] { background: var(--k-row-focus-idle); }
+.pane[data-focused] .logs-line[data-cursor],
+.pane[data-focused] .logs-mark[data-cursor],
+.pane[data-focused] .logs-note[data-cursor] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+
+/* a status hue as text is only allowed on b1 and b2: none on cursor, selected or matching lines */
+.logs-line[data-cursor] .level-warn, .logs-line[data-cursor] .level-error,
+.logs-line[data-cursor] .tone-warn, .logs-line[data-cursor] .tone-error,
+.logs-line[data-selected] .level-warn, .logs-line[data-selected] .level-error,
+.logs-line[data-selected] .tone-warn, .logs-line[data-selected] .tone-error,
+.logs-line[data-match-current] .tone-warn, .logs-line[data-match-current] .tone-error { color: var(--k-text); }
+.logs-line[data-cursor] .tone-muted, .logs-line[data-selected] .tone-muted,
+.logs-line[data-cursor] .logs-ts, .logs-line[data-selected] .logs-ts { color: var(--k-text-3); }
+
+/* ── marker rows: user mark (rule + time), gap, note, error ── */
+.logs-mark, .logs-note {
+  display: flex; align-items: center; gap: var(--k-luft-15);
+  height: var(--k-h-line); padding-inline: var(--k-luft-15);
+  color: var(--k-text-muted); white-space: nowrap; overflow: hidden;
+}
+.logs-mark::after { content: ""; flex: 1; border-top: var(--k-hair) solid var(--k-divider); }
+.logs-mark[data-cursor], .logs-note[data-cursor] { color: var(--k-text-3); }
+.logs-note-word { flex: none; }
+.logs-note-text { min-width: 0; }
+.logs-note[data-kind="error"]:not([data-cursor]) .logs-note-word { color: var(--k-st-error); }
+
+/* ── states and the jump control ── */
+.logs-empty { position: absolute; inset: 0; pointer-events: none; }
+/* the fix named in the line is a button (the action its key runs) */
+.logs-empty .k-abtn { pointer-events: auto; }
+.logs-jump {
+  position: absolute; right: var(--k-luft-2); bottom: var(--k-luft-15);
+  display: flex; align-items: center; height: var(--k-luft-35); padding-inline: var(--k-luft-1);
+  background: var(--k-bg-overlay); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius);
+}
+.logs-jump .k-hint { color: var(--k-text-2); }
+
+/* ── pane header: state labels and the search bar ── */
+.logs-labels { display: inline-flex; align-items: center; gap: var(--k-luft-1); }
+.logs-paused { color: var(--k-text); }
+.logs-labels .num { font-variant-numeric: tabular-nums; }
+/* resource names are never uppercased (§10) */
+.logs-labels .logs-plain { text-transform: none; letter-spacing: 0; }
+.logs-mode { display: inline-flex; flex: none; }
+
+/* The search bar replaces the crumbs while editing (§6.3): src/panes/panes.css does that for
+   every bar input in the chips slot. */
+
+/* the jump control is a button (mouse parity): it runs logs.resumeFollow for this pane */
+button.logs-jump { gap: var(--k-luft-1); color: var(--k-text-2); cursor: pointer; }
+button.logs-jump:hover, button.logs-jump:hover .k-hint { color: var(--k-text); }
+
+/* The logs toolbar is how the mouse reaches follow, wrap, the time range and the search, so in
+   this view it never gives way completely: it keeps room for three buttons and "more". Only a
+   reserve, not a share of the squeeze: the toolbar is invisible on an unfocused pane, and the
+   crumbs must not be ellipsized next to blank space. */
+.pane-header > .pane-toolbar:has(> .k-toolbar[aria-label="Logs"]) { min-width: calc(4 * var(--k-h-chip)); }
+/* The reserve grows with the pane (the header is a size container): a wide pane with a long
+   crumb path and all its labels would otherwise still show three buttons. From 640 the time
+   range is kept too, from 900 the instance and the container, from 1100 the whole toolbar. */
+@container (min-width: 640px) {
+  .pane-header > .pane-toolbar:has(> .k-toolbar[aria-label="Logs"]) { min-width: calc(9 * var(--k-h-chip)); }
+}
+@container (min-width: 900px) {
+  .pane-header > .pane-toolbar:has(> .k-toolbar[aria-label="Logs"]) { min-width: calc(13 * var(--k-h-chip)); }
+}
+@container (min-width: 1100px) {
+  .pane-header > .pane-toolbar:has(> .k-toolbar[aria-label="Logs"]) { min-width: calc(22 * var(--k-h-chip)); }
+}
+
+/* ── merged logs: the pod gutter is tinted per pod (with the letter marker, never colour alone).
+   The syntax tokens are used, so the status hues keep meaning a level. A click goes to the pod. ── */
+.logs-src[data-pod] { cursor: pointer; }
+.logs-src[data-pod]:hover { text-decoration: underline; text-underline-offset: 2px; }
+.logs-src[data-pod="0"] { color: var(--k-syn-key); }
+.logs-src[data-pod="1"] { color: var(--k-syn-string); }
+.logs-src[data-pod="2"] { color: var(--k-syn-number); }
+.logs-src[data-pod="3"] { color: var(--k-syn-atom); }
+.logs-src[data-pod="4"] { color: var(--k-syn-meta); }

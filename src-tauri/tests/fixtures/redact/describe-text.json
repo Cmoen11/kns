@@ -1,0 +1,12 @@
+{
+  "input": {
+    "text": "Name:         web-1\nNamespace:    default\nContainers:\n  main:\n    Environment:\n      DB_PASSWORD:  describe-pw\n      DB_HOST:      db\n      API_TOKEN:    <set to the key 'token' in secret 'api'>  Optional: false\n"
+  },
+  "expected": "Name:         web-1\nNamespace:    default\nContainers:\n  main:\n    Environment:\n      DB_PASSWORD:  •••\n      DB_HOST:      db\n      API_TOKEN:    •••\n",
+  "rules": {
+    "line": 2
+  },
+  "mustNotContain": [
+    "describe-pw"
+  ]
+}

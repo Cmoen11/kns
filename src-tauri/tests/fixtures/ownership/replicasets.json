@@ -1,0 +1,37 @@
+{
+  "kind": "ReplicaSetList",
+  "items": [
+    {
+      "metadata": {
+        "name": "web-5b8d", "creationTimestamp": "2026-11-18T10:00:00Z",
+        "annotations": { "deployment.kubernetes.io/revision": "1" },
+        "ownerReferences": [{ "kind": "Deployment", "name": "web", "uid": "uid-web" }]
+      },
+      "spec": { "template": { "metadata": { "labels": { "app": "web", "pod-template-hash": "5b8d" } }, "spec": { "containers": [{ "name": "main", "image": "nginx:1.25-alpine" }] } } }
+    },
+    {
+      "metadata": {
+        "name": "web-7c9f", "creationTimestamp": "2026-11-21T10:00:00Z",
+        "annotations": { "deployment.kubernetes.io/revision": "3" },
+        "ownerReferences": [{ "kind": "Deployment", "name": "web", "uid": "uid-web" }]
+      },
+      "spec": { "template": { "metadata": { "labels": { "app": "web", "pod-template-hash": "7c9f" } }, "spec": { "containers": [{ "name": "main", "image": "nginx:1.27-alpine" }] } } }
+    },
+    {
+      "metadata": {
+        "name": "web-6a1e", "creationTimestamp": "2026-11-20T10:00:00Z",
+        "annotations": { "deployment.kubernetes.io/revision": "2" },
+        "ownerReferences": [{ "kind": "Deployment", "name": "web", "uid": "uid-web" }]
+      },
+      "spec": { "template": { "metadata": { "labels": { "app": "web", "pod-template-hash": "6a1e" } }, "spec": { "containers": [{ "name": "main", "image": "nginx:1.26-alpine" }] } } }
+    },
+    {
+      "metadata": {
+        "name": "other-1111", "creationTimestamp": "2026-11-21T10:00:00Z",
+        "annotations": { "deployment.kubernetes.io/revision": "9" },
+        "ownerReferences": [{ "kind": "Deployment", "name": "other", "uid": "uid-other" }]
+      },
+      "spec": { "template": { "spec": { "containers": [{ "name": "main", "image": "x" }] } } }
+    }
+  ]
+}

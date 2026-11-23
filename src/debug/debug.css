@@ -1,0 +1,12 @@
+/* Feature F dialogs: the explanatory lines under the fields. Tokens only (docs/frontend.md §5). */
+.debug-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-luft-1);
+  margin-top: var(--k-luft-2);
+  color: var(--k-text-muted);
+  overflow-wrap: anywhere;
+}
+.debug-lines .t-mono {
+  color: var(--k-text);
+}

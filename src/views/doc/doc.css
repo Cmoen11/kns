@@ -1,0 +1,130 @@
+/* Doc view (docs/ux.md §13.1, §13.2). Tokens only; the editor's own colours are in cm.ts. */
+.doc { height: 100%; display: flex; flex-direction: column; min-height: 0; position: relative; background: var(--k-bg-pane); }
+.doc-editor, .doc-review { flex: 1; min-height: 0; overflow: hidden; }
+.doc-editor[hidden] { display: none; }
+.doc-editor .cm-editor, .doc-review > .cm-editor { height: 100%; }
+.doc-review { overflow: auto; }
+.doc-review .cm-mergeView { min-height: 100%; }
+
+/* The line cursor (view mode): the cursor-row signal of §9.4, bar included. */
+.doc[data-focused][data-mode="view"] .cm-activeLine {
+  background: var(--k-row-focus);
+  box-shadow: inset var(--k-ring) 0 0 var(--k-accent);
+}
+.doc[data-mode="edit"] .cm-activeLine { background: var(--k-row-hover); }
+
+/* Result, warning and error lines under the header: 20px each, hue on glyph and words only. */
+.doc-lines { flex: none; background: var(--k-bg-header); border-bottom: var(--k-hair) solid var(--k-line); }
+.doc-line {
+  display: flex; align-items: center; gap: var(--k-luft-1); min-height: var(--k-h-pane-header);
+  padding: 0 var(--k-luft-15); color: var(--k-text-2); min-width: 0;
+}
+.doc-line .glyph { flex: none; }
+.doc-line-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.doc-line[data-state="error"] .doc-line-text { color: var(--k-st-error); }
+.doc-line[data-state="warn"] .doc-line-text { color: var(--k-st-warn); }
+/* the conflict banner is a message, not a status hue: the glyph carries the warning, the words
+   stay readable, and a rule sets it apart from the dry-run line above */
+.doc-line.doc-conflict { border-top: var(--k-hair) solid var(--k-line); }
+.doc-line.doc-conflict .doc-line-text { color: var(--k-text); }
+.doc-line.doc-conflict .doc-line-hint { color: var(--k-text-2); }
+.doc-line-hint { display: inline-flex; align-items: center; gap: var(--k-luft-1); flex: none; margin-left: auto; color: var(--k-text-3); }
+.doc-line .t-label { color: var(--k-text); flex: none; }
+
+/* Mouse parity. The format switch is a segmented control: three doc.format buttons, joined. */
+.doc-tb [data-action="doc.format"] { border-radius: 0; padding-inline: var(--k-luft-05); box-shadow: inset 0 0 0 var(--k-hair) var(--k-divider); }
+.doc-tb [data-action="doc.format"] + [data-action="doc.format"] { margin-left: calc(-1 * (var(--k-luft-05) + var(--k-hair))); }
+.doc-tb :not([data-action="doc.format"]) + [data-action="doc.format"], .doc-tb [data-action="doc.format"]:first-child { border-radius: var(--k-radius) 0 0 var(--k-radius); }
+.doc-tb [data-action="doc.format"]:not(:has(+ [data-action="doc.format"])) { border-radius: 0 var(--k-radius) var(--k-radius) 0; }
+/* Like the logs toolbar (logs.css), the document's keeps a reserve in the pane header instead of
+   giving way completely. It grows with the pane (the header is a size container): from 420 edit,
+   search and "more" in view mode and the primary button in EDIT / REVIEW; from 640 both labelled
+   buttons (Review / Cancel, Apply / Back) and the toggles; from 900 the whole view toolbar. */
+.pane-header > .pane-toolbar:has(> .doc-tb) { min-width: calc(4 * var(--k-h-chip)); }
+@container (min-width: 420px) {
+  .pane-header > .pane-toolbar:has(> .doc-tb) { min-width: calc(5 * var(--k-h-chip)); }
+  /* Review (or Apply) and "more": the crumbs still say what is being edited */
+  .pane-header > .pane-toolbar:has(> .doc-tb-work) { min-width: calc(6 * var(--k-h-chip)); }
+}
+@container (min-width: 640px) {
+  .pane-header > .pane-toolbar:has(> .doc-tb) { min-width: calc(10 * var(--k-h-chip)); }
+  .pane-header > .pane-toolbar:has(> .doc-tb-work) { min-width: calc(17 * var(--k-h-chip)); }
+}
+@container (min-width: 900px) {
+  .pane-header > .pane-toolbar:has(> .doc-tb) { min-width: calc(21 * var(--k-h-chip)); }
+}
+/* Apply / Back in REVIEW: labelled, with their keys, always visible under the result lines */
+.doc-review-acts { gap: var(--k-luft-1); padding-block: var(--k-luft-05); }
+.doc-review-acts .doc-act { height: var(--k-luft-35); }
+.doc-act { color: var(--k-text); padding-inline: var(--k-luft-1); box-shadow: inset 0 0 0 var(--k-hair) var(--k-frame); }
+.doc-act[data-action="review.apply"]:not([data-disabled]) { background: var(--k-btn-bg); color: var(--k-btn-fg); box-shadow: none; }
+.doc-act[data-action="review.apply"]:not([data-disabled]):hover { background: var(--k-btn-hover); color: var(--k-btn-fg); }
+.doc-act[data-action="review.apply"] .k-chip { border-color: currentColor; color: inherit; }
+
+.doc-loading { position: absolute; top: 0; right: var(--k-luft-15); color: var(--k-text-muted); pointer-events: none; }
+.doc-scrim { padding-top: var(--k-luft-6); }
+
+/* Diff (review and the diff gutter): no green or red (§13.2). Added = --k-diff-add with "+",
+   removed = --k-diff-del, muted, with "−". !important beats @codemirror/merge's own light/dark colours. */
+.doc .cm-mergeView .cm-mergeViewEditors { align-items: stretch; }
+.doc .cm-mergeView .cm-mergeViewEditor + .cm-mergeViewEditor { border-left: var(--k-hair) solid var(--k-line); }
+.doc .cm-merge-b .cm-changedLine,
+.doc .cm-changedLine,
+.doc .cm-insertedLine,
+.doc .cm-inlineChangedLine { background: var(--k-diff-add) !important; }
+.doc .cm-merge-a .cm-changedLine,
+.doc .cm-deletedChunk,
+.doc .cm-deletedLine { background: var(--k-diff-del) !important; color: var(--k-text-muted); }
+.doc .cm-deletedChunk { padding-left: 0; }
+/* a removed line starts where every other line's text starts (the editor's line padding) */
+.doc .cm-deletedChunk .cm-deletedLine { padding-inline: var(--k-luft-15); }
+.doc .cm-deletedChunk .cm-deletedLine, .doc .cm-deletedChunk del { text-decoration: none; }
+.doc .cm-merge-a .cm-changedLine *, .doc .cm-deletedChunk * { color: var(--k-text-muted) !important; }
+.doc .cm-changedText, .doc .cm-deletedText {
+  background: none !important; text-decoration: underline; text-decoration-thickness: var(--k-hair);
+}
+/* Two signals per changed line (§9.4), so the diff reads at a glance without green or red: the
+   surface step plus a bar at the line's left edge, strong on the added side, quiet on the removed
+   one. Inside a changed line the characters that differ get the next surface step. */
+.doc .cm-merge-b .cm-changedLine, .doc .cm-insertedLine, .doc .cm-inlineChangedLine { box-shadow: inset var(--k-ring) 0 0 var(--k-frame); }
+.doc .cm-merge-a .cm-changedLine, .doc .cm-deletedChunk .cm-deletedLine, .doc .cm-deletedLine { box-shadow: inset var(--k-ring) 0 0 var(--k-divider); }
+/* one bar per line: the same classes also mark the changed text inside a line (inline spans) */
+.doc .cm-line :is(.cm-insertedLine, .cm-deletedLine) { box-shadow: none; }
+.doc .cm-merge-b .cm-changedText, .doc .cm-insertedLine .cm-changedText, .doc .cm-inlineChangedLine .cm-changedText {
+  background: var(--k-match-current) !important; text-decoration: none;
+}
+.doc .cm-merge-b .cm-changedText, .doc .cm-insertedLine .cm-changedText { color: var(--k-text) !important; }
+.doc .cm-changeGutter { width: var(--k-luft-2) !important; padding-left: 0 !important; }
+.doc .cm-changedLineGutter, .doc .cm-deletedLineGutter {
+  background: none !important; color: var(--k-text-2); text-align: center;
+  font: 400 var(--k-type-mono) / var(--k-h-line) var(--k-font-mono);
+}
+.doc .cm-changedLineGutter::before { content: "+"; }
+.doc .cm-merge-a .cm-changedLineGutter::before, .doc .cm-deletedLineGutter::before { content: "\2212"; }
+.doc .cm-collapsedLines {
+  background: var(--k-bg-header) !important; color: var(--k-text-3) !important;
+  padding: 0 var(--k-luft-15); cursor: default;
+}
+.doc .cm-collapsedLines::before, .doc .cm-collapsedLines::after { content: none !important; }
+.doc .cm-mergeSpacer { background: var(--k-bg-header) !important; background-image: none !important; }
+.doc .cm-chunkButtons { display: none; }
+
+/* Vim keys (vim.ts): the library ships its own colours; these put its block cursor, search
+   highlight and command line on tokens. !important beats its Prec.highest theme. */
+.doc .cm-editor .cm-fat-cursor { background: var(--k-text-2) !important; color: var(--k-bg-pane) !important; }
+.doc .cm-editor:not(.cm-focused) .cm-fat-cursor {
+  background: none !important; outline: var(--k-hair) solid var(--k-text-3) !important; color: transparent !important;
+}
+.doc .cm-editor .cm-searchMatch { background: var(--k-match) !important; }
+.doc .cm-editor .cm-panels {
+  background: var(--k-bg-header); color: var(--k-text); border-top: var(--k-hair) solid var(--k-line) !important;
+}
+.doc .cm-editor .cm-vim-panel {
+  align-items: center; min-height: var(--k-h-pane-header); padding: 0 var(--k-luft-15);
+  font: 400 var(--k-type-mono) / var(--k-h-line) var(--k-font-mono);
+}
+.doc .cm-editor .cm-vim-panel input { flex: 1; min-width: 0; padding: 0; font: inherit; color: inherit; background: transparent; }
+/* the library sets these inline: monospace on the prompt, grey on its hint, red on its messages */
+.doc .cm-editor .cm-vim-panel span { font-family: inherit !important; }
+.doc .cm-editor .cm-vim-panel span[style*="color"] { color: var(--k-text-3) !important; }
+.doc .cm-editor .cm-vim-panel div[style*="color"] { color: var(--k-st-error) !important; }

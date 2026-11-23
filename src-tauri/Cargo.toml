@@ -1,0 +1,79 @@
+[package]
+name = "kns"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2024"
+# H3 adds src/bin/kns-mcp.rs; `cargo run` / `tauri dev` keep starting the app
+default-run = "kns"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "kns_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+kube = { version = "5.1.0", features = ["ws", "gzip"] }
+k8s-openapi = { version = "0.29", features = ["earliest"] }
+tokio = { version = "1.54.1", features = ["full"] }
+futures = "0.3.34"
+http = "1.5.0"
+anyhow = "1.0.104"
+bytes = "1.12.2"
+tokio-util = { version = "0.7.20", features = ["io", "compat"] }
+serde-saphyr = "2"
+base64 = "0.23"
+jiff = "0.2"
+percent-encoding = "2"
+http-body-util = "0.1"
+tower = "0.5.3"
+sha2 = "0.11"
+rand = "0.10"
+subtle = "2.6.1"
+regex = "1.13.2"
+socket2 = "0.6.5"
+dirs = "7.0.0"
+# B-dev: .gitignore matching for env exports, no git process (docs/plan-features.md §3 B-dev)
+ignore = "0.4.34"
+# H1: MCP server (docs/plan-features.md §5)
+rmcp = { version = "3.11", features = ["server", "macros", "transport-streamable-http-server", "schemars"] }
+axum = "0.8.9"
+# used from Rust only; the window gets no dialog/opener/notification permission
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-notification = "2"
+# auto-update (docs/auto-update.md), also used from Rust only
+tauri-plugin-updater = "2"
+
+# Dependencies (rustls, hyper, serde_json) are optimised in dev builds too: unoptimised TLS and
+# JSON are many times slower and make `tauri dev` misleading about speed.
+[profile.dev.package."*"]
+opt-level = 2
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+# clip.rs: clipboard with history/cloud exclusion formats
+[target."cfg(windows)".dependencies]
+clipboard-win = "5.4.3"
+windows-sys = { version = "0.61", features = ["Win32_Networking_WinSock"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.5"
+objc2-app-kit = "0.3.2"
+objc2-foundation = "0.3.2"

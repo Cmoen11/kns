@@ -1,0 +1,19 @@
+# kns-spike fixtures (docs/plan-features.md §3 A2). Applied by hand by the owner:
+#   kubectl --context <ctx> apply -k scripts/kns-spike
+# Everything lives in namespace kns-spike; remove it all with:
+#   kubectl --context <ctx> delete namespace kns-spike
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kns-spike
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: kns-spike
+resources:
+  - namespace.yaml
+  - crashy.yaml
+  - oomy.yaml
+  - pullfail.yaml
+  - web.yaml
+  - envdemo.yaml
+  - db.yaml
+  - logsy.yaml

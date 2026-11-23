@@ -1,0 +1,42 @@
+/* Shell view (docs/ux.md §13.4). Colours inside the terminal come from the xterm theme (theme.ts). */
+.term-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--k-bg-pane);
+}
+/* the padding sits outside the host, so the fit addon measures the content box */
+.term-box {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding-inline: var(--k-luft-15);
+  overflow: hidden;
+}
+.term-host { width: 100%; height: 100%; }
+.term-host .xterm { height: 100%; }
+.term-host .xterm, .term-host .xterm * { cursor: text; }
+.term-host .xterm-viewport { background: var(--k-bg-pane); }
+
+.term-ended {
+  display: flex;
+  align-items: center;
+  gap: var(--k-luft-2);
+  flex: none;
+  height: var(--k-h-row);
+  padding-inline: var(--k-luft-15);
+  background: var(--k-bg-header);
+  border-top: var(--k-hair) solid var(--k-line);
+  color: var(--k-text-2);
+}
+.term-ended-text { min-width: 0; }
+.term-reconnect { flex: none; }
+.term-reconnect:hover { color: var(--k-text); }
+
+.term-search { flex: 1 1 var(--k-luft-11); }
+.term-search-count { flex: none; color: var(--k-text-3); }
+
+/* the shell toolbar keeps a reserve in the header (see logs.css): reconnect, copy mode and
+   "more" must stay one click away in a narrow pane */
+.pane-header > .pane-toolbar:has(> .k-toolbar[aria-label="Shell"]) { min-width: calc(4 * var(--k-h-chip)); }

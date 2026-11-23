@@ -1,0 +1,31 @@
+/* timeline and traps views (docs/plan-features.md §3 C2). Only --k-* tokens. */
+
+.c2 { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); color: var(--k-text-2); }
+.c2-head {
+  display: flex; align-items: center; gap: var(--k-luft-2); flex: none; min-width: 0;
+  height: var(--k-h-col-header); padding-inline: var(--k-luft-15);
+  background: var(--k-bg-header); color: var(--k-text-3); white-space: nowrap; overflow: hidden;
+}
+.c2-head-ref { color: var(--k-text); overflow: hidden; text-overflow: ellipsis; unicode-bidi: isolate; }
+.c2 .muted { color: var(--k-text-muted); }
+.c2-cols { display: flex; gap: var(--k-luft-2); flex: none; padding: var(--k-luft-05) var(--k-luft-15); color: var(--k-text-muted); }
+.c2-list { flex: 1; min-height: 0; overflow: auto; padding-bottom: var(--k-luft-2); }
+
+.c2-row { position: relative; display: flex; align-items: center; gap: var(--k-luft-2); min-height: var(--k-h-row); padding-inline: var(--k-luft-15); cursor: default; }
+.c2-row:hover { background: var(--k-row-hover); }
+.c2-row[data-focus] { background: var(--k-row-focus-idle); color: var(--k-text); }
+.c2[data-active] .c2-row[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 0 var(--k-focus); }
+
+.c2-time { flex: none; width: 11ch; font-variant-numeric: tabular-nums; }
+.c2-src { flex: none; width: 8ch; }
+.c2-glyph { flex: none; width: 10px; display: inline-flex; }
+.c2-what { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
+.c2-row[data-sev="warn"] .c2-what, .c2-row[data-sev="error"] .c2-what { color: var(--k-text); }
+.c2-detail { flex: none; color: var(--k-text-muted); white-space: nowrap; }
+.c2-bundle { padding-inline-start: calc(var(--k-luft-15) + 3ch); }
+
+.c2-open { flex: none; visibility: hidden; }
+.c2-row:hover .c2-open, .c2-row[data-focus] .c2-open { visibility: visible; }
+
+.c2-trap-target { margin-block: var(--k-luft-1); }
+.c2-trap-lines { color: var(--k-text-muted); }

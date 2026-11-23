@@ -1,0 +1,99 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "web",
+    "namespace": "kns-spike",
+    "uid": "uid-web",
+    "labels": { "app": "web" },
+    "finalizers": ["kns.dev/test"],
+    "managedFields": [
+      {
+        "manager": "kustomize-controller",
+        "operation": "Apply",
+        "apiVersion": "apps/v1",
+        "time": "2026-11-20T10:00:00Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:metadata": {
+            "f:labels": { "f:app": {} },
+            "f:finalizers": { "v:\"kns.dev/test\"": {}, "v:\"kns.dev/gone\"": {} }
+          },
+          "f:spec": {
+            "f:selector": {},
+            "f:template": {
+              "f:metadata": { "f:labels": { "f:app": {} } },
+              "f:spec": {
+                "f:containers": {
+                  "k:{\"name\":\"main\"}": {
+                    ".": {},
+                    "f:image": {},
+                    "f:name": {},
+                    "f:ports": {
+                      "k:{\"containerPort\":80,\"protocol\":\"TCP\"}": { ".": {}, "f:containerPort": {}, "f:protocol": {} }
+                    }
+                  },
+                  "k:{\"name\":\"sidecar\"}": { ".": {}, "f:image": {}, "f:name": {} },
+                  "k:{\"name\":\"gone\"}": { ".": {}, "f:image": {} }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "manager": "kubectl-scale",
+        "operation": "Update",
+        "apiVersion": "apps/v1",
+        "time": "2026-11-21T09:00:00Z",
+        "fieldsType": "FieldsV1",
+        "subresource": "scale",
+        "fieldsV1": { "f:spec": { "f:replicas": {} } }
+      },
+      {
+        "manager": "kubectl-edit",
+        "operation": "Update",
+        "apiVersion": "apps/v1",
+        "time": "2026-11-21T09:30:00Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": { "f:spec": { "f:template": { "f:spec": { "f:containers": { "k:{\"name\":\"main\"}": { "f:image": {} } } } } } }
+      },
+      {
+        "manager": "kns",
+        "operation": "Update",
+        "apiVersion": "apps/v1",
+        "time": "2026-11-22T08:00:00Z",
+        "fieldsType": "FieldsV1",
+        "fieldsV1": {
+          "f:spec": { "f:template": { "f:metadata": { "f:annotations": { ".": {}, "f:kubectl.kubernetes.io/restartedAt": {} } } } }
+        }
+      },
+      {
+        "manager": "kube-controller-manager",
+        "operation": "Update",
+        "apiVersion": "apps/v1",
+        "time": "2026-11-22T08:01:00Z",
+        "fieldsType": "FieldsV1",
+        "subresource": "status",
+        "fieldsV1": { "f:status": { "f:replicas": {}, "f:readyReplicas": {} } }
+      }
+    ]
+  },
+  "spec": {
+    "replicas": 2,
+    "selector": { "matchLabels": { "app": "web" } },
+    "template": {
+      "metadata": {
+        "labels": { "app": "web" },
+        "annotations": { "kubectl.kubernetes.io/restartedAt": "2026-11-22T08:00:00Z" }
+      },
+      "spec": {
+        "containers": [
+          { "name": "main", "image": "nginx:1.27-alpine", "ports": [{ "containerPort": 80, "protocol": "TCP" }] },
+          { "name": "sidecar", "image": "busybox:1.37.0" }
+        ]
+      }
+    }
+  },
+  "status": { "replicas": 2, "readyReplicas": 2 }
+}

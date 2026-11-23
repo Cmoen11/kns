@@ -1,0 +1,9 @@
+{
+  "kind": "PartialObjectMetadataList",
+  "apiVersion": "meta.k8s.io/v1",
+  "items": [
+    { "kind": "PartialObjectMetadata", "metadata": { "name": "sh.helm.release.v1.api.v1", "namespace": "apps", "creationTimestamp": "2026-11-18T10:00:00Z", "labels": { "owner": "helm", "name": "api", "version": "1", "status": "superseded" } } },
+    { "kind": "PartialObjectMetadata", "metadata": { "name": "sh.helm.release.v1.api.v3", "namespace": "apps", "creationTimestamp": "2026-11-21T10:00:00Z", "labels": { "owner": "helm", "name": "api", "version": "3", "status": "deployed" } }, "data": { "release": "H4sIAAAAAAAA" } },
+    { "kind": "PartialObjectMetadata", "metadata": { "name": "sh.helm.release.v1.api.v2", "namespace": "apps", "creationTimestamp": "2026-11-20T10:00:00Z", "labels": { "owner": "helm", "name": "api", "version": "2", "status": "superseded" } } }
+  ]
+}

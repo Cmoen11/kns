@@ -1,0 +1,20 @@
+# :why / crash card: OOMKilled. `tail` buffers the newline-free stream until the 32Mi limit kills it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oomy
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: oomy }
+  template:
+    metadata:
+      labels: { app: oomy }
+    spec:
+      containers:
+        - name: oomy
+          image: busybox:1.37.0
+          command: ["sh", "-c", "echo allocating; head -c 256m /dev/zero | tail"]
+          resources:
+            requests: { cpu: 5m, memory: 16Mi }
+            limits: { memory: 32Mi }

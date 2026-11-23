@@ -1,0 +1,13 @@
+{
+  "input": {
+    "text": "connecting to postgres://app:url-pw@db.kns-spike.svc:5432/app?sslmode=disable&password=q-pw ok"
+  },
+  "expected": "connecting to postgres://app:•••@db.kns-spike.svc:5432/app?sslmode=disable&password=••• ok",
+  "rules": {
+    "url": 2
+  },
+  "mustNotContain": [
+    "url-pw",
+    "q-pw"
+  ]
+}

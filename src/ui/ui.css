@@ -1,0 +1,220 @@
+/* Primitives (docs/ux.md §11). Only --k-* tokens; pixel sizes are the ones the spec names. */
+
+/* ── glyphs (§9.5, §9.6) ── */
+.glyph { width: var(--k-glyph); height: var(--k-glyph); color: var(--k-node); fill: currentColor; }
+/* glyph hues: tokens.css (one rule for every glyph) */
+.k-nodelinje { color: var(--k-node); fill: currentColor; }
+
+/* ── key chip (§11.4) ── */
+.k-keys { display: inline-flex; align-items: center; gap: var(--k-luft-1); flex: none; }
+.k-keys-chord { display: inline-flex; gap: var(--k-luft-05); }
+.k-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: var(--k-h-chip); min-width: var(--k-h-chip); padding-inline: var(--k-luft-1);
+  border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius);
+  color: var(--k-text-2); white-space: nowrap;
+  /* 16px box with a 1px frame: the text sits in the 14px inside */
+  line-height: 14px;
+}
+.k-keys[data-disabled] { opacity: 0.5; }
+.k-hint { display: inline-flex; align-items: center; gap: var(--k-luft-1); white-space: nowrap; }
+
+/* ── filter chip (§11.4) ── */
+.k-fchip {
+  display: inline-flex; align-items: center; gap: var(--k-luft-1);
+  height: var(--k-h-chip); padding-inline: var(--k-luft-1);
+  background: var(--k-bg-chip); border-radius: var(--k-radius); color: var(--k-text-2);
+  max-width: 100%; flex: none;
+}
+.k-fchip[data-focus] { outline: var(--k-ring) solid var(--k-focus); outline-offset: 0; }
+.k-fchip-value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── buttons (§11.8) ── */
+.k-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--k-luft-15);
+  height: var(--k-h-control); padding-inline: var(--k-luft-4);
+  border-radius: var(--k-radius); white-space: nowrap; flex: none;
+}
+.k-btn:focus-visible { outline-offset: var(--k-ring); }
+.k-btn[data-variant="primary"] { background: var(--k-btn-bg); color: var(--k-btn-fg); }
+.k-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--k-btn-hover); }
+.k-btn[data-variant="primary"] .k-chip { border-color: currentColor; color: inherit; }
+.k-btn[data-variant="secondary"] { border: var(--k-hair) solid var(--k-frame); color: var(--k-text); }
+.k-btn[data-variant="secondary"]:hover:not(:disabled) { background: var(--k-row-marked); }
+.k-btn[data-variant="tertiary"] { color: var(--k-text-2); padding-inline: var(--k-luft-2); }
+.k-btn[data-variant="tertiary"]:hover:not(:disabled) .k-btn-label { text-decoration: underline; text-underline-offset: 3px; }
+.k-btn:disabled { opacity: 0.5; }
+
+/* ── inputs (§11.5) ── */
+.k-bar {
+  display: flex; align-items: center; gap: var(--k-luft-1);
+  height: var(--k-h-pane-header); min-width: 0; flex: 1;
+}
+.k-bar-label { color: var(--k-text-3); flex: none; }
+.k-bar-field {
+  display: flex; align-items: center; flex: 1; min-width: 0; height: 100%;
+  background: var(--k-bg-input); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius);
+  padding-inline: var(--k-luft-15);
+}
+.k-bar-field:focus-within, .k-field-box:focus-within {
+  outline: var(--k-ring) solid var(--k-focus); outline-offset: calc(-1 * var(--k-ring));
+}
+.k-bar-field input, .k-field-box input { flex: 1; min-width: 0; height: var(--k-h-line); outline: none; }
+.k-bar-error, .k-field-error {
+  display: flex; align-items: center; gap: var(--k-luft-1); color: var(--k-st-error); flex: none;
+}
+.k-field { display: flex; flex-direction: column; gap: var(--k-luft-1); min-width: 0; }
+.k-field-label { color: var(--k-text-3); overflow-wrap: anywhere; }
+/* text to type exactly, inside an upper-case label: as written */
+.k-literal { text-transform: none; letter-spacing: 0; color: var(--k-text); user-select: text; -webkit-user-select: text; }
+.k-field-box {
+  display: flex; align-items: center; height: var(--k-h-control);
+  background: var(--k-bg-input); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius);
+  padding-inline: var(--k-luft-15);
+}
+.k-bar[data-disabled], .k-field[data-disabled] { opacity: 0.5; }
+
+/* checkbox: a square that fills; radio: a circle with a centred node (§9.6) */
+.k-check, .k-radio { display: inline-flex; align-items: center; gap: var(--k-luft-15); color: var(--k-text-2); }
+.k-check input, .k-radio input {
+  appearance: none; -webkit-appearance: none; flex: none;
+  width: var(--k-luft-2); height: var(--k-luft-2);
+  border: var(--k-hair) solid var(--k-frame); background: var(--k-bg-input);
+  display: grid; place-content: center;
+}
+.k-check input { border-radius: var(--k-radius); }
+.k-radio input { border-radius: 50%; }
+.k-check input::before, .k-radio input::before {
+  content: ""; width: var(--k-luft-1); height: var(--k-luft-1); background: var(--k-mark); visibility: hidden;
+}
+.k-check input::before { width: var(--k-glyph); height: var(--k-glyph); }
+.k-radio input::before { border-radius: 50%; }
+.k-check input:checked::before, .k-radio input:checked::before { visibility: visible; }
+.k-check input:focus-visible, .k-radio input:focus-visible { outline-offset: var(--k-ring); }
+.k-radio-group { display: flex; flex-direction: column; gap: var(--k-luft-1); border: 0; padding: 0; margin: 0; min-width: 0; }
+.k-radio-group legend { padding: 0; margin-bottom: var(--k-luft-1); color: var(--k-text-3); }
+
+/* ── overlay surface, dialog (§11.7) ── */
+.k-scrim {
+  position: fixed; inset: 0; z-index: 100; background: var(--k-scrim);
+  display: flex; align-items: flex-start; justify-content: center; padding-top: var(--k-luft-11);
+}
+.k-overlay { background: var(--k-bg-overlay); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius); }
+.k-dialog {
+  /* % of the fixed scrim, not vw/vh: viewport units overshoot under CSS zoom */
+  width: 400px; max-width: calc(100% - var(--k-luft-6)); max-height: calc(100% - var(--k-luft-11));
+  padding: var(--k-luft-3); display: flex; flex-direction: column; gap: var(--k-luft-2); overflow: hidden;
+}
+.k-dialog-title { display: flex; align-items: center; gap: var(--k-luft-15); color: var(--k-text); }
+/* the body scrolls, the title and the buttons stay: in a short window Cancel and the primary are
+   always on screen. The negative margin keeps the scrollbar in the dialog's padding. */
+.k-dialog-title, .k-dialog-footer { flex: none; }
+.k-dialog-body {
+  color: var(--k-text-2); display: flex; flex-direction: column; gap: var(--k-luft-2);
+  flex: 0 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  margin-right: calc(-1 * var(--k-luft-2)); padding-right: var(--k-luft-2);
+}
+.k-dialog-body > * { flex-shrink: 0; }
+/* wraps: in a narrow pane (a 240px edit pane) the primary button must not be pushed out of the dialog */
+.k-dialog-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--k-luft-2); }
+.k-facts {
+  display: grid; grid-template-columns: max-content 1fr; column-gap: var(--k-luft-2);
+  background: var(--k-bg-input); padding: var(--k-luft-15); border-radius: var(--k-radius); color: var(--k-text-2);
+}
+.k-facts dt { color: var(--k-text-muted); }
+.k-facts dd { overflow-wrap: anywhere; }
+.k-items { max-height: calc(8 * var(--k-h-line) + 2 * var(--k-luft-15)); overflow: auto; background: var(--k-bg-input); padding: var(--k-luft-15); }
+
+/* ── toast (§11.9) ── */
+.k-toasts {
+  position: fixed; z-index: 90; right: var(--k-luft-2); bottom: calc(var(--k-h-bottom) + var(--k-luft-1));
+  display: flex; flex-direction: column; gap: var(--k-luft-1); width: 280px; pointer-events: none;
+}
+.k-toast {
+  display: flex; align-items: flex-start; gap: var(--k-luft-15); padding: var(--k-luft-15) var(--k-luft-2);
+  color: var(--k-text-2); pointer-events: auto;
+}
+/* a 2px edge in the toast's status hue (the glyph shape and the text still say it) */
+.k-toast[data-kind="ok"] { box-shadow: inset var(--k-ring) 0 0 var(--k-st-ok); }
+.k-toast[data-kind="warn"] { box-shadow: inset var(--k-ring) 0 0 var(--k-st-warn); }
+.k-toast[data-kind="error"] { box-shadow: inset var(--k-ring) 0 0 var(--k-st-error); }
+.k-toast .glyph { margin-top: var(--k-luft-1); }   /* centres the 8px glyph on the 17px first line */
+.k-toast-text { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.k-toast-action { display: inline-flex; align-items: center; gap: var(--k-luft-1); color: var(--k-text-2); flex: none; height: 17px; }
+.k-toast-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── tab strip (§11.10) ── */
+.k-tabs {
+  display: flex; align-items: center; gap: var(--k-luft-2); height: var(--k-h-tabstrip);
+  padding-inline: var(--k-luft-15); background: var(--k-bg-header); overflow: hidden; flex: none;
+}
+.k-tab {
+  display: inline-flex; align-items: center; gap: var(--k-luft-1); height: 100%; color: var(--k-text-3);
+  white-space: nowrap; min-width: 0; box-shadow: none; border-bottom: var(--k-ring) solid transparent;
+  padding-top: var(--k-ring);
+}
+.k-tab:hover { color: var(--k-text-2); }
+.k-tab[aria-selected="true"] { color: var(--k-text); border-bottom-color: var(--k-accent); }
+.k-tab-label { overflow: hidden; text-overflow: ellipsis; }
+
+/* ── empty state (§11.10) ── */
+.k-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  height: 100%; padding: var(--k-luft-3); color: var(--k-text-2);
+}
+.k-empty .k-nodelinje { margin-bottom: var(--k-luft-5); }
+.k-empty-title { color: var(--k-text); margin-bottom: var(--k-luft-2); }
+.k-empty-line { display: inline-flex; align-items: center; gap: var(--k-luft-1); flex-wrap: wrap; justify-content: center; }
+.k-empty-actions { display: flex; gap: var(--k-luft-2); margin-top: var(--k-luft-3); }
+
+/* ── action buttons and toolbars (mouse parity, docs/frontend.md §17) ── */
+.k-icon { width: 13px; height: 13px; }
+.k-abtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--k-luft-05);
+  height: 18px; min-width: 20px; padding-inline: var(--k-luft-05);
+  border-radius: var(--k-radius); color: var(--k-text-2); white-space: nowrap; flex: none;
+}
+.k-abtn:hover { color: var(--k-text); background: var(--k-row-marked); }
+.k-abtn:active { background: var(--k-row-focus); }
+/* a toggle that is on: one step above the hover surface, so on and hovered never look the same */
+.k-abtn[aria-pressed="true"] { color: var(--k-text); background: var(--k-row-focus); }
+.k-abtn[aria-pressed="true"]:hover, .k-abtn[aria-pressed="true"]:active { background: var(--k-cell-delta); }
+.k-abtn[data-disabled], .k-abtn[data-disabled]:hover { color: var(--k-disabled); background: none; }
+.k-abtn-label { padding-inline: var(--k-luft-05); }
+/* an action named in prose (empty states): key chip + underlined label */
+.k-ahint { height: auto; min-width: 0; padding: 0; gap: var(--k-luft-1); color: var(--k-text); vertical-align: baseline; }
+.k-ahint:hover { background: none; }
+.k-ahint .k-abtn-label { padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+
+/* one visible row; what wraps below it is clipped and listed by the "more" button */
+.k-toolbar { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; height: var(--k-h-chip); }
+.k-toolbar-items {
+  display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--k-luft-05); row-gap: var(--k-luft-2);
+  position: relative; height: var(--k-h-chip); min-width: 0; flex: 0 1 auto; overflow: hidden;
+}
+.k-toolbar-sep { width: var(--k-hair); height: var(--k-luft-2); margin-inline: var(--k-luft-05); background: var(--k-divider); flex: none; }
+/* items that stay together (ToolbarAction.join): one flex item, so the run wraps as a whole */
+.k-toolbar-join { display: inline-flex; align-items: center; flex: none; column-gap: var(--k-luft-05); }
+.k-toolbar-more { margin-left: var(--k-luft-05); }
+.k-tab-wrap { display: inline-flex; align-items: center; height: 100%; min-width: 0; }
+/* always there (a tap without hover must hit it), quiet until its tab is hovered or selected */
+.k-tab-close { color: var(--k-text-muted); height: var(--k-h-chip); min-width: var(--k-h-chip); }
+.k-tab-wrap:hover .k-tab-close, .k-tab-wrap[data-selected] .k-tab-close { color: var(--k-text-2); }
+.k-tab-wrap .k-tab-close:hover { color: var(--k-text); }
+
+/* ── tooltip (Tooltip.tsx): overlay surface, label + key chips, the disabled reason below ── */
+.k-tip {
+  position: fixed; left: 0; top: 0; z-index: 300; visibility: hidden; pointer-events: none;
+  display: flex; flex-direction: column; max-width: 280px;
+  padding: var(--k-luft-05) var(--k-luft-1); color: var(--k-text); white-space: nowrap;
+}
+.k-tip-head { display: flex; align-items: center; gap: var(--k-luft-1); min-width: 0; height: var(--k-h-line); }
+.k-tip-label { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* registry labels are lower case ("split right"), hand-written ones are not: one look */
+.k-tip-label::first-letter { text-transform: uppercase; }
+.k-tip-reason { color: var(--k-text-3); white-space: normal; overflow-wrap: anywhere; padding-bottom: var(--k-luft-05); }
+/* the full text of a cut-off name (clipTip): as written (names are case-sensitive), wrapped, whole */
+.k-tip[data-plain] { max-width: 420px; }
+.k-tip[data-plain] .k-tip-head { height: auto; min-height: var(--k-h-line); }
+.k-tip[data-plain] .k-tip-label { white-space: normal; overflow-wrap: anywhere; }
+.k-tip[data-plain] .k-tip-label::first-letter { text-transform: none; }

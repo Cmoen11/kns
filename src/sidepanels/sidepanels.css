@@ -1,0 +1,181 @@
+/* Side panels: the context sidebar (left) and the activity panel (right). Only --k-* tokens.
+   Metrics follow the pane chrome: 20px header, 20px rows (36px with a second line), the spacing scale. */
+
+.side-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  /* the panes keep at least 320px: one docked panel may take the rest, two share it */
+  max-width: calc(100% - 5 * var(--k-luft-11));
+  background: var(--k-bg-app);
+  color: var(--k-text-2);
+  contain: layout paint;
+}
+.side-panel[data-side="left"] { border-right: var(--k-hair) solid var(--k-divider); }
+.side-panel[data-side="right"] { border-left: var(--k-hair) solid var(--k-divider); }
+/* like a pane, focus shows as a line on the header, not as a ring */
+.side-panel:focus-visible { outline: none; }
+
+/* narrow window: over the panes, shown only while it has the focus */
+.side-panel[data-both] { max-width: calc((100% - 5 * var(--k-luft-11)) / 2); }
+.side-panel[data-narrow] {
+  max-width: calc(100% - var(--k-luft-11));
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+}
+.side-panel[data-narrow][data-side="left"] { left: 0; }
+.side-panel[data-narrow][data-side="right"] { right: 0; }
+
+.side-header {
+  display: flex;
+  align-items: center;
+  gap: var(--k-luft-1);
+  flex: none;
+  height: var(--k-h-pane-header);
+  padding-inline: var(--k-luft-15);
+  background: var(--k-bg-header);
+  box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line);
+  color: var(--k-text-3);
+  white-space: nowrap;
+}
+.side-panel[data-focused] .side-header { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-accent); color: var(--k-text); }
+.side-title { min-width: 0; }
+.side-fill { flex: 1; min-width: 0; }
+/* the close button is a .k-abtn, like the pane's; pulled out so its icon lines up with the row ends */
+.side-close { margin-right: calc(-1 * var(--k-luft-05)); }
+
+/* type-to-filter */
+.side-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--k-luft-1);
+  flex: none;
+  height: var(--k-h-row);
+  padding-inline: var(--k-luft-15);
+  border-bottom: var(--k-hair) solid var(--k-line);
+  color: var(--k-text-3);
+}
+.side-filter input { flex: 1; min-width: 0; height: var(--k-h-line); outline: none; color: var(--k-text); background: none; border: 0; padding: 0; }
+.side-filter:focus-within { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-focus); }
+
+.side-rows { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; padding-bottom: var(--k-luft-15); }
+
+.side-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-luft-1);
+  min-height: var(--k-h-row);
+  padding: var(--k-luft-05) var(--k-luft-15) var(--k-luft-05) 0;
+  white-space: nowrap;
+  cursor: default;
+}
+.side-row:hover { background: var(--k-row-hover); }
+.side-row[data-focus] { background: var(--k-row-focus-idle); }
+.side-panel[data-focused] .side-row[data-focus] {
+  background: var(--k-row-focus);
+  box-shadow: inset var(--k-ring) 0 0 var(--k-accent);
+}
+.side-row[data-disabled] .side-label { color: var(--k-text-muted); }
+.side-row[data-current] .side-label { color: var(--k-text); }
+
+/* section header */
+.side-head {
+  align-items: center;
+  margin-top: var(--k-luft-1);
+  padding-left: var(--k-luft-15);
+  color: var(--k-text-3);
+}
+.side-head:first-child { margin-top: 0; }
+.side-head .side-label { flex: 0 1 auto; }
+.side-chevron { flex: none; color: var(--k-text-muted); }
+.side-count { color: var(--k-text-muted); }
+
+/* gutter 20: cursor bar 2 + 6 + glyph 8 + 4; the current context / namespace gets the mark square */
+.side-gutter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: none;
+  width: var(--k-luft-35);
+  height: var(--k-h-line);
+  color: var(--k-node);
+}
+.side-gutter[data-current]::after { content: ""; width: var(--k-glyph-quiet); height: var(--k-glyph-quiet); margin-right: var(--k-luft-05); background: var(--k-mark); }
+.side-row[data-focus] .side-gutter .glyph { color: var(--k-text); }
+
+.side-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.side-line { display: flex; align-items: center; gap: var(--k-luft-1); min-width: 0; height: var(--k-h-line); }
+.side-label { flex: 0 1 auto; min-width: 0; color: var(--k-text-2); }
+.side-row[data-focus] .side-label { color: var(--k-text); }
+.side-detail { color: var(--k-text-muted); height: var(--k-h-line); }
+.side-row[data-focus] .side-detail, .side-row[data-focus] .side-trailing { color: var(--k-text-3); }
+.side-trailing { flex: none; color: var(--k-text-muted); }
+.side-tag { flex: none; color: var(--k-text-3); }
+/* Row buttons (open, copy, stop; stop-all and clear on a header). They share one grid cell with
+   the age / trailing text, so the cell is as wide as the wider of the two at all times: on the
+   hovered row and on the cursor row of the focused panel the buttons replace the text, and
+   nothing shifts. */
+.side-end { display: inline-grid; flex: none; align-items: center; justify-items: end; height: var(--k-h-line); }
+.side-end > * { grid-area: 1 / 1; }
+.side-acts { display: inline-flex; align-items: center; gap: var(--k-luft-05); visibility: hidden; }
+.side-row:hover .side-acts, .side-panel[data-focused] .side-row[data-focus] .side-acts { visibility: visible; }
+.side-row:hover .side-end:has(.side-acts) > .side-trailing,
+.side-panel[data-focused] .side-row[data-focus] .side-end:has(.side-acts) > .side-trailing { visibility: hidden; }
+
+/* resize handle: 6px hit area inside the inner edge (the panel clips, so nothing may hang out;
+   wider would cover the close button and the start of the activity rows) */
+.side-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--k-luft-1);
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+.side-panel[data-side="left"] .side-resize { right: 0; }
+.side-panel[data-side="right"] .side-resize { left: 0; }
+.side-resize::after { content: ""; position: absolute; top: 0; bottom: 0; width: var(--k-ring); }
+.side-panel[data-side="left"] .side-resize::after { right: 0; }
+.side-panel[data-side="right"] .side-resize::after { left: 0; }
+.side-resize:hover::after, .side-resize[data-drag]::after { background: var(--k-accent); }
+
+/* titlebar toggles and the bottom-row count */
+.side-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--k-luft-1);
+  height: var(--k-h-row); min-width: var(--k-h-row); padding-inline: var(--k-luft-05);
+  border-radius: var(--k-radius); color: var(--k-text-2);
+}
+.side-toggle:hover, .side-toggle[aria-pressed="true"] { color: var(--k-text); }
+.side-toggle:hover { background: var(--k-row-marked); }
+.side-toggle:active { background: var(--k-row-focus); }
+.side-indicator { display: inline-flex; align-items: center; gap: var(--k-luft-15); color: inherit; }
+.side-indicator:hover { color: var(--k-text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Recent: a failed or warning entry stays marked (a 2px edge in its hue, the detail line in the
+   hue on b1/b2); the glyph and the word "failed" carry it too */
+.side-row[data-tone="error"] { box-shadow: inset var(--k-ring) 0 0 var(--k-st-error); }
+.side-row[data-tone="warn"] { box-shadow: inset var(--k-ring) 0 0 var(--k-st-warn); }
+.side-row[data-tone="error"]:not([data-focus]) .side-detail { color: var(--k-st-error); }
+.side-row[data-tone="warn"]:not([data-focus]) .side-detail { color: var(--k-st-warn); }
+
+/* sign in (aws sso login): a text button on a context row that has an AWS profile */
+.side-login {
+  flex: none;
+  padding: 0 var(--k-luft-1, 6px);
+  margin-right: var(--k-luft-05, 4px);
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--k-text-muted, inherit);
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.side-login:hover:not(:disabled) { color: var(--k-text, inherit); }
+.side-login:disabled { opacity: 0.6; cursor: progress; }

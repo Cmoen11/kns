@@ -1,0 +1,130 @@
+/* Reset, typography classes (docs/ux.md §10), focus ring and scrollbars. Only --k-* tokens. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+html {
+  background: var(--k-bg-pane);
+  color: var(--k-text);
+  font-family: var(--k-font-ui);
+  font-size: var(--k-type-body);
+  font-weight: 400;
+  font-synthesis: none;            /* never a faux bold or italic */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow: hidden;                /* the app never scrolls as a page */
+  line-height: var(--k-h-line);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+h1, h2, h3, h4, h5, h6, p, ul, ol, dl, dd, figure, pre { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h1, h2, h3, h4, h5, h6, b, strong, th { font-weight: 500; }   /* 400/500 only, never bold */
+a { color: inherit; }
+svg { display: block; flex: none; }
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+  border-radius: 0;
+}
+button { background: none; border: 0; padding: 0; cursor: default; }
+input, textarea { background: none; border: 0; padding: 0; user-select: text; -webkit-user-select: text; }
+input::placeholder, textarea::placeholder { color: var(--k-text-muted); opacity: 1; }
+:disabled { cursor: default; }
+
+/* Text that can be selected with the mouse (documents, logs, messages). */
+.selectable, .selectable * { user-select: text; -webkit-user-select: text; cursor: text; }
+
+::selection { background: var(--k-match-current); color: var(--k-text); }
+
+/* ── focus: a visible 2px ring or bar on everything focusable (§9.4, §17) ── */
+:focus { outline: none; }
+:focus-visible {
+  outline: var(--k-ring) solid var(--k-focus);
+  outline-offset: calc(-1 * var(--k-ring));      /* inset */
+}
+
+/* ── scrollbars: 6px overlay thumb, shown on hover or scroll (§11.2) ── */
+/* Chromium ignores the ::-webkit-scrollbar rules once the standard properties are set, so the
+   standard ones are only for engines without the pseudo-elements. */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  *:hover, *:focus-within { scrollbar-color: var(--k-frame) transparent; }
+}
+::-webkit-scrollbar { width: var(--k-luft-1); height: var(--k-luft-1); }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--k-radius); }
+*:hover::-webkit-scrollbar-thumb, *:focus-within::-webkit-scrollbar-thumb { background: var(--k-frame); }
+
+/*
+ * ── typography (§10) ──
+ * Single-line styles have no line-height of their own: the text sits in a 16px line box.
+ * Weights are locked per style and never change for focus, selection or hierarchy.
+ */
+.t-cell,            /* table cell: Brødtekst XS */
+.t-row {            /* palette, picker and menu rows */
+  font: 400 var(--k-type-body) / var(--k-h-line) var(--k-font-ui);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.t-body {           /* dialog body, toast: Brødtekst XS, 12/17 */
+  font: 400 var(--k-type-body) / 17px var(--k-font-ui);
+  letter-spacing: -0.01em;
+}
+.t-palette-input {  /* Brødtekst S, 14 in a 20px box */
+  font: 400 var(--k-type-body-s) / var(--k-luft-35) var(--k-font-ui);
+  letter-spacing: -0.01em;
+}
+.t-ui,              /* bottom-row status, counts, tab strip, key chips: UI XS */
+.t-hint {           /* hint labels */
+  font: 500 var(--k-type-ui) / var(--k-h-line) var(--k-font-ui);
+  font-variant-numeric: tabular-nums;   /* counts, ages and countdowns tick without moving their neighbours */
+}
+.t-hint { color: var(--k-text-3); }
+.t-ui-multi {       /* multi-line UI text (help reasons, error messages): 10/15 */
+  font: 500 var(--k-type-ui) / 15px var(--k-font-ui);
+}
+.t-crumb,           /* pane crumbs: UI S */
+.t-input {          /* typed text in inputs */
+  font: 500 var(--k-type-ui-s) / var(--k-h-line) var(--k-font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.t-label,           /* mode badge, chip mode, group and field labels: Etikett XS */
+.t-colhead,         /* column header: Etikett S */
+.t-button {         /* button label: Etikett S */
+  font: 500 var(--k-type-label) / var(--k-h-line) var(--k-font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.t-colhead, .t-button { font-size: var(--k-type-label-s); }
+.t-dialog-title {   /* Overskrift 4, 14/18 */
+  font: 500 var(--k-type-h4) / 18px var(--k-font-ui);
+}
+.t-title {          /* empty-state and settings titles: serif 28/31 */
+  font: 400 var(--k-type-h2) / 31px var(--k-font-head);
+}
+.t-title em { font-style: italic; font-weight: inherit; color: var(--k-emph); }
+.t-mono {           /* logs, YAML, describe, terminal, fact blocks: 12/16 */
+  font: 400 var(--k-type-mono) / var(--k-h-line) var(--k-font-mono);
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+/* helpers */
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}

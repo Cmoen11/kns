@@ -1,0 +1,15 @@
+{
+  "input": {
+    "env": [
+      "SPRING_DATASOURCE_PASSWORD",
+      "env-pw"
+    ]
+  },
+  "expected": "•••",
+  "rules": {
+    "key": 1
+  },
+  "mustNotContain": [
+    "env-pw"
+  ]
+}

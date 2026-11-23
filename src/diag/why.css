@@ -1,0 +1,36 @@
+/* `why` view (docs/plan-features.md §3 C1). Only --k-* tokens. */
+
+.why { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); color: var(--k-text-2); }
+.why-head {
+  display: flex; align-items: center; gap: var(--k-luft-2); flex: none; min-width: 0;
+  height: var(--k-h-col-header); padding-inline: var(--k-luft-15);
+  background: var(--k-bg-header); color: var(--k-text-3); white-space: nowrap; overflow: hidden;
+}
+.why-head-ref { color: var(--k-text); overflow: hidden; text-overflow: ellipsis; unicode-bidi: isolate; }
+.why-head .muted, .why .muted { color: var(--k-text-muted); }
+.why-none { flex: none; padding: var(--k-luft-2) var(--k-luft-15); }
+.why-none-title { color: var(--k-text); }
+.why-list { flex: 1; min-height: 0; overflow: auto; padding-bottom: var(--k-luft-2); }
+
+.why-row { position: relative; padding-inline: var(--k-luft-15); color: var(--k-text-2); cursor: default; }
+.why-row:hover { background: var(--k-row-hover); }
+.why-row[data-focus] { background: var(--k-row-focus-idle); color: var(--k-text); }
+.why[data-active] .why-row[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 0 var(--k-focus); }
+
+.why-line, .why-evidence, .why-next { display: flex; align-items: center; gap: var(--k-luft-2); min-height: var(--k-h-row); }
+.why-finding { padding-top: var(--k-luft-1); }
+.why-finding + .why-finding, .why-evidence + .why-finding { border-top: var(--k-hair) solid var(--k-line); }
+.why-title { flex: 1 1 auto; min-width: 0; color: var(--k-text); font-weight: 600; overflow-wrap: anywhere; unicode-bidi: isolate; }
+.why-detail { padding-inline-start: calc(8px + var(--k-luft-2)); padding-bottom: var(--k-luft-05); overflow-wrap: anywhere; }
+
+.why-evidence { flex-wrap: wrap; padding-inline-start: calc(var(--k-luft-15) + 8px + var(--k-luft-2)); }
+.why-tag { flex: none; min-width: 7ch; }
+.why-text { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; unicode-bidi: isolate; }
+.why-evidence[data-type="logLine"] .why-text, .why-evidence[data-type="field"] .why-text { font-family: var(--k-font-mono); }
+.why-diff { flex-basis: 100%; font-family: var(--k-font-mono); padding: 0 0 var(--k-luft-05) 7ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.why-del { color: var(--k-text-muted); }
+.why-add { color: var(--k-text); }
+
+/* the row's open button: its space is always there; shown on the hovered and the cursor row */
+.why-open { flex: none; visibility: hidden; }
+.why-row:hover .why-open, .why-row[data-focus] .why-open { visibility: visible; }

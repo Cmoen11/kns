@@ -1,0 +1,20 @@
+{
+  "kind": "ControllerRevisionList",
+  "items": [
+    {
+      "metadata": { "name": "db-6f7", "creationTimestamp": "2026-11-19T10:00:00Z", "ownerReferences": [{ "kind": "StatefulSet", "uid": "uid-sts" }] },
+      "revision": 1,
+      "data": { "spec": { "template": { "spec": { "containers": [{ "name": "db", "image": "postgres:16" }] } } } }
+    },
+    {
+      "metadata": { "name": "db-8a9", "creationTimestamp": "2026-11-21T10:00:00Z", "ownerReferences": [{ "kind": "StatefulSet", "uid": "uid-sts" }] },
+      "revision": 2,
+      "data": { "spec": { "template": { "spec": { "containers": [{ "name": "db", "image": "postgres:17" }] } } } }
+    },
+    {
+      "metadata": { "name": "other-1", "creationTimestamp": "2026-11-21T10:00:00Z", "ownerReferences": [{ "kind": "DaemonSet", "uid": "uid-ds" }] },
+      "revision": 5,
+      "data": {}
+    }
+  ]
+}

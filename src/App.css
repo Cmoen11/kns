@@ -1,0 +1,8 @@
+/* The pane area between the titlebar and the bottom row. The frame itself is in shell/shell.css. */
+.app-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}

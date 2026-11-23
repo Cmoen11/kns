@@ -1,0 +1,58 @@
+/* Env and devsets views (docs/plan-features.md §3 B-dev); metrics as the port-forward manager. */
+.dev-view { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); container-type: inline-size; }
+.dev-summary { flex: none; display: flex; flex-wrap: wrap; gap: var(--k-luft-1) var(--k-luft-3); padding: var(--k-luft-1) var(--k-luft-15); border-bottom: var(--k-hair) solid var(--k-line); color: var(--k-text-2); }
+.dev-scroll { flex: 1; min-height: 0; overflow: auto; }
+.dev-head, .dev-row {
+  display: grid;
+  grid-template-columns: var(--k-luft-6) minmax(0, 3fr) minmax(11ch, 1.4fr) minmax(0, 4fr) minmax(0, 3fr) calc(2 * var(--k-luft-9));
+  align-items: center;
+  padding: 0 var(--k-luft-15) 0 var(--k-luft-2);
+  white-space: nowrap;
+}
+.dev-head { position: sticky; top: 0; z-index: 1; height: var(--k-h-col-header); background: var(--k-bg-header); border-bottom: var(--k-hair) solid var(--k-line); color: var(--k-text-3); }
+.dev-row { height: var(--k-h-row); color: var(--k-text-2); }
+/* headers sit in the same grid as the cells: same inset, clipped (spaced capitals are wider than the cell text) */
+.dev-head > span { padding-inline: var(--k-luft-1); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dev-cell { padding-inline: var(--k-luft-1); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dev-key { color: var(--k-text); }
+.dev-row[data-off] .dev-key, .dev-row[data-off] .dev-cell { color: var(--k-text-muted); }
+.dev-rw { color: var(--k-text-3); }
+.dev-check { display: flex; align-items: center; }
+.dev-acts { display: flex; align-items: center; justify-content: flex-end; gap: var(--k-luft-05); overflow: visible; }
+.dev-row .dev-acts .k-abtn, .dev-set .dev-acts .k-abtn { visibility: hidden; }
+.dev-row:hover .dev-acts .k-abtn, .dev-row[data-focus] .dev-acts .k-abtn,
+.dev-set:hover .dev-acts .k-abtn, .dev-set[data-focus] .dev-acts .k-abtn { visibility: visible; }
+.dev-row:hover, .dev-set:hover, .dev-dep:hover { background: var(--k-row-hover); }
+.dev-row[data-focus], .dev-set[data-focus], .dev-dep[data-focus] { background: var(--k-row-focus-idle); }
+.dev-view[data-pane-focused] .dev-row[data-focus],
+.dev-view[data-pane-focused] .dev-set[data-focus],
+.dev-view[data-pane-focused] .dev-dep[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+.dev-section { padding: var(--k-luft-2) var(--k-luft-15) var(--k-luft-05); color: var(--k-text-3); }
+.dev-dep { display: flex; flex-direction: column; padding: var(--k-luft-05) var(--k-luft-15); color: var(--k-text-2); }
+.dev-dep-head { display: flex; align-items: center; gap: var(--k-luft-2); min-height: var(--k-h-row); }
+.dev-note { padding: 0 var(--k-luft-15) var(--k-luft-05) calc(var(--k-luft-15) + var(--k-luft-6)); color: var(--k-text-3); }
+.dev-note .glyph { color: var(--k-st-warn); }
+.dev-set {
+  display: grid;
+  grid-template-columns: var(--k-luft-6) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 2fr) minmax(0, 3fr) calc(4 * var(--k-luft-9));
+  align-items: center;
+  gap: var(--k-luft-1);
+  height: var(--k-h-row);
+  padding: 0 var(--k-luft-15) 0 var(--k-luft-2);
+  white-space: nowrap;
+  color: var(--k-text-2);
+}
+/* a half-width pane: the context goes (it is in the details), the row buttons take what they need */
+@container (max-width: 560px) {
+  .dev-set { grid-template-columns: var(--k-luft-6) minmax(0, 3fr) minmax(0, 2fr) minmax(0, 2fr) auto; }
+  .dev-set > :nth-child(3) { display: none; }
+}
+.dev-warn { color: var(--k-st-warn); }
+.dev-add { color: var(--k-node); }
+.dev-del { color: var(--k-st-error); }
+.dev-details { padding: var(--k-luft-1) var(--k-luft-15) var(--k-luft-3); border-top: var(--k-hair) solid var(--k-line); color: var(--k-text-2); }
+.dev-approve { display: flex; flex-direction: column; gap: var(--k-luft-05); }
+.dev-approve .dev-section { padding: var(--k-luft-2) 0 0; }
+.dev-lines { color: var(--k-text-3); max-height: calc(8 * var(--k-h-row)); overflow: auto; }
+.dev-status { display: inline-flex; align-items: center; gap: var(--k-luft-1); }
+.dev-warnline { display: flex; align-items: baseline; gap: var(--k-luft-1); }

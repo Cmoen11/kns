@@ -1,0 +1,177 @@
+/* Resource table (docs/ux.md §9.4, §11.2, §11.3, §12). Only --k-* tokens; no motion. */
+
+.tbl { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); }
+/* the scroller is snapped to whole rows by the Grid (inline height); the rest of .tbl-view stays empty */
+.tbl-view { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.tbl-scroll { position: relative; height: 100%; overflow: auto; overscroll-behavior: contain; }
+
+/* ── column header: 20px, sticky ── */
+.tbl-head {
+  position: sticky; top: 0; z-index: 1;
+  display: flex; align-items: center;
+  height: var(--k-h-col-header); min-width: 100%; padding-right: var(--k-luft-15);
+  background: var(--k-bg-header); color: var(--k-text-3);
+  box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line);
+}
+.tbl-hcell {
+  position: relative; flex: none; display: flex; align-items: center; height: 100%;
+  padding-inline: var(--k-luft-1); overflow: hidden; white-space: nowrap;
+}
+.tbl-hcell.num { justify-content: flex-end; }
+.tbl-hcell[data-sorted] { color: var(--k-text); }
+/* a header is a button: one background step under the pointer, one more while pressed. The cell
+   covers the header's hairline, so it draws its own. */
+.tbl-hcell:hover { color: var(--k-text); background: var(--k-row-marked); box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line); }
+.tbl-hcell:active:not(:has(.tbl-resize:active, .tbl-hmenu:active)) { background: var(--k-row-focus); }
+.tbl-hcell[data-selected] { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-accent); }
+/* resize handle: 6px hit area at the column's right edge; a hairline under the pointer, the
+   accent while dragging */
+.tbl-resize { position: absolute; z-index: 1; top: 0; right: 0; bottom: 0; width: var(--k-luft-1); cursor: col-resize; touch-action: none; }
+.tbl-resize:hover { box-shadow: inset calc(-1 * var(--k-hair)) 0 0 var(--k-frame); }
+.tbl-resize[data-active] { box-shadow: inset calc(-1 * var(--k-ring)) 0 0 var(--k-accent); }
+
+/* ── rows: fixed height, absolutely positioned by the virtualizer ── */
+.tbl-body { position: relative; min-width: 100%; }
+.tbl-row {
+  position: absolute; top: 0; left: 0;
+  display: flex; align-items: center;
+  height: var(--k-h-row); min-width: 100%; padding-right: var(--k-luft-15);
+  color: var(--k-text-2); white-space: nowrap; contain: layout style;
+}
+.tbl-row:hover { background: var(--k-row-hover); }
+.tbl-row[data-marked] { background: var(--k-row-marked); }
+.tbl-row[data-focus] { background: var(--k-row-focus-idle); }
+.tbl[data-focused] .tbl-row[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+/* the rule above the first row appended out of sort position (§12.3) */
+.tbl-row[data-appended]::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: var(--k-hair); background: var(--k-line); }
+
+/* mark gutter: cursor bar 2 + checkbox square 8 + 2 */
+.tbl-gutter { flex: none; display: flex; align-items: center; width: var(--k-luft-2); height: 100%; padding-left: var(--k-luft-05); }
+.tbl-mark { width: var(--k-glyph); height: var(--k-glyph); background: var(--k-mark); }
+
+.tbl-row .cell { flex: none; display: flex; align-items: center; min-width: 0; height: 100%; padding-inline: var(--k-luft-1); overflow: hidden; }
+.tbl-row .cell.num { justify-content: flex-end; }
+.tbl-row .tbl-name { color: var(--k-text); }
+.tbl-row .muted { color: var(--k-text-muted); }
+.tbl-tail { flex: none; }
+/* a 5-character age (`5d11h`) is wider than the 44px column minus padding: let it use the padding */
+.tbl-row .tbl-age { overflow: visible; }
+.tbl-row .cell[data-delta] { background: var(--k-cell-delta); color: var(--k-text); }
+
+/* stale, terminating or held rows: muted text, the glyph still says what it is */
+.tbl-row[data-muted] .cell, .tbl-row[data-muted] .status-word { color: var(--k-text-muted); }
+
+/* status cell: 6 + glyph 8 + 6, then the word */
+.tbl-status { gap: var(--k-luft-1); }
+.tbl-noglyph { flex: none; width: var(--k-glyph); }
+.status-word[data-state="warn"] { color: var(--k-st-warn); }
+.status-word[data-state="error"] { color: var(--k-st-error); }
+/* heat (heat.ts): READY / RESTARTS that explain a fault; hue only on b1/b2 rows (§9.3) */
+.tbl-row .cell[data-heat="warn"] { color: var(--k-st-warn); }
+.tbl-row .cell[data-heat="error"] { color: var(--k-st-error); }
+.tbl-row[data-focus] .cell[data-heat], .tbl-row[data-marked] .cell[data-heat], .tbl-row .cell[data-heat][data-delta] { color: var(--k-text); }
+.status-word[data-state="done"],.status-word[data-state="terminating"], .status-word[data-state="unknown"] { color: var(--k-text-muted); }
+.tbl-gone { flex: none; margin-left: var(--k-luft-1); color: var(--k-text-3); }
+
+/* filter match: background step + underline (§1) */
+.tbl-match { background: var(--k-match); color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* ── states ── */
+.tbl-empty { position: sticky; left: 0; height: calc(100% - var(--k-h-col-header)); }
+.tbl-syncing { display: flex; align-items: center; height: var(--k-h-row); padding-left: calc(var(--k-luft-2) + var(--k-luft-1)); color: var(--k-text-muted); }
+.tbl-label { color: var(--k-text-2); }
+
+/* ── filter input in the pane header (§6.3): replaces the crumbs while editing ── */
+.tbl-filterbar { display: flex; align-items: center; gap: var(--k-luft-1); flex: 1; min-width: 0; }
+
+
+/* ── column menu ── */
+.tbl-colmenu {
+  position: absolute; z-index: 3; top: var(--k-h-col-header); right: var(--k-luft-15);
+  display: flex; flex-direction: column; width: 240px; max-width: calc(100% - var(--k-luft-3));
+  max-height: calc(100% - var(--k-h-col-header) - var(--k-luft-15));
+}
+.tbl-colmenu-title { flex: none; padding: var(--k-luft-05) var(--k-luft-15); color: var(--k-text-3); }
+.tbl-colmenu-list { flex: 1; min-height: 0; overflow: auto; }
+.tbl-colmenu-row { display: flex; align-items: center; gap: var(--k-luft-1); height: var(--k-h-row); padding-right: var(--k-luft-15); color: var(--k-text-2); }
+.tbl-colmenu-row:hover { background: var(--k-row-hover); }
+.tbl-colmenu-row[data-focus] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); color: var(--k-text); }
+.tbl-colmenu-row[data-off] .tbl-colmenu-name { color: var(--k-text-muted); }
+.tbl-colmenu-name { flex: 1; min-width: 0; }
+.tbl-colmenu-state { flex: none; color: var(--k-text-muted); }
+.tbl-colmenu-hints {
+  flex: none; display: flex; flex-wrap: wrap; gap: var(--k-luft-05) var(--k-luft-2);
+  padding: var(--k-luft-1) var(--k-luft-15); box-shadow: inset 0 var(--k-hair) 0 var(--k-line);
+}
+
+/* ── mouse parity (docs/frontend.md §17) ── */
+.tbl-row[data-hover] { background: var(--k-row-hover); }
+.tbl-row[data-hover][data-marked] { background: var(--k-row-marked); }
+.tbl-row[data-hover][data-focus] { background: var(--k-row-focus-idle); }
+.tbl[data-focused] .tbl-row[data-hover][data-focus] { background: var(--k-row-focus); }
+
+/* the checkbox in the mark gutter: an outline under the pointer, on the cursor row and on every
+   row once something is marked; filled when marked */
+.tbl-check { flex: none; width: var(--k-glyph); height: var(--k-glyph); }
+.tbl[data-marks] .tbl-row .tbl-gutter { cursor: pointer; }
+.tbl[data-marks] .tbl-row:hover .tbl-check,
+.tbl[data-marks] .tbl-row[data-hover] .tbl-check,
+.tbl[data-marks] .tbl-row[data-focus] .tbl-check,
+.tbl[data-marking] .tbl-row .tbl-check,
+.tbl-checkall .tbl-check { box-shadow: inset 0 0 0 var(--k-hair) var(--k-text-3); }
+.tbl-row[data-marked] .tbl-check, .tbl-checkall[data-marked="2"] .tbl-check { background: var(--k-mark); box-shadow: none; }
+/* some rows marked: a half-filled box */
+.tbl-checkall[data-marked="1"] .tbl-check { background: linear-gradient(var(--k-mark), var(--k-mark)) center / 100% 2px no-repeat; }
+.tbl-checkall { cursor: pointer; color: inherit; }
+.tbl-checkall:hover .tbl-check { box-shadow: inset 0 0 0 var(--k-hair) var(--k-text); }
+.tbl-checkall[data-marked="2"]:hover .tbl-check { box-shadow: none; }
+
+/* header: sort arrow, and the column menu caret (revealed on hover, over the title: no shift) */
+.tbl-hcell { cursor: pointer; gap: var(--k-luft-05); }
+/* The sort arrow never moves the title: after it in a left-aligned column, before it in a
+   right-aligned one (the title stays on the right edge). The icon's own box is mostly air, so it
+   overlaps the gap and the cell padding: RDY, RST and AGE keep their whole title. */
+.tbl-hcell > .k-icon { flex: none; margin-inline: calc(-1 * var(--k-luft-05)) calc(-1 * var(--k-luft-1)); }
+.tbl-hcell.num > .k-icon { order: -1; margin-inline: calc(-1 * var(--k-luft-1)) calc(-2 * var(--k-luft-05)); }
+.tbl-hmenu { position: absolute; top: 0; bottom: 0; margin-block: auto; right: var(--k-luft-1); visibility: hidden; background: var(--k-row-marked); }
+.tbl-hcell.num > .tbl-hmenu { right: auto; left: 0; }
+.tbl-hcell:hover > .tbl-hmenu { visibility: visible; }
+.tbl-hcell:active > .tbl-hmenu { background: var(--k-row-focus); }
+.tbl-hcell > .tbl-hmenu:hover { background: var(--k-row-focus); }
+.tbl-hcell > .tbl-hmenu:active { background: var(--k-cell-delta); }
+
+/* the namespace of a row scopes the pane to it */
+
+/* the row action bar: one element for the hovered row. The rail is as wide as the visible table
+   and sticks to its left edge, so the bar stays at the right edge while the rows scroll sideways */
+.tbl-rail { position: sticky; left: 0; height: 0; pointer-events: none; }
+.tbl-rowbar {
+  --tbl-bar-bg: var(--k-row-hover);
+  position: absolute; right: 0; display: flex; align-items: center; gap: var(--k-luft-05);
+  height: var(--k-h-row); padding-inline: var(--k-luft-05) var(--k-luft-15);
+  background: var(--tbl-bar-bg); pointer-events: auto;
+}
+/* the cells under the bar fade out instead of being cut by an edge */
+.tbl-rowbar::before {
+  content: ""; position: absolute; top: 0; bottom: 0; right: 100%; width: var(--k-luft-4); pointer-events: none;
+  background: linear-gradient(to right, color-mix(in srgb, var(--tbl-bar-bg) 0%, transparent), var(--tbl-bar-bg));
+}
+.tbl-rowbar[data-cursor] { --tbl-bar-bg: var(--k-row-focus-idle); }
+.tbl[data-focused] .tbl-rowbar[data-cursor] { --tbl-bar-bg: var(--k-row-focus); }
+/* buttons on a row or on the bulk bar: a tint of the text colour, so the step shows on every row
+   state (the plain button hover is the marked-row colour) */
+.tbl-rowbar .k-abtn:not([data-disabled]):hover, .tbl-bulk .k-abtn:not([data-disabled]):hover { background: color-mix(in srgb, var(--k-text) 12%, transparent); }
+.tbl-rowbar .k-abtn:not([data-disabled]):active, .tbl-bulk .k-abtn:not([data-disabled]):active { background: color-mix(in srgb, var(--k-text) 22%, transparent); }
+
+/* the bulk bar: under the rows while rows are marked (the rows keep their place) */
+.tbl-bulk {
+  flex: none; display: flex; align-items: center; gap: var(--k-luft-2);
+  height: var(--k-h-row); padding-inline: calc(var(--k-luft-2) + var(--k-luft-1)) var(--k-luft-15);
+  background: var(--k-row-marked); color: var(--k-text); box-shadow: inset 0 var(--k-hair) 0 var(--k-line);
+}
+.tbl-bulk-count { flex: none; }
+.tbl-bulk .k-toolbar { flex: 1 1 auto; min-width: 0; }
+/* the column menu's checkbox: a wider hit area than the 12px gutter */
+.tbl-colmenu-check { width: var(--k-luft-35); padding-left: var(--k-luft-1); cursor: pointer; }
+.tbl-colmenu-check .tbl-check { box-shadow: inset 0 0 0 var(--k-hair) var(--k-text-3); }
+.tbl-colmenu-check .tbl-check[data-on] { background: var(--k-mark); box-shadow: none; }

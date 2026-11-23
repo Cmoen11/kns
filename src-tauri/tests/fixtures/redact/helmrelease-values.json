@@ -1,0 +1,58 @@
+{
+  "input": {
+    "gvr": {
+      "group": "helm.toolkit.fluxcd.io",
+      "version": "v2",
+      "resource": "helmreleases"
+    },
+    "object": {
+      "apiVersion": "helm.toolkit.fluxcd.io/v2",
+      "kind": "HelmRelease",
+      "metadata": {
+        "name": "app",
+        "namespace": "default"
+      },
+      "spec": {
+        "chart": {
+          "spec": {
+            "chart": "app",
+            "version": "1.0.0"
+          }
+        },
+        "values": {
+          "auth": {
+            "adminPassword": "hr-admin-pw",
+            "username": "admin"
+          },
+          "postgresql": {
+            "password": "pg-pw",
+            "host": "db"
+          },
+          "image": {
+            "tag": "1.2.3"
+          },
+          "apiKey": "hr-api-key",
+          "author": "someone",
+          "config": "server:\n  port: 8080\n  secret: hr-file-secret\n"
+        }
+      }
+    }
+  },
+  "rules": {
+    "key": 3,
+    "line": 1
+  },
+  "mustNotContain": [
+    "hr-admin-pw",
+    "pg-pw",
+    "hr-api-key",
+    "hr-file-secret"
+  ],
+  "mustContain": [
+    "someone",
+    "admin",
+    "1.2.3",
+    "port: 8080",
+    "db"
+  ]
+}

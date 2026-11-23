@@ -1,0 +1,38 @@
+/* Patterns view (docs/plan-features.md §3 E). Only --k-* tokens; rows are 20px like tables. */
+
+.pat { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); color: var(--k-text-2); }
+
+.pat-head, .pat-row {
+  display: grid;
+  grid-template-columns: 7ch 9ch 9ch 6ch minmax(0, 1fr);
+  column-gap: 1ch;
+  align-items: center;
+  padding-inline: var(--k-luft-15);
+  white-space: nowrap;
+}
+.pat-head { flex: none; height: var(--k-h-col-header); background: var(--k-bg-header); color: var(--k-text-3); }
+.pat-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.pat-row { height: var(--k-h-row); cursor: default; }
+.pat-row:hover { background: var(--k-row-hover); }
+.pat-row[data-cursor] { background: var(--k-row-focus-idle); }
+.pane[data-focused] .pat-row[data-cursor] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+
+.pat-count { text-align: right; color: var(--k-text); }
+.pat-head .pat-count { color: var(--k-text-3); }
+.pat .num { font-variant-numeric: tabular-nums; }
+.pat-time { color: var(--k-text-muted); }
+.pat-row[data-cursor] .pat-time { color: var(--k-text-3); }
+.pat-level { color: var(--k-text-3); }
+/* status hues as text only on b1/b2: not on the cursor row */
+.pat-row:not([data-cursor]) .pat-level[data-level="warn"] { color: var(--k-st-warn); }
+.pat-row:not([data-cursor]) .pat-level[data-level="error"] { color: var(--k-st-error); }
+.pat-template { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pat-new {
+  display: inline-block; margin-right: 1ch; padding-inline: var(--k-luft-05);
+  border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius); color: var(--k-text);
+}
+.pat-more { padding: var(--k-luft-1) var(--k-luft-15); color: var(--k-text-muted); }
+.pat-empty { position: absolute; inset: var(--k-h-col-header) 0 0 0; pointer-events: none; }
+
+.pat-labels { display: inline-flex; align-items: center; gap: var(--k-luft-1); }
+.pat-state { color: var(--k-text); }

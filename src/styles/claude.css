@@ -1,0 +1,208 @@
+/*
+ * Theme "claude": warm greys and a clay accent in the style of the Claude desktop app, with rounder
+ * corners and more room around things. It defines the raw palette (--c-*), which tokens.css maps
+ * onto the --k-* layer, and then overrides that layer where this look differs from the base:
+ * the chrome is darker than the content, panes are rounded cards on the chrome, overlays float
+ * with a soft shadow instead of a hard frame, and labels are quieter.
+ * Imported after tokens.css; everything is scoped to [data-tema="claude"].
+ */
+
+/* ── colours ── */
+[data-tema="claude"][data-modus="mork"] {
+  --c-bg-1: #262624;     /* content */
+  --c-bg-2: #1f1e1d;     /* chrome: sidebar, titlebar */
+  --c-bg-3: #30302e;
+  --c-bg-4: #3a3a37;
+  --c-bg-5: #45443f;
+  --c-bg-6: #504f4a;
+  --c-text-1: #f5f4ef;
+  --c-text-2: #d6d4cb;
+  --c-text-3: #a8a69d;
+  --c-emph: #d97757;
+  --c-accent: #d97757;
+  --c-node: #a8a69d;
+  --c-fg-1: #918f87;
+  --c-fg-3: #e08a6d;     /* primary button hover */
+
+  --k-shadow: 0 8px 28px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+[data-tema="claude"][data-modus="lys"] {
+  --c-bg-1: #faf9f5;
+  --c-bg-2: #f0eee6;
+  --c-bg-3: #e8e6dc;
+  --c-bg-4: #dedcd1;
+  --c-bg-5: #d3d0c4;
+  --c-bg-6: #c6c3b6;
+  --c-text-1: #141413;
+  --c-text-2: #3d3d3a;
+  --c-text-3: #5e5d59;
+  --c-emph: #b4532f;
+  --c-accent: #c6613f;
+  --c-node: #6b6a64;
+  --c-fg-1: #6b6a64;
+  --c-fg-3: #b4532f;
+
+  --k-shadow: 0 8px 28px rgb(20 20 19 / 0.14), 0 0 0 1px rgb(20 20 19 / 0.08);
+}
+
+[data-tema="claude"] {
+  /* surfaces: the chrome (b2) sits under the content (b1); overlays are one step up */
+  --k-bg-app:     var(--c-bg-2);
+  --k-bg-pane:    var(--c-bg-1);
+  --k-bg-header:  var(--c-bg-1);
+  --k-bg-overlay: var(--c-bg-1);
+  --k-bg-input:   var(--c-bg-3);
+  --k-bg-chip:    var(--c-bg-4);
+  --k-scrim:      rgb(0 0 0 / 0.35);
+
+  --k-row-hover:      var(--c-bg-3);
+  --k-row-marked:     var(--c-bg-4);
+  --k-row-focus:      var(--c-bg-4);
+  --k-row-focus-idle: var(--c-bg-3);
+
+  --k-line:    color-mix(in srgb, var(--c-text-1) 8%, transparent);
+  --k-divider: color-mix(in srgb, var(--c-text-1) 10%, transparent);
+  --k-frame:   color-mix(in srgb, var(--c-text-1) 18%, transparent);
+
+  --k-btn-fg: #ffffff;
+  --k-mark:   var(--c-accent);
+
+  /* type: one step larger for UI and labels; Claude's labels are sentence case */
+  --k-type-ui:      12px;
+  --k-type-ui-s:    13px;
+  --k-type-label:   10px;
+  --k-type-label-s: 12px;
+  --k-type-body:    13px;
+  --k-type-body-s:  15px;
+
+  /* sizes: more room around everything (row height stays the setting, see :rows) */
+  --k-radius:        6px;
+  --k-radius-l:      10px;
+  --k-radius-xl:     14px;
+  --k-h-titlebar:    40px;
+  --k-h-bottom:      26px;
+  --k-h-pane-header: 30px;
+  --k-h-col-header:  26px;
+  --k-h-tabstrip:    30px;
+  --k-h-chip:        18px;
+  --k-h-control:     34px;
+  --k-h-list:        28px;     /* palette, picker and menu rows (ListBox reads it) */
+  --k-gap:           6px;      /* gap around pane cards */
+
+}
+
+/* ── typography ── */
+[data-tema="claude"] .t-colhead,
+[data-tema="claude"] .t-button { text-transform: none; letter-spacing: 0; }
+[data-tema="claude"] .t-label { letter-spacing: 0.06em; color: var(--k-text-3); }
+[data-tema="claude"] .t-button { font-weight: 500; }
+[data-tema="claude"] .t-title em { color: var(--k-accent); }
+
+/* ── window chrome ── */
+[data-tema="claude"] .titlebar { padding-inline: var(--k-luft-2); gap: var(--k-luft-3); }
+[data-tema="claude"] .titlebar[data-mac] { padding-left: 80px; }
+[data-tema="claude"] .titlebar-switch,
+[data-tema="claude"] .side-toggle,
+[data-tema="claude"] .titlebar-buttons .k-abtn { height: 28px; min-width: 28px; padding-inline: var(--k-luft-1); border-radius: var(--k-radius); }
+[data-tema="claude"] .titlebar-palette {
+  height: 28px; padding-inline: var(--k-luft-2); border: 0; border-radius: var(--k-radius-l);
+  background: var(--k-bg-input);
+}
+[data-tema="claude"] .titlebar-palette:hover { background: var(--k-row-marked); }
+[data-tema="claude"] .titlebar-palette-text { min-width: 220px; }
+[data-tema="claude"] .bottom { padding-inline: var(--k-luft-3); }
+
+/* ── panes: rounded cards on the chrome, with a gap instead of a divider line ── */
+[data-tema="claude"] .panes { background: var(--k-bg-app); }
+[data-tema="claude"] .pane-frame { background: transparent; padding: calc(var(--k-gap) / 2); }
+[data-tema="claude"] .pane {
+  background: var(--k-bg-pane); border-radius: var(--k-radius-l); overflow: hidden;
+  box-shadow: 0 0 0 var(--k-hair) var(--k-line);
+}
+[data-tema="claude"] .panes { padding: 0; }
+[data-tema="claude"] .pane-header {
+  padding-inline: var(--k-luft-2); gap: var(--k-luft-15);
+  box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line);
+}
+/* focus: the accent line becomes a soft ring around the card */
+[data-tema="claude"] .pane[data-focused] > .pane-header { box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line); }
+[data-tema="claude"] .pane[data-focused] { box-shadow: 0 0 0 var(--k-hair) var(--k-frame); }
+[data-tema="claude"] .pane[data-protected] > .pane-header,
+[data-tema="claude"] .pane[data-focused][data-protected] > .pane-header { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-st-warn); }
+[data-tema="claude"] .pane-divider::before { background: transparent; }
+[data-tema="claude"] .pane-divider:hover::before,
+[data-tema="claude"] .pane-divider[data-drag]::before { background: var(--k-accent); border-radius: var(--k-ring); }
+[data-tema="claude"] .pane-drop { border-radius: var(--k-radius-l); }
+[data-tema="claude"] .panes[data-mode="move"] .pane-frame[data-move="target"] { outline-offset: calc(-1 * var(--k-gap) / 2); }
+
+/* ── buttons and chips ── */
+[data-tema="claude"] .k-abtn { height: 24px; min-width: 24px; padding-inline: var(--k-luft-05); border-radius: var(--k-radius); }
+[data-tema="claude"] .k-toolbar,
+[data-tema="claude"] .k-toolbar-items { height: 24px; }
+[data-tema="claude"] .k-icon { width: 14px; height: 14px; }
+[data-tema="claude"] .k-chip {
+  border: 0; background: var(--k-bg-chip); color: var(--k-text-2); border-radius: 4px;
+  line-height: var(--k-h-chip); padding-inline: 5px;
+}
+[data-tema="claude"] .k-btn { border-radius: var(--k-radius-l); padding-inline: var(--k-luft-3); }
+[data-tema="claude"] .k-btn[data-variant="secondary"] { border-color: var(--k-frame); background: var(--k-bg-input); }
+[data-tema="claude"] .k-btn[data-variant="primary"] .k-chip { background: rgb(255 255 255 / 0.2); color: inherit; }
+[data-tema="claude"] .k-bar-field,
+[data-tema="claude"] .k-field-box { border-color: transparent; border-radius: var(--k-radius-l); }
+[data-tema="claude"] .k-fchip { border-radius: var(--k-h-chip); padding-inline: var(--k-luft-15); }
+[data-tema="claude"] .k-check input { border-radius: 4px; }
+
+/* ── overlays float: rounded, a soft shadow, no hard frame ── */
+[data-tema="claude"] .k-overlay { border: 0; border-radius: var(--k-radius-xl); box-shadow: var(--k-shadow); }
+[data-tema="claude"] .k-tip { border-radius: var(--k-radius); padding: var(--k-luft-05) var(--k-luft-15); background: var(--k-bg-input); }
+[data-tema="claude"] .k-dialog { padding: var(--k-luft-4); gap: var(--k-luft-3); width: 440px; }
+[data-tema="claude"] .k-facts, [data-tema="claude"] .k-items { border-radius: var(--k-radius-l); padding: var(--k-luft-2); }
+[data-tema="claude"] .k-toast { border-radius: var(--k-radius-l); padding: var(--k-luft-2) var(--k-luft-3); }
+
+/* palette and pickers: a roomy input row, rows as rounded pills inset from the edge */
+[data-tema="claude"] .pal-input-row { height: 48px; padding-inline: var(--k-luft-3); }
+[data-tema="claude"] .pal-input-label { text-transform: none; letter-spacing: 0; font-size: var(--k-type-ui-s); }
+[data-tema="claude"] .pal-list { padding-block: var(--k-luft-1); contain: layout paint; box-sizing: content-box; }
+[data-tema="claude"] .pal-row,
+[data-tema="claude"] .pal-group { height: var(--k-h-list); left: var(--k-luft-1); right: var(--k-luft-1); padding-inline: var(--k-luft-15); gap: var(--k-luft-15); }
+[data-tema="claude"] .pal-group { align-items: flex-end; padding-bottom: var(--k-luft-05); }
+[data-tema="claude"] .pal-row[data-selected] { border-radius: var(--k-radius-l); box-shadow: none; background: var(--k-row-marked); }
+[data-tema="claude"] .pal-empty, [data-tema="claude"] .pal-error { padding-inline: var(--k-luft-3); min-height: var(--k-h-list); }
+[data-tema="claude"] .pal-footer { padding-block: var(--k-luft-1); }
+[data-tema="claude"] .pal-menu { width: 260px; }
+[data-tema="claude"] .pal-which { border-radius: var(--k-radius-xl); padding: var(--k-luft-2) var(--k-luft-3); }
+
+/* ── tables ── */
+[data-tema="claude"] .tbl-head { box-shadow: inset 0 calc(-1 * var(--k-hair)) 0 var(--k-line); }
+[data-tema="claude"] .tbl-hcell { padding-inline: var(--k-luft-15); }
+[data-tema="claude"] .tbl-row .cell { padding-inline: var(--k-luft-15); }
+[data-tema="claude"] .tbl-gutter { width: var(--k-luft-3); padding-left: var(--k-luft-1); }
+[data-tema="claude"] .tbl-mark { border-radius: 2px; }
+[data-tema="claude"] .tbl[data-focused] .tbl-row[data-focus] { box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+
+/* ── tab strips ── */
+[data-tema="claude"] .k-tabs { gap: var(--k-luft-05); padding-inline: var(--k-luft-1); }
+[data-tema="claude"] .k-tab { padding-inline: var(--k-luft-15); border-bottom: 0; padding-top: 0; height: 24px; border-radius: var(--k-radius); }
+[data-tema="claude"] .k-tab:hover { background: var(--k-row-hover); }
+[data-tema="claude"] .k-tab[aria-selected="true"] { background: var(--k-row-marked); }
+
+/* ── side panels: like the Claude sidebar, rows are rounded pills ── */
+[data-tema="claude"] .side-panel[data-side="left"] { border-right: 0; }
+[data-tema="claude"] .side-panel[data-side="right"] { border-left: 0; }
+[data-tema="claude"] .side-header { padding-inline: var(--k-luft-3); box-shadow: none; }
+[data-tema="claude"] .side-panel[data-focused] .side-header { box-shadow: none; }
+[data-tema="claude"] .side-filter {
+  margin: 0 var(--k-luft-15) var(--k-luft-1); padding-inline: var(--k-luft-15); border: 0;
+  border-radius: var(--k-radius-l); background: var(--k-bg-input); height: 30px;
+}
+[data-tema="claude"] .side-filter:focus-within { box-shadow: 0 0 0 var(--k-hair) var(--k-frame); }
+[data-tema="claude"] .side-rows { padding-inline: var(--k-luft-15); }
+[data-tema="claude"] .side-row { border-radius: var(--k-radius-l); padding-block: 4px; }
+[data-tema="claude"] .side-head { margin-top: var(--k-luft-3); padding-left: var(--k-luft-15); }
+[data-tema="claude"] .side-head:hover { background: none; }
+[data-tema="claude"] .side-panel[data-focused] .side-row[data-focus] { box-shadow: none; background: var(--k-row-focus); }
+[data-tema="claude"] .side-login { border-radius: var(--k-radius); }
+
+/* a bar input in the pane header (filter, search, command): a little air above and below */
+[data-tema="claude"] .pane-header .k-bar-field { height: calc(100% - var(--k-luft-1)); }

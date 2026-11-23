@@ -1,0 +1,65 @@
+# dev from workload (E), env export, address rewriting, redaction fixtures.
+# The values are fake test values; they exist to check that kns masks them.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envdemo
+data:
+  LOG_LEVEL: info
+  application.yaml: |
+    spring:
+      datasource:
+        url: jdbc:postgresql://db.kns-spike.svc:5432/app
+        password: x
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: envdemo
+type: Opaque
+stringData:
+  PASSWORD: x
+  DATABASE_URL: postgres://app:pw@db.kns-spike.svc:5432/app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: envdemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: envdemo }
+  template:
+    metadata:
+      labels: { app: envdemo }
+    spec:
+      containers:
+        - name: envdemo
+          image: busybox:1.37.0
+          # the args land in $1 of the script; the flag is there for the CLI-flag redaction rule
+          command: ["sh", "-c", "while true; do sleep 3600; done", "envdemo"]
+          args: ["--db-password=x"]
+          env:
+            - name: WEB_URL
+              value: http://web.kns-spike.svc.cluster.local:80
+            - name: KAFKA_CONSUMER_GROUP_ID
+              value: envdemo
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef: { name: envdemo, key: PASSWORD }
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: envdemo, key: DATABASE_URL }
+          envFrom:
+            - configMapRef:
+                name: envdemo
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests: { cpu: 5m, memory: 8Mi }
+            limits: { memory: 16Mi }
+      volumes:
+        - name: config
+          configMap:
+            name: envdemo

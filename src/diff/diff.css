@@ -1,0 +1,62 @@
+/* The diff view (src/diff/DiffView.tsx). Self-contained: doc.css is loaded with the doc view only,
+   and a diff may be the first CodeMirror view of the session. Tokens only. */
+.diff { position: relative; display: flex; flex-direction: column; height: 100%; background: var(--k-bg-pane); }
+.diff-sides {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--k-luft-15);
+  padding: 0 var(--k-luft-15); height: var(--k-h-row); align-items: center; flex: none;
+  color: var(--k-text-2); border-bottom: var(--k-hair) solid var(--k-line);
+}
+.diff-sides[data-layout="unified"] { grid-template-columns: auto auto; justify-content: start; }
+.diff-side { min-width: 0; unicode-bidi: isolate; }
+.diff-note { padding: 0 var(--k-luft-15); flex: none; line-height: var(--k-h-row); }
+.diff-body { flex: 1; min-height: 0; overflow: hidden; }
+.diff-body[hidden] { display: none; }
+/* split: the merge view scrolls (both sides as one); unified: the editor's own scroller */
+.diff-body .cm-mergeView { height: 100%; }
+.diff-body > .cm-editor { height: 100%; }
+.diff-loading { position: absolute; top: 0; right: var(--k-luft-15); color: var(--k-text-muted); pointer-events: none; }
+
+/* Same look as REVIEW (doc.css, docs/ux.md §13.2): no green or red; added = --k-diff-add with "+",
+   removed = --k-diff-del, muted, with a minus sign. Kept in step with doc.css by hand. */
+.diff .cm-mergeView .cm-mergeViewEditors { align-items: stretch; }
+.diff .cm-mergeView .cm-mergeViewEditor + .cm-mergeViewEditor { border-left: var(--k-hair) solid var(--k-line); }
+.diff .cm-merge-b .cm-changedLine,
+.diff .cm-changedLine,
+.diff .cm-insertedLine,
+.diff .cm-inlineChangedLine { background: var(--k-diff-add) !important; }
+.diff .cm-merge-a .cm-changedLine,
+.diff .cm-deletedChunk,
+.diff .cm-deletedLine { background: var(--k-diff-del) !important; color: var(--k-text-muted); }
+.diff .cm-deletedChunk { padding-left: 0; }
+/* a removed line starts where every other line's text starts (the editor's line padding) */
+.diff .cm-deletedChunk .cm-deletedLine { padding-inline: var(--k-luft-15); }
+.diff .cm-deletedChunk .cm-deletedLine, .diff .cm-deletedChunk del { text-decoration: none; }
+.diff .cm-merge-a .cm-changedLine *, .diff .cm-deletedChunk * { color: var(--k-text-muted) !important; }
+.diff .cm-changedText, .diff .cm-deletedText {
+  background: none !important; text-decoration: underline; text-decoration-thickness: var(--k-hair);
+}
+/* Two signals per changed line (§9.4), so the diff reads at a glance without green or red: the
+   surface step plus a bar at the line's left edge, strong on the added side, quiet on the removed
+   one. Inside a changed line the characters that differ get the next surface step. */
+.diff .cm-merge-b .cm-changedLine, .diff .cm-insertedLine, .diff .cm-inlineChangedLine { box-shadow: inset var(--k-ring) 0 0 var(--k-frame); }
+.diff .cm-merge-a .cm-changedLine, .diff .cm-deletedChunk .cm-deletedLine, .diff .cm-deletedLine { box-shadow: inset var(--k-ring) 0 0 var(--k-divider); }
+/* one bar per line: the same classes also mark the changed text inside a line (inline spans) */
+.diff .cm-line :is(.cm-insertedLine, .cm-deletedLine) { box-shadow: none; }
+.diff .cm-merge-b .cm-changedText, .diff .cm-insertedLine .cm-changedText, .diff .cm-inlineChangedLine .cm-changedText {
+  background: var(--k-match-current) !important; text-decoration: none;
+}
+.diff .cm-merge-b .cm-changedText, .diff .cm-insertedLine .cm-changedText { color: var(--k-text) !important; }
+.diff .cm-changeGutter { width: var(--k-luft-2) !important; padding-left: 0 !important; }
+.diff .cm-changedLineGutter, .diff .cm-deletedLineGutter {
+  background: none !important; color: var(--k-text-2); text-align: center;
+  font: 400 var(--k-type-mono) / var(--k-h-line) var(--k-font-mono);
+}
+.diff .cm-changedLineGutter::before { content: "+"; }
+.diff .cm-merge-a .cm-changedLineGutter::before, .diff .cm-deletedLineGutter::before { content: "\2212"; }
+.diff .cm-collapsedLines {
+  background: var(--k-bg-header) !important; color: var(--k-text-3) !important;
+  padding: 0 var(--k-luft-15); cursor: default;
+}
+.diff .cm-collapsedLines::before, .diff .cm-collapsedLines::after { content: none !important; }
+.diff .cm-mergeSpacer { background: var(--k-bg-header) !important; background-image: none !important; }
+.diff .cm-chunkButtons { display: none; }

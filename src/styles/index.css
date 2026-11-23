@@ -1,0 +1,11 @@
+/* Order matters: fonts, the semantic layer, the theme, then base. Imported once, by main.tsx. */
+/* All fonts are SIL OFL, from @fontsource. */
+@import "@fontsource/instrument-sans/400.css";
+@import "@fontsource/instrument-sans/500.css";
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/400-italic.css";
+@import "@fontsource/geist-mono/400.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "./tokens.css";
+@import "./claude.css";
+@import "./base.css";

@@ -1,0 +1,71 @@
+{
+  "input": {
+    "gvr": {
+      "group": "",
+      "version": "v1",
+      "resource": "pods"
+    },
+    "object": {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "envdemo-1",
+        "namespace": "kns-spike"
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "app",
+            "image": "busybox",
+            "args": [
+              "--db-password=x-arg-pw",
+              "--port=8080",
+              "--api-key",
+              "x-arg-key"
+            ],
+            "command": [
+              "/app",
+              "-token",
+              "x-cmd-token"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "expected": {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "name": "envdemo-1",
+      "namespace": "kns-spike"
+    },
+    "spec": {
+      "containers": [
+        {
+          "name": "app",
+          "image": "busybox",
+          "args": [
+            "--db-password=•••",
+            "--port=8080",
+            "--api-key",
+            "•••"
+          ],
+          "command": [
+            "/app",
+            "-token",
+            "•••"
+          ]
+        }
+      ]
+    }
+  },
+  "rules": {
+    "flag": 3
+  },
+  "mustNotContain": [
+    "x-arg-pw",
+    "x-arg-key",
+    "x-cmd-token"
+  ]
+}

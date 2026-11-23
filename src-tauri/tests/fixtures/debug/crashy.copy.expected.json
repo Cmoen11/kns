@@ -1,0 +1,19 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "crashy-7d9f-debug-ab1c2",
+    "namespace": "kns-spike",
+    "labels": { "kns.dev/debug": "true", "kns.dev/source": "crashy-7d9f" },
+    "annotations": { "kns.dev/source-pod": "crashy-7d9f", "kns.dev/container": "app" }
+  },
+  "spec": {
+    "restartPolicy": "Never",
+    "activeDeadlineSeconds": 3600,
+    "serviceAccountName": "default",
+    "containers": [
+      { "name": "app", "image": "busybox:1.37.0", "command": ["sleep", "3600"] },
+      { "name": "sidecar", "image": "ghcr.io/example/proxy:1.0", "command": ["/proxy"], "args": ["--port=9000"] }
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+/* Palette, pickers, help, context menu, which-key panel and the pane-header bars
+   (docs/ux.md §5.5, §11.5, §11.6, §11.10). Only --k-* tokens; pixel sizes are the spec's. */
+
+/* ── overlay frame (§11.6): 560 wide (640 from 1920), top offset 64 from the scrim ── */
+.pal {
+  /* % of the fixed scrim, not vw: viewport units overshoot under CSS zoom */
+  width: 560px; max-width: 80%; max-height: calc(100% - var(--k-luft-11));
+  display: flex; flex-direction: column; overflow: hidden;
+}
+@media (min-width: 1920px) {
+  .pal[data-size="palette"] { width: 640px; }
+}
+.pal[data-size="picker"] { width: 400px; }
+
+/* input row: 32 = 20 + 6 + 6, padding-inline 12 */
+.pal-input-row {
+  display: flex; align-items: center; gap: var(--k-luft-15); flex: none;
+  height: var(--k-h-control); padding-inline: var(--k-luft-2);
+  border-bottom: var(--k-hair) solid var(--k-line);
+}
+.pal-input-label { color: var(--k-text-3); flex: none; }
+.pal-input-wrap { position: relative; flex: 1; min-width: 0; height: var(--k-luft-35); }
+.pal-input { width: 100%; height: 100%; color: var(--k-text); position: relative; }
+.pal-input:focus-visible { outline: none; }
+.pal-ghost {
+  position: absolute; inset: 0; color: var(--k-text-muted); white-space: pre; overflow: hidden; pointer-events: none;
+}
+.pal-ghost-typed { visibility: hidden; }
+
+.pal-error {
+  display: flex; align-items: center; gap: var(--k-luft-1); flex: none;
+  min-height: var(--k-h-row); padding-inline: var(--k-luft-2); color: var(--k-st-error);
+}
+.pal-empty {
+  height: 20px; padding-inline: var(--k-luft-2); color: var(--k-text-3); display: flex; align-items: center; gap: var(--k-luft-1); flex: none;
+  white-space: nowrap; overflow: hidden;
+}
+
+/* ── list: 20px rows, padding-inline 12, at most 14 visible ── */
+.pal-list { overflow-y: auto; overflow-x: hidden; flex: 0 1 auto; min-height: 0; contain: strict; }
+.pal-list-inner { position: relative; width: 100%; }
+.pal-row, .pal-group {
+  position: absolute; top: 0; left: 0; right: 0; height: var(--k-h-list);
+  display: flex; align-items: center; gap: var(--k-luft-1);
+  padding-inline: var(--k-luft-2); white-space: nowrap;
+}
+.pal-group { color: var(--k-text-3); }
+/* a rule between two groups of a menu (ListRow.separator): 5px = 2 + hairline + 2 */
+.pal-sep { position: absolute; top: 0; left: 0; right: 0; height: 5px; }
+.pal-sep::after { content: ""; position: absolute; left: 0; right: 0; top: var(--k-luft-05); height: var(--k-hair); background: var(--k-line); }
+.pal-row { color: var(--k-text-2); cursor: default; }
+/* no :hover surface: the pointer moves the selection (ListBox.onHover), so the list never shows
+   a hovered row and a selected row at once */
+/* selected: background step plus the 2px accent bar (two signals, §9.4) */
+.pal-row[data-selected] {
+  background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent);
+}
+.pal-row[data-disabled] > :not(.pal-reason) { opacity: 0.5; }
+/* row buttons (favourites: rename, delete): on the selected row only, 16px hit area */
+.pal-act {
+  flex: none; width: 16px; height: 16px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: 0; color: var(--k-text-3); cursor: default;
+}
+.pal-act:hover { color: var(--k-text); background: var(--k-row-focus); }
+.pal-act[data-action="delete"]:hover { color: var(--k-danger, var(--k-text)); }
+/* the hint line under a list: a hairline above, keys between the words */
+.pal-footer { border-top: var(--k-hair) solid var(--k-line); gap: var(--k-luft-2); }
+
+/* the gutter sits inside the 12px inset: accent bar 2 + square 8 + 2 */
+.pal-gutter { position: absolute; left: var(--k-luft-05); top: var(--k-luft-1); width: var(--k-glyph); height: var(--k-glyph); }
+.pal-gutter[data-current] { background: var(--k-mark); }
+.pal-slot { width: var(--k-luft-2); flex: none; color: var(--k-text-3); text-align: center; }
+.pal-label { color: var(--k-text); flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* matched characters: underline, no colour change */
+.pal-hit { text-decoration: underline; text-underline-offset: 3px; }
+.pal-detail { color: var(--k-text-muted); flex: 0 2 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pal-fill { flex: 1; min-width: 0; }
+.pal-reason, .pal-kind { color: var(--k-text-3); flex: none; }
+/* object rows (name search) read namespace/name, as kubectl writes them: the namespace is the
+   muted prefix, the name keeps the text colour and the match underline, the kind is the tag */
+.pal-scope { color: var(--k-text-3); }
+.pal-kind[data-col] { color: var(--k-text-2); }
+.pal-tag { color: var(--k-text-2); flex: none; }
+
+
+/* ── context menu (§11.10): 240 wide, anchored at the pane ── */
+.pal-menu-scrim { position: fixed; inset: 0; z-index: 100; }
+.pal-menu { position: absolute; width: 240px; margin: var(--k-luft-1) 0 0 var(--k-luft-2); }
+.pal-menu:focus-visible { outline: none; }
+/* 240px is narrow: a disabled row keeps its whole label, the reason gives way (the tooltip has it in full) */
+.pal-menu .pal-label { flex-shrink: 0; max-width: 100%; }
+.pal-menu .pal-reason { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pal-menu .pal-fill { min-width: var(--k-luft-1); }
+
+/* ── which-key (§5.5): anchored above the bottom row ── */
+.pal-which {
+  position: fixed; z-index: 80; left: var(--k-luft-15); bottom: calc(var(--k-h-bottom) + var(--k-luft-1));
+  max-width: calc(100% - 2 * var(--k-luft-15));
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(3 * var(--k-luft-9)), 1fr)); width: 720px;
+  gap: var(--k-luft-05) var(--k-luft-3); padding: var(--k-luft-15) var(--k-luft-2);
+}
+.pal-which-item { display: inline-flex; align-items: center; gap: var(--k-luft-1); height: 20px; white-space: nowrap; overflow: hidden; }
+.pal-which-range { color: var(--k-text-muted); }
+
+/* ── bars in the pane header (§11.5, §6.2, §6.3): the bar replaces the crumbs while editing ── */
+.pane-header:has(> .pal-bar) > :not(.pal-bar):not(.pane-count):not(.pane-watch) { display: none; }
+/* the portal appends the bar after the header's own children: order puts it first */
+.pal-bar { gap: var(--k-luft-1); order: -1; flex: 1 1 0; min-width: 0; overflow: hidden; }
+.pal-bar .k-bar-error { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pal-bar-field { position: relative; }
+.pal-bar-field .pal-ghost { inset: 0 var(--k-luft-15); display: flex; align-items: center; }
+.pal-bar .k-bar-field input { position: relative; }

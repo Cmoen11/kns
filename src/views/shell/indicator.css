@@ -1,0 +1,2 @@
+.pf-indicator { display: inline-flex; align-items: center; gap: var(--k-luft-1); color: inherit; }
+.pf-indicator:hover { color: var(--k-text); }

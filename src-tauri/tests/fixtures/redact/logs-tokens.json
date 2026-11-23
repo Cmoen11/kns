@@ -1,0 +1,17 @@
+{
+  "input": {
+    "text": "2026-11-22T10:00:00Z GET /api auth=ok\nAuthorization: Bearer abcdef123456token\ncredentials Basic dXNlcjpwYXNzd29yZA==\nBasic authentication enabled\nid_token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJrbnMifQ.c2lnbmF0dXJlLXZhbHVl\n-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEApem-body-secret\n-----END RSA PRIVATE KEY-----\ndone\n"
+  },
+  "expected": "2026-11-22T10:00:00Z GET /api auth=ok\nAuthorization: Bearer •••\ncredentials Basic •••\nBasic authentication enabled\nid_token •••\n-----BEGIN RSA PRIVATE KEY-----•••-----END RSA PRIVATE KEY-----\ndone\n",
+  "rules": {
+    "bearer": 2,
+    "jwt": 1,
+    "pem": 1
+  },
+  "mustNotContain": [
+    "abcdef123456token",
+    "dXNlcjpwYXNzd29yZA==",
+    "eyJzdWIiOiJrbnMifQ",
+    "body-secret"
+  ]
+}

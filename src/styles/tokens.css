@@ -1,0 +1,183 @@
+/*
+ * The semantic --k-* layer (docs/ux.md §9.2). Components read ONLY these tokens: no hex value
+ * and no raw palette (--c-*) variable anywhere else. The palette comes from the theme
+ * (claude.css), selected by <html data-tema data-modus>.
+ */
+:root {
+  /* surfaces */
+  --k-bg-app:        var(--c-bg-2);   /* titlebar, bottom row */
+  --k-bg-pane:       var(--c-bg-1);   /* pane body, tables, editor, logs */
+  --k-bg-header:     var(--c-bg-2);   /* pane header, column header, tab strip */
+  --k-bg-overlay:    var(--c-bg-2);   /* palette, dialog, menu, toast; always with --k-frame */
+  --k-bg-input:      var(--c-bg-1);
+  --k-bg-chip:       var(--c-bg-3);   /* filter chip */
+  --k-scrim:         color-mix(in srgb, var(--c-bg-1) 60%, transparent);
+
+  /* rows */
+  --k-row-hover:      var(--c-bg-2);
+  --k-row-marked:     var(--c-bg-3);
+  --k-row-focus:      var(--c-bg-4);
+  --k-row-focus-idle: var(--c-bg-3);
+  --k-cell-delta:     var(--c-bg-5);
+  --k-match:          var(--c-bg-4);
+  --k-match-current:  var(--c-bg-5);
+
+  /* lines */
+  --k-line:     var(--c-bg-4);        /* hairlines, decorative */
+  --k-divider:  var(--c-bg-6);        /* pane divider */
+  --k-frame:    var(--c-fg-1);        /* inputs, overlays, key chips, secondary button */
+
+  /* text */
+  --k-text:        var(--c-text-1);
+  --k-text-2:      var(--c-text-2);
+  --k-text-3:      var(--c-text-3);
+  --k-text-muted:  var(--c-fg-1);     /* only on b1 and b2 */
+  --k-disabled:    color-mix(in srgb, var(--c-fg-1) 50%, transparent);
+  --k-emph:        var(--c-emph); /* one italic word in a serif heading, nothing else */
+
+  /* accent and focus */
+  --k-accent:     var(--c-accent);
+  --k-focus:      var(--c-accent);
+  --k-btn-bg:     var(--c-accent);
+  --k-btn-hover:  var(--c-fg-3);
+  --k-btn-fg:     var(--c-bg-1);
+  --k-mark:       var(--c-accent);          /* the checkbox square in the mark gutter */
+
+  /* nodes: one colour for every node that is not warn or error */
+  --k-node:        var(--c-node);  /* status glyphs, watch glyph, empty state */
+
+  /* editor syntax: punctuation and comments from the theme, the hues are set per mode below */
+  --k-syn-punct:    var(--c-text-3);
+  --k-syn-comment:  var(--c-fg-1);
+  --k-diff-add:     var(--c-bg-4);
+  --k-diff-del:     var(--c-bg-2);
+
+  /* type */
+  --k-type-ui:       10px;            /* 10 */
+  --k-type-ui-s:     12px;             /* 12, S exception */
+  --k-type-body:     12px;     /* 12 */
+  --k-type-body-s:   14px;      /* 14, S exception */
+  --k-type-label:    8px;       /* 8 */
+  --k-type-label-s:  10px;        /* 10, S exception */
+  --k-type-h4:       14px;  /* 14 */
+  --k-type-h2:       28px;  /* 28 */
+  --k-type-mono:     12px;                          /* [ours] the reference has no mono */
+
+  /* spacing scale */
+  --k-luft-05: 2px;  /*  2 */
+  --k-luft-1:  6px;    /*  6 */
+  --k-luft-15: 8px;  /*  8 */
+  --k-luft-2:  12px;    /* 12 */
+  --k-luft-25: 14px;  /* 14 */
+  --k-luft-3:  16px;    /* 16 */
+  --k-luft-35: 20px;  /* 20 */
+  --k-luft-4:  24px;    /* 24 */
+  --k-luft-5:  28px;    /* 28 */
+  --k-luft-6:  32px;    /* 32 */
+  --k-luft-7:  40px;    /* 40 */
+  --k-luft-8:  44px;    /* 44 */
+  --k-luft-9:  48px;    /* 48 */
+  --k-luft-10: 56px;   /* 56 */
+  --k-luft-11: 64px;   /* 64 */
+
+  /* sizes */
+  --k-radius:        2px;    /* 2px */
+  --k-h-titlebar:    32px;                /* 16 line box + 8 + 8 */
+  --k-h-bottom:      20px;                /* 16 + 2 + 2 */
+  --k-h-pane-header: 20px;                /* 16 + 2 + 2 */
+  --k-h-col-header:  20px;                /* 16 + 2 + 2 */
+  --k-h-row:         20px;                /* 16 + 2 + 2; 28px (16 + 6 + 6) with :rows 28 */
+  --k-h-line:        16px;                /* logs, YAML, terminal; also the single-line text box */
+  --k-h-tabstrip:    20px;
+  --k-h-chip:        16px;
+  --k-h-control:     32px;                /* buttons, dialog fields, palette input row */
+  --k-h-list:        20px;                /* palette, picker and menu rows (ListBox reads it) */
+  --k-glyph:         8px;   /* 8px */
+  --k-glyph-quiet:   4px;      /* 4px */
+  --k-ring:          2px;                 /* focus ring, cursor bar, focus line */
+  --k-hair:          1px;                 /* frames and hairlines */
+
+  /* fonts */
+  --k-font-ui:    "Instrument Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;   /* SIL OFL, @fontsource */
+  --k-font-head:  "Newsreader", Georgia, serif;                                           /* SIL OFL, @fontsource */
+  --k-font-mono:  "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+/* Settings hooks on <html> (src/store/appearance.ts). */
+[data-rows="28"] { --k-h-row: 28px; }
+[data-mono="jetbrains"] { --k-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace; }
+
+/*
+ * Status hues (docs/ux.md §9.3 / §9.5): hardcoded, with the syntax hues
+ * below the only ones. Same for all themes. Glyphs, words, small badges and a faint row tint only;
+ * never a surface. Each is at least 4.5:1 on b1-b4 in light and dark (docs/ux.md §9.3).
+ * OKLCH: ok L0.80 C0.13 h150 (Lys L0.44 h148),
+ * progress L0.78 C0.10 h245 (Lys L0.42 h250). info shares the progress hue; unknown is muted text.
+ * Colour never stands alone: the glyph shape and the word carry the state.
+ */
+[data-modus="mork"] { --k-st-warn: #dfb162; --k-st-error: #ec8a80; --k-st-ok: #7cd591; --k-st-progress: #7fbef3; }
+[data-modus="lys"]  { --k-st-warn: #734d00; --k-st-error: #a3342d; --k-st-ok: #006523; --k-st-progress: #0e4f86; }
+:root {
+  --k-st-info: var(--k-st-progress);
+  --k-st-unknown: var(--k-text-muted);
+  /* the faint row tint of failing rows (setting "Row tint"): mixed into the row's own surface */
+  --k-tint-error: color-mix(in srgb, var(--k-st-error) 9%, transparent);
+  --k-tint-warn: color-mix(in srgb, var(--k-st-warn) 6%, transparent);
+}
+/* setting "Status colours: quiet": only warn and error keep a hue, as before (src/status) */
+[data-status="quiet"] { --k-st-ok: var(--k-node); --k-st-progress: var(--k-node); }
+
+/*
+ * Syntax hues [ours]: a theme has one hue, too few to tell keys, strings, numbers and
+ * constants apart. One OKLCH lightness per mode (0.80 Mørk, 0.385 Lys; number 0.76 with more
+ * chroma to stand off the Lilla text), hues 252 / 150 / 302 / 200 / 338: clear of warn (78) and
+ * error (27), the pink only on rare tokens. Same for all themes; each is at least 4.5:1 on b1–b4
+ * and 3.8:1 on b5 in light and dark. Editor text only.
+ */
+[data-modus="mork"] {
+  --k-syn-key:    #8cc2fe;   /* keys */
+  --k-syn-string: #86d396;   /* quoted, plain and block scalars */
+  --k-syn-number: #c399ff;
+  --k-syn-atom:   #4dd4db;   /* true, false, null, ~ */
+  --k-syn-meta:   #eea1d7;   /* --- ..., directives, block scalar header, anchors, aliases, tags */
+}
+[data-modus="lys"] {
+  --k-syn-key:    #00447f;
+  --k-syn-string: #005322;
+  --k-syn-number: #5a0499;
+  --k-syn-atom:   #004e52;
+  --k-syn-meta:   #6f1a5d;
+}
+
+/*
+ * Row-state contract for tables, logs and documents. Feature CSS relies on these class and
+ * attribute names: .row[data-marked] / [data-focus], .cell[data-delta], .line[data-match-current],
+ * .status-word, .muted, .glyph, .level.
+ */
+
+/* Status words lose their hue on marked and focused rows. */
+.row[data-marked] .status-word,
+.row[data-focus]  .status-word { color: var(--k-text); }
+.row[data-focus]  .muted,
+.row[data-marked] .muted       { color: var(--k-text-3); }
+
+/* b5 rule: no status hue at all on a changed cell or the current match. */
+.cell[data-delta] .status-word,
+.cell[data-delta] .glyph,
+.line[data-match-current] .level { color: var(--k-text); }
+
+/* Status glyph hues (one rule for every glyph in the app). The word keeps --k-text-2 for ok and
+   progress: only the 8px node is coloured, so a healthy table stays calm. */
+.glyph[data-state="ok"]       { color: var(--k-st-ok); }
+.glyph[data-state="progress"] { color: var(--k-st-progress); }
+.glyph[data-state="warn"]     { color: var(--k-st-warn); }
+.glyph[data-state="error"]    { color: var(--k-st-error); }
+
+/* Failing-row tint (setting, default on): faint, under the row's own state colours (status words stay >= 4.93:1 on a tinted b1; hover drops the tint, b2 + tint would be 4.24 in Lys); the cursor
+   and marked rows keep their surface (their b3/b4 step is the stronger signal). */
+[data-tint="on"] .row[data-tint="error"]:not([data-focus]):not([data-marked]):not(:hover) { background-image: linear-gradient(var(--k-tint-error), var(--k-tint-error)); }
+[data-tint="on"] .row[data-tint="warn"]:not([data-focus]):not([data-marked]):not(:hover) { background-image: linear-gradient(var(--k-tint-warn), var(--k-tint-warn)); }
+
+@media (forced-colors: active) {
+  :root { --k-focus: Highlight; --k-frame: CanvasText; --k-accent: Highlight; }
+}

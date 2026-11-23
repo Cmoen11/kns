@@ -1,0 +1,113 @@
+{
+  "crashy": {
+    "metadata": { "name": "crashy-7d9f-abcde", "namespace": "kns-spike" },
+    "spec": {
+      "containers": [
+        { "name": "main", "image": "busybox:1.37.0", "env": [{ "name": "DB_PASSWORD", "value": "s3cr3t-value" }] }
+      ]
+    },
+    "status": {
+      "phase": "Running",
+      "conditions": [{ "type": "PodScheduled", "status": "True" }, { "type": "Ready", "status": "False", "reason": "ContainersNotReady" }],
+      "containerStatuses": [
+        {
+          "name": "main", "ready": false, "restartCount": 12, "image": "busybox:1.37.0",
+          "state": { "waiting": { "reason": "CrashLoopBackOff", "message": "back-off 5m0s restarting failed container=main" } },
+          "lastState": { "terminated": { "exitCode": 1, "reason": "Error", "startedAt": "2026-11-22T10:00:00Z", "finishedAt": "2026-11-22T10:00:03Z" } }
+        }
+      ]
+    }
+  },
+  "oomy": {
+    "metadata": { "name": "oomy-5c6d-fghij", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "main", "image": "busybox:1.37.0", "resources": { "limits": { "memory": "32Mi" } } }] },
+    "status": {
+      "phase": "Running",
+      "conditions": [{ "type": "Ready", "status": "True" }],
+      "containerStatuses": [
+        {
+          "name": "main", "ready": true, "restartCount": 3,
+          "state": { "running": { "startedAt": "2026-11-22T10:05:00Z" } },
+          "lastState": { "terminated": { "exitCode": 137, "reason": "OOMKilled", "startedAt": "2026-11-22T10:00:00Z", "finishedAt": "2026-11-22T10:00:41Z" } }
+        }
+      ]
+    }
+  },
+  "pullfail": {
+    "metadata": { "name": "pullfail-1-xyz", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "main", "image": "busybox:does-not-exist" }] },
+    "status": {
+      "phase": "Pending",
+      "conditions": [{ "type": "PodScheduled", "status": "True" }],
+      "containerStatuses": [
+        { "name": "main", "ready": false, "restartCount": 0, "state": { "waiting": { "reason": "ImagePullBackOff", "message": "Back-off pulling image \"busybox:does-not-exist\"" } } }
+      ]
+    }
+  },
+  "unschedulable": {
+    "metadata": { "name": "big-1", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "main", "image": "nginx" }] },
+    "status": {
+      "phase": "Pending",
+      "conditions": [{ "type": "PodScheduled", "status": "False", "reason": "Unschedulable", "message": "0/3 nodes are available: 1 Insufficient memory, 2 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }. preemption: 0/3 nodes are available: 3 Preemption is not helpful for scheduling." }]
+    }
+  },
+  "configerror": {
+    "metadata": { "name": "envdemo-1", "namespace": "kns-spike" },
+    "spec": {
+      "containers": [
+        {
+          "name": "main", "image": "busybox",
+          "env": [{ "name": "PASSWORD", "valueFrom": { "secretKeyRef": { "name": "envdemo", "key": "PASSWORD" } } }],
+          "envFrom": [{ "configMapRef": { "name": "envdemo" } }]
+        }
+      ]
+    },
+    "status": {
+      "phase": "Pending",
+      "conditions": [{ "type": "PodScheduled", "status": "True" }],
+      "containerStatuses": [
+        { "name": "main", "ready": false, "restartCount": 0, "state": { "waiting": { "reason": "CreateContainerConfigError", "message": "secret \"envdemo\" not found" } } }
+      ]
+    }
+  },
+  "healthy": {
+    "metadata": { "name": "web-1", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "nginx", "image": "nginx:1.27-alpine" }] },
+    "status": {
+      "phase": "Running",
+      "conditions": [{ "type": "PodScheduled", "status": "True" }, { "type": "Ready", "status": "True" }],
+      "containerStatuses": [{ "name": "nginx", "ready": true, "restartCount": 0, "state": { "running": { "startedAt": "2026-11-22T09:00:00Z" } } }]
+    }
+  },
+  "probed": {
+    "metadata": { "name": "web-2", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "nginx", "image": "nginx", "readinessProbe": { "httpGet": { "port": 8080, "path": "/healthz" } } }] },
+    "status": {
+      "phase": "Running",
+      "conditions": [{ "type": "Ready", "status": "False", "reason": "ContainersNotReady" }],
+      "containerStatuses": [{ "name": "nginx", "ready": false, "restartCount": 0, "state": { "running": { "startedAt": "2026-11-22T09:00:00Z" } } }]
+    }
+  },
+  "pvc": {
+    "metadata": { "name": "db-0", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "pg", "image": "postgres" }], "volumes": [{ "name": "data", "persistentVolumeClaim": { "claimName": "data-db-0" } }] },
+    "status": { "phase": "Pending", "conditions": [{ "type": "PodScheduled", "status": "False", "reason": "Unschedulable", "message": "0/1 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling." }] }
+  },
+  "evicted": {
+    "metadata": { "name": "web-3", "namespace": "kns-spike" },
+    "spec": { "containers": [{ "name": "nginx", "image": "nginx" }] },
+    "status": { "phase": "Failed", "reason": "Evicted", "message": "The node was low on resource: memory." }
+  },
+  "init": {
+    "metadata": { "name": "migrate-1", "namespace": "kns-spike" },
+    "spec": { "initContainers": [{ "name": "migrate", "image": "app" }], "containers": [{ "name": "app", "image": "app" }] },
+    "status": {
+      "phase": "Pending",
+      "initContainerStatuses": [
+        { "name": "migrate", "restartCount": 4, "state": { "waiting": { "reason": "CrashLoopBackOff" } }, "lastState": { "terminated": { "exitCode": 127, "reason": "Error", "startedAt": "2026-11-22T10:00:00Z", "finishedAt": "2026-11-22T10:00:01Z" } } }
+      ],
+      "containerStatuses": [{ "name": "app", "restartCount": 0, "state": { "waiting": { "reason": "PodInitializing" } } }]
+    }
+  }
+}
