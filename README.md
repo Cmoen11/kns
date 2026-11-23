@@ -1,6 +1,6 @@
 # kns
 
-kns is a graphical k9s: a keyboard-first Kubernetes desktop app for Windows and macOS. It keeps the k9s idea of driving everything from the keyboard, and adds what a terminal makes hard: split panes, virtualized tables, a real YAML editor with server dry run, a diagnosis view that explains why something is broken, tools for running a service locally against the cluster (port-forwards plus a rewritten `.env`), and a local MCP server so a coding agent can look at the cluster and ask for changes that you approve in the kns window. It is built with Tauri 2 (Rust, kube-rs) and React 19 / TypeScript, starts fast and stays small.
+kns is a graphical k9s: a keyboard-first Kubernetes desktop app for Windows and macOS. It keeps the k9s idea of driving everything from the keyboard, and adds what a terminal makes hard: split panes, virtualized tables, a real YAML editor with server dry run, a diagnosis view that explains why something is broken, tools for running a service locally against the cluster (port-forwards plus a rewritten `.env`), and a local MCP server so a coding agent can look at the cluster and ask for changes that you approve in the kns window. It is built with Tauri 2 (Rust, kube-rs) and React 19 / TypeScript, starts fast, stays small and updates itself from GitHub Releases.
 
 ![Split panes: pods, deployments and services side by side](docs/img/panes.png)
 
@@ -77,7 +77,7 @@ pnpm tauri dev    # the desktop app against your kubeconfig (KUBECONFIG or ~/.ku
 pnpm tauri build  # release build and installer for the current platform
 ```
 
-The mock backend needs no cluster and is what the screenshots show. In the browser dev build, `:mcp demo` plays an agent through the dev-set flow against the mock.
+The mock backend needs no cluster and is what the screenshots show (dark mode; `node scripts/screenshots.mjs` retakes them). In the browser dev build, `:mcp demo` plays an agent through the dev-set flow against the mock.
 
 ## Connect an agent
 
@@ -142,6 +142,7 @@ Notes:
 - The IPC contract is `src/ipc/types.ts`; `src/ipc/mock.ts` implements it in memory, so most UI work needs no cluster.
 - Rust contract types write fixtures to `src/ipc/contract/__fixtures__/` that `pnpm typecheck` checks; after changing a contract run `UPDATE_FIXTURES=1 cargo test`. The MCP tool table in `docs/tools.md` is generated from `src-tauri/src/mcp/describe.rs` (`UPDATE_GOLDEN=1 cargo test mcp::describe`).
 - Every default key lives in `src/actions/keymap-data.ts`; an action without a handler is hidden everywhere.
+- `node scripts/screenshots.mjs` retakes the README screenshots in `docs/img/` from the mock (dark mode, 2x; it starts `pnpm dev` if it is not running). Pass shot names to retake only some, `--light` for light mode. Each shot is a scene in the script; when a key or view changes, fix the scene there.
 - `scripts/kns-spike/` holds manifests for checking features against a real cluster in a throwaway namespace.
 
 ## License
