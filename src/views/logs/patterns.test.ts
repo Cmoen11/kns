@@ -100,7 +100,10 @@ describe("mine", () => {
     expect(mine(many).lines).toBe(20_000);
   });
 
-  it("mines 10k lines in under 50 ms", () => {
+  // 50 ms on a developer machine; shared CI runners (Windows above all) are 2-3x slower and noisy,
+  // so CI gets a wider budget that still catches an accidental quadratic.
+  const budget = import.meta.env.CI ? 150 : 50;
+  it(`mines 10k lines in under ${budget} ms`, () => {
     const input = lines(10_000, 13);
     mine(input);
     let best = Infinity;
@@ -109,6 +112,6 @@ describe("mine", () => {
       mine(input);
       best = Math.min(best, performance.now() - t0);
     }
-    expect(best).toBeLessThan(50);
+    expect(best).toBeLessThan(budget);
   });
 });
