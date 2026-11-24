@@ -1,7 +1,8 @@
 name: build
+# Builds only for releases (v* tags) or when started by hand: the macOS runner is expensive,
+# so pushes to main do not run CI. Run the checks locally before pushing (README, Contributing).
 on:
   push:
-    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 

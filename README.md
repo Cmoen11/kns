@@ -58,7 +58,15 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `‚å
 
 ## Install and build
 
-There is no signed release. CI (`.github/workflows/build.yml`) builds an unsigned Windows installer (NSIS `.exe`) and a universal macOS `.dmg` on every push to `main`, and attaches them to a GitHub Release for `v*` tags. Unsigned means Windows SmartScreen and macOS Gatekeeper will warn before the first start.
+There is no signed release. CI (`.github/workflows/build.yml`) runs only for `v*` tags (or when started by hand from the Actions tab): it builds an unsigned Windows installer (NSIS `.exe`) and an Apple Silicon macOS `.dmg` and attaches them to a GitHub Release. Unsigned means Windows SmartScreen will warn before the first start.
+
+On macOS the app is ad-hoc signed but not notarized (that needs a paid Apple Developer ID), so Gatekeeper blocks the first start of a downloaded copy. Drag `kns.app` from the `.dmg` to Applications, then remove the quarantine flag once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/kns.app
+```
+
+Updates installed by the app itself are not affected.
 
 Installed apps update themselves from the latest GitHub Release. They download the new version in the background and install it when you click `update <version>` in the bottom row, or run `:update`. See `docs/auto-update.md`.
 
@@ -128,7 +136,7 @@ The per-wave log is in [docs/status.md](docs/status.md).
 
 ## Contributing
 
-Run these before sending a change; CI runs the same on Windows and macOS:
+Run these before sending a change. CI runs the same on Windows and macOS, but only when a release is tagged, so nothing checks a push to `main`:
 
 ```sh
 pnpm typecheck && pnpm test && pnpm build
