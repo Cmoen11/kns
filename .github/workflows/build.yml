@@ -57,15 +57,43 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS Developer ID signing and notarization (docs/macos-signing.md). Without these the
+          # app is only ad-hoc signed and Gatekeeper blocks a downloaded copy until the quarantine
+          # flag is removed. Tauri imports APPLE_CERTIFICATE into a temporary keychain and notarizes
+          # and staples the .app when APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID are set.
+          APPLE_CERTIFICATE: ${{ matrix.os == 'macos-latest' && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
         run: |
           extra=()
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
-            extra=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+            extra+=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
           elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "::error::TAURI_SIGNING_PRIVATE_KEY is not set: a release must carry updater signatures"
             exit 1
           fi
+          if [ "$RUNNER_OS" = macOS ]; then
+            if [ -n "$APPLE_CERTIFICATE" ] && [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+              # replace the ad-hoc identity ("-") from tauri.conf.json with the Developer ID
+              extra+=(--config "$(jq -nc --arg id "$APPLE_SIGNING_IDENTITY" '{bundle:{macOS:{signingIdentity:$id}}}')")
+              if [ -z "$APPLE_ID" ] || [ -z "$APPLE_PASSWORD" ] || [ -z "$APPLE_TEAM_ID" ]; then
+                echo "::warning::APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID missing: the app is signed but not notarized"
+              fi
+            else
+              echo "::warning::no Apple Developer ID secrets: the macOS app is only ad-hoc signed (docs/macos-signing.md)"
+            fi
+          fi
           pnpm tauri build ${{ matrix.args }} "${extra[@]}"
+      - name: verify macOS signature
+        if: runner.os == 'macOS'
+        run: |
+          app=src-tauri/target/aarch64-apple-darwin/release/bundle/macos/kns.app
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E 'Authority|TeamIdentifier|Signature' || true
+          spctl -a -vv -t exec "$app" || echo "::warning::Gatekeeper would not accept this build (expected without Developer ID + notarization)"
       - uses: actions/upload-artifact@v4
         with:
           name: kns-${{ matrix.os }}

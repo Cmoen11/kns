@@ -60,7 +60,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `‚å
 
 There is no signed release. CI (`.github/workflows/build.yml`) runs only for `v*` tags (or when started by hand from the Actions tab): it builds an unsigned Windows installer (NSIS `.exe`) and an Apple Silicon macOS `.dmg` and attaches them to a GitHub Release. Unsigned means Windows SmartScreen will warn before the first start.
 
-On macOS the app is ad-hoc signed but not notarized (that needs a paid Apple Developer ID), so Gatekeeper blocks the first start of a downloaded copy. Drag `kns.app` from the `.dmg` to Applications, then remove the quarantine flag once:
+On macOS the app is ad-hoc signed but not notarized until the Apple Developer ID secrets are set up (see [docs/macos-signing.md](docs/macos-signing.md)), so Gatekeeper blocks the first start of a downloaded copy. Drag `kns.app` from the `.dmg` to Applications, then remove the quarantine flag once:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/kns.app
