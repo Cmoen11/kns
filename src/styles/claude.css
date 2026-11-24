@@ -101,7 +101,6 @@
 
 /* ── window chrome ── */
 [data-tema="claude"] .titlebar { padding-inline: var(--k-luft-2); gap: var(--k-luft-3); }
-[data-tema="claude"] .titlebar[data-mac] { padding-left: 80px; }
 [data-tema="claude"] .titlebar-switch,
 [data-tema="claude"] .side-toggle,
 [data-tema="claude"] .titlebar-buttons .k-abtn { height: 28px; min-width: 28px; padding-inline: var(--k-luft-1); border-radius: var(--k-radius); }

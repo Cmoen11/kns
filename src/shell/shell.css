@@ -26,8 +26,14 @@
   white-space: nowrap;
   overflow: hidden;
 }
-/* macOS: the native traffic lights overlay the left 78px */
-.titlebar[data-mac] { padding-left: 78px; }
+/* macOS: the native traffic lights sit at a fixed spot in screen points (tauri.macos.conf.json:
+   x 18, y 25 → centred in a 48pt row, 72pt wide), so the row's height and its left room are fixed
+   in points too: divided by the zoom (--k-zoom, set by applyZoom). At large zoom the row grows
+   to fit its 30px controls rather than clip them. */
+.titlebar[data-mac] {
+  height: max(calc(48px / var(--k-zoom, 1)), 30px);
+  padding-left: calc(84px / var(--k-zoom, 1));
+}
 /* protected context: a 2px --k-text line under the titlebar (a theme token, not the warn hue) */
 .titlebar[data-protected] { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-text); }
 

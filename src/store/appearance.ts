@@ -47,6 +47,9 @@ export function applyZoom(zoom: Zoom): void {
   const factor = (zoom / 100) * BASE_SCALE;
   const seq = ++zoomSeq;
   if (typeof window === "undefined") return;
+  // the total scale, whichever route applies it: CSS that must stay fixed in screen points
+  // (the macOS titlebar around the native traffic lights) divides by it
+  document.documentElement.style.setProperty("--k-zoom", String(factor));
   if (!("__TAURI_INTERNALS__" in window)) {
     zoomVia = "css";
     cssZoom(factor);
