@@ -1,5 +1,5 @@
 // Titlebar (docs/ux.md §2.4): 32px, a drag region except for its controls. Window controls stay
-// native: on macOS the traffic lights overlay the left 78px; on Windows the OS caption is used.
+// native: on macOS the traffic lights overlay the left 84pt of a 48pt row (shell.css); on Windows the OS caption is used.
 import { contextDetail } from "../store/context-label";
 import { useSyncExternalStore } from "react";
 import { registry, type ActionId } from "../actions";

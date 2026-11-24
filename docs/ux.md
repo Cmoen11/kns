@@ -129,7 +129,7 @@ Legend: `===` focused pane, `|` at row start is the cursor bar, `#` square and `
 
 ### 2.4 Titlebar (32px, `--k-bg-app`)
 
-- **macOS:** native traffic lights, overlay title bar (`src-tauri/tauri.macos.conf.json`: `titleBarStyle: Overlay`, hidden title, lights centred in the 32px row), 78px reserved on the left [verify].
+- **macOS:** native traffic lights, overlay title bar (`src-tauri/tauri.macos.conf.json`: `titleBarStyle: Overlay`, hidden title, `trafficLightPosition` x 18 / y 25). The lights do not follow the zoom, so on macOS the row is a fixed 48pt high with 84pt reserved on the left, whatever the zoom and theme (`shell.css` divides by `--k-zoom`); at zoom large enough that 30px controls no longer fit, the row grows instead.
 - **Windows:** native caption buttons and Win11 snap layouts, 138px reserved on the right. Tauri's overlay style is macOS-only, so the route is a plugin or native hit-testing [verify].
 - **Windows fallback:** if neither works, the standard OS title bar is used and the 32px row stays where it is as an ordinary app bar with no drag region and no reserved 138px. Nothing moves into the bottom row. The cost is the OS title bar height (about 31px), which is two table rows.
 - Everything non-interactive is a drag region. Padding-inline 8, group gap 12, item gap 6.
