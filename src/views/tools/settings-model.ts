@@ -110,6 +110,7 @@ export function buildSettingsRows(s: Settings, contexts: readonly string[], name
     toggle("hints", "Key hints", "the hint row at the bottom", s.hints, (hints) => setSettings({ hints })),
     toggle("openBeside", "Open beside", "logs, describe, YAML and shells open in a pane next to the table", s.openBeside, (openBeside) => setSettings({ openBeside })),
     choice("statusColors", "Status colours", "Full: ok and in-progress glyphs coloured too; Quiet: only warnings and errors", STATUS_COLORS, s.statusColors, (statusColors) => setSettings({ statusColors })),
+    toggle("stripNsPrefix", "Hide namespace prefix", "names like <namespace>-api show as api in tables; copy and actions keep the full name", s.stripNsPrefix, (stripNsPrefix) => setSettings({ stripNsPrefix })),
     toggle("rowTint", "Row tint", "a faint warn / error tint behind failing table rows", s.rowTint, (rowTint) => setSettings({ rowTint })),
     toggle("nsHealth", "Namespace health", "badges with failing pods and degraded workloads per namespace (one cluster-wide watch)", s.nsHealth, (nsHealth) => setSettings({ nsHealth })),
     toggle("nsProblemsFirst", "Namespaces with problems first", "context sidebar order; s in the sidebar", s.nsProblemsFirst, (nsProblemsFirst) => setSettings({ nsProblemsFirst })),

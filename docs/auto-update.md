@@ -8,15 +8,16 @@ Status: implemented, but switched off until the signing key below is added. Writ
 2. Put the **public** key (the contents of `~/.tauri/kns.key.pub`) in `src-tauri/tauri.conf.json` under `plugins.updater.pubkey`, and commit it.
 3. Add the repo secrets `TAURI_SIGNING_PRIVATE_KEY` (the contents of `~/.tauri/kns.key`) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
 4. Make the repo public, so the app can read `releases/latest/download/latest.json` without logging in.
-5. Release: bump `version` in `package.json` (the only version that counts: `tauri.conf.json` reads it), commit, tag `v<version>`, push the tag.
+5. Release: push to `main`. Every push to `main` is released on its own as the next patch version after the newest `v*` tag (`1.0.1` → `1.0.2`); CI writes that version into the build and creates the tag and the release. For a minor or major release, set `version` in `package.json` (the only version that counts: `tauri.conf.json` reads it) higher than the newest tag, and that push releases it. `[skip ci]` in the commit message skips the build and the release. Pushing a `v<version>` tag by hand still works; the tag must match `package.json`.
 
 What is in place:
 - **Rust** (`src-tauri/src/update.rs`): checks 30 s after start and every 6 h, downloads and verifies in the background, and installs only on `update_install`. It is off in dev builds, when `KNS_NO_UPDATE` is set, and while `pubkey` is empty.
 - **UI** (`src/update/`): `update 0.2.0` in the bottom row once a version is downloaded. A click, `:update` or Help → Check for Updates installs it after a confirm. `:update check` and `:update status` are also available. Try it in the browser with `pnpm dev`, then open `http://localhost:1420/?update=ready`.
 - **CI** (`.github/workflows/build.yml`):
-  - A tag build fails if the tag does not match `package.json` or if `pubkey` or the signing secret is missing.
+  - The `version` job picks the version and whether to release (push to `main` or a `v*` tag: yes; a manual run, or a commit that already has a version tag: no). Runs on `main` go one at a time, so two pushes never get the same version.
+  - A release build fails if `pubkey` or the signing secret is missing, and a tag build if the tag does not match `package.json`.
   - The release job uploads `kns_<v>_aarch64.app.tar.gz` and `latest.json` next to the installers.
-  - Builds on `main` sign when the secret is there and still pass when it is not.
+  - Manual builds sign when the secret is there and still pass when it is not.
 
 The rest of this file is the exploration that led here.
 

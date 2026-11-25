@@ -318,6 +318,8 @@ export interface Settings {
   actionLog: "all" | "writes" | "off";
   /** context sidebar: namespaces with problems first */
   nsProblemsFirst: boolean;
+  /** tables: a name that starts with its namespace and a dash shows without that prefix */
+  stripNsPrefix: boolean;
 }
 
 export type NsSlot = { name: string; pinned: boolean } | null;

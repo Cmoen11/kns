@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Json, Row, TableQuery } from "../ipc/types";
 import type { Filter, Sort } from "../types";
 import {
-  backend, flash, isFluxGroup, gvrKey, patchView, setNamespace, useCluster, tableKey, tables, toObjRef, useConn, usePaneContext, useResource, useTable,
+  backend, flash, isFluxGroup, gvrKey, patchView, setNamespace, useCluster, tableKey, tables, toObjRef, useConn, usePaneContext, useResource, useSettings, useTable,
   type ViewOf, type ViewProps,
 } from "../foundation";
 import { containerRows, CONTAINER_COLUMNS } from "./containers";
@@ -75,6 +75,7 @@ function ResourceTable({ pane, view, focused, visible }: ViewProps<"table">) {
   live.current = { view, columns: snap.columns };
   const prefsKey = gvrKey(view.gvr);
 
+  const stripNsPrefix = useSettings((s) => s.stripNsPrefix);
   const source: GridSource = {
     pane,
     kind: "table",
@@ -89,6 +90,7 @@ function ResourceTable({ pane, view, focused, visible }: ViewProps<"table">) {
     message: snap.message,
     stale: snap.stale,
     namespaceColumn: namespaced && view.namespace === "*",
+    stripNsPrefix,
     metrics: metricsOn ? metrics : null,
     filters: view.filters,
     faultsOnly: view.faultsOnly,

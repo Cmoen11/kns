@@ -134,8 +134,8 @@ export const TableRow = memo(function TableRow(p: RowProps) {
             style={{ width: c.width }}
             data-delta={changed || undefined}
             data-heat={s.role === "name" || muted ? undefined : cellHeat(s.id, text, status)}
-            // the whole name, only while the cell cuts it
-            {...(s.role === "name" ? clipTip(text) : undefined)}
+            // the whole name: while the cell cuts it, or always when its namespace prefix is hidden
+            {...(s.role === "name" ? (ctx.stripNs && text !== row.name ? tip(row.name, { plain: true, delay: CLIP_DELAY }) : clipTip(text)) : undefined)}
           >
             {body}
             {s.role === "name" && p.held && !hasStatus && <span className="tbl-gone t-label">GONE</span>}

@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   nsHealth: true,
   actionLog: "all",
   nsProblemsFirst: false,
+  stripNsPrefix: false,
 };
 
 const oneOf = <T,>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
@@ -83,6 +84,7 @@ export function sanitizeSettings(raw: unknown, d: Settings = DEFAULT_SETTINGS): 
     nsHealth: bool(r.nsHealth, d.nsHealth),
     actionLog: oneOf(r.actionLog, ["all", "writes", "off"] as const, d.actionLog),
     nsProblemsFirst: bool(r.nsProblemsFirst, d.nsProblemsFirst),
+    stripNsPrefix: bool(r.stripNsPrefix, d.stripNsPrefix),
   };
 }
 

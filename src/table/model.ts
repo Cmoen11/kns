@@ -37,6 +37,8 @@ export interface GridSource {
   message?: string;
   stale: boolean;
   namespaceColumn: boolean;
+  /** the name column hides a `<namespace>-` prefix (setting) */
+  stripNsPrefix?: boolean;
   /** null = no CPU/MEM columns */
   metrics: ReadonlyMap<string, PodMetric> | null;
   filters: readonly Filter[];
@@ -219,11 +221,12 @@ export class TableModel {
       m.colIndex = new Map(src.columns.map((c, i) => [c.name.trim().toLowerCase(), i]));
     }
     if (changed(m.statusKey, (m.statusKey = [m.colIndex, src.resource, src.flux]))) m.statusOf = this.makeStatusOf(m.colIndex!, src.resource, src.flux);
-    if (changed(m.ctxKey, (m.ctxKey = [nowMs, src.metrics, m.statusOf]))) m.ctx = { nowMs, metrics: src.metrics, statusOf: m.statusOf! };
+    const stripNs = src.stripNsPrefix ?? false;
+    if (changed(m.ctxKey, (m.ctxKey = [nowMs, src.metrics, m.statusOf, stripNs]))) m.ctx = { nowMs, metrics: src.metrics, statusOf: m.statusOf!, stripNs };
     const ctx = m.ctx!;
 
     // ideal widths are sampled on a (re)sort, never per data frame
-    if (changed(m.idealKey, (m.idealKey = [specs, src.synced, this.resortEpoch]))) {
+    if (changed(m.idealKey, (m.idealKey = [specs, src.synced, this.resortEpoch, stripNs]))) {
       const sample = src.rows.length > IDEAL_SAMPLE ? src.rows.slice(0, IDEAL_SAMPLE) : src.rows;
       m.ideal = specs.map((s) => {
         if (sample.length === 0) return s;
@@ -848,7 +851,8 @@ export class TableModel {
     const rows = this.targets();
     if (!d || rows.length === 0) return;
     const spec = what === "cell" ? (d.specs.find((s) => s.id === this.selectedCol) ?? d.specs.find((s) => s.role === "name")) : undefined;
-    const lines = rows.map((r) => (what === "name" ? r.name : what === "namespace" ? (r.namespace ?? "") : spec ? columnText(r, spec, d.ctx) : r.name));
+    // a name copies whole, even while the table hides its namespace prefix
+    const lines = rows.map((r) => (what === "name" ? r.name : what === "namespace" ? (r.namespace ?? "") : spec && spec.role !== "name" ? columnText(r, spec, d.ctx) : r.name));
     const label = what === "cell" ? (spec?.title.toLowerCase() ?? "cell") : what;
     const done = () => flash(rows.length > 1 ? `copied ${rows.length} ${label} values` : `copied ${label}: ${lines[0]}`);
     const fail = () => flash("copy failed: the clipboard is not available", "warn");

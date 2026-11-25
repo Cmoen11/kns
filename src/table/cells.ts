@@ -45,8 +45,20 @@ export const metricKey = (namespace: string | undefined, name: string): string =
 export const formatCpu = (milli: number): string => `${Math.round(milli)}m`;
 export const formatMem = (bytes: number): string => `${Math.round(bytes / 1048576)}Mi`;
 
+/**
+ * A name without its namespace prefix (`companyadmin-api` in `companyadmin` → `api`). A name that
+ * is only the prefix, or the namespace itself, stays whole.
+ */
+export function stripNamespace(name: string, namespace: string | undefined): string {
+  if (!namespace) return name;
+  const prefix = `${namespace}-`;
+  return name.length > prefix.length && name.startsWith(prefix) ? name.slice(prefix.length) : name;
+}
+
 export interface CellContext {
   nowMs: number;
+  /** the name column shows names without their namespace prefix (setting) */
+  stripNs?: boolean;
   metrics: ReadonlyMap<string, PodMetric> | null;
   statusOf: (row: Row) => Status | null;
 }
@@ -55,8 +67,10 @@ export interface CellContext {
 export function columnText(row: Row, spec: ColSpec, ctx: CellContext): string {
   const s = spec.source;
   switch (s.by) {
-    case "cell":
-      return s.index < 0 ? row.name : (textsOf(row)[s.index] ?? "");
+    case "cell": {
+      const text = s.index < 0 ? row.name : (textsOf(row)[s.index] ?? "");
+      return ctx.stripNs && spec.role === "name" ? stripNamespace(text, row.namespace) : text;
+    }
     case "namespace":
       return row.namespace ?? "";
     case "age": {
