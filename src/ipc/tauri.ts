@@ -38,6 +38,7 @@ export const tauriBackend: Backend = {
   listContexts: () => call("list_contexts"),
   connect: (context) => call("connect", { context }),
   awsSsoLogin: (context) => call("aws_sso_login", { context }),
+  awsSsoStatus: (contexts) => call("aws_sso_status", { contexts }),
   discover: (context) => call("discover", { context }),
 
   subscribeTable: (query, onEvent) => stream<TableEvent>("subscribe_table", { query }, onEvent),

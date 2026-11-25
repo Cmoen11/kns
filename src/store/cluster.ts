@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { backend } from "../ipc";
-import type { ApiResource, BackendError, ClusterInfo, ContextInfo, Gvr, TableQuery } from "../ipc/types";
+import type { ApiResource, BackendError, ClusterInfo, ContextInfo, Gvr, SsoStatus, TableQuery } from "../ipc/types";
 import { buildAliases, gvrKey, resolveAlias, type AliasMap } from "./aliases";
 import { focusedContext, layoutStore, liveSessions, setLayoutContext, workspaceContexts } from "./layout";
 import { setActiveContext } from "./settings";
@@ -44,13 +44,18 @@ export interface ClusterState extends ContextConn {
   conns: Readonly<Record<string, ContextConn>>;
   /** the context an `aws sso login` is running for */
   signingIn: string | null;
+  /**
+   * SSO sign-in status of the contexts with an AWS profile; null until the first check. A failed
+   * check leaves an empty map: every such context then offers its sign-in, as before.
+   */
+  sso: Readonly<Record<string, SsoStatus>> | null;
 }
 
 const NO_ALIASES = buildAliases([]);
 const IDLE: ContextConn = { status: "idle", info: null, error: null, retryAt: null, resources: [], discovered: false, aliases: NO_ALIASES };
 
 export const clusterStore = createStore<ClusterState>(() => ({
-  ...IDLE, contexts: [], files: [], context: null, conns: {}, signingIn: null,
+  ...IDLE, contexts: [], files: [], context: null, conns: {}, signingIn: null, sso: null,
 }));
 
 /** Narrow selector: useCluster((s) => s.contexts). For a pane's connection use useConn. */
@@ -244,8 +249,9 @@ export function reconnect(): void {
 }
 
 /**
- * `aws sso login` for a context (the AWS CLI opens the browser). Afterwards the window's context
- * connects at once instead of waiting for its backoff.
+ * `aws sso login` for a context (the AWS CLI opens the browser). Afterwards the sign-in status is
+ * read again, and every context on screen that signs in with that login connects at once instead
+ * of waiting for its backoff.
  */
 export async function awsSsoLogin(context: string): Promise<void> {
   if (clusterStore.getState().signingIn) return;
@@ -253,7 +259,9 @@ export async function awsSsoLogin(context: string): Promise<void> {
   try {
     await backend.awsSsoLogin(context);
     toasts.show({ kind: "ok", text: `Signed in for ${context}` });
-    if (clusterStore.getState().context === context) reconnect();
+    await checkSso();
+    const s = clusterStore.getState();
+    if (s.context && (s.context === context || connOf(s.context).status === "offline")) reconnect();
   } catch (e) {
     toasts.error(asError(e).message);
   } finally {
@@ -261,10 +269,103 @@ export async function awsSsoLogin(context: string): Promise<void> {
   }
 }
 
+// ── SSO sign-in status ─────────────────────────────────────────────────────
+
+/** How often the status is read while someone watches it; it is a few file reads, no network. */
+const SSO_POLL_MS = 60_000;
+
+/** A connection error that a new sign-in may fix: the cluster refused the token, or the exec plugin failed. */
+export function looksLikeAuthError(e: BackendError | null): boolean {
+  if (!e) return false;
+  if (e.code === 401) return true;
+  return /\b(sso|token|expired|credential|exec plugin|getting credentials|unauthori[sz]ed)\b/i.test(e.message);
+}
+
+/**
+ * Whether a context's row offers `aws sso login`: when its cached token expired or is missing,
+ * when the check failed, or when its connection was refused for credentials. A context that does
+ * not sign in with an AWS profile never does.
+ */
+export function needsSsoLogin(c: ContextInfo, s: ClusterState = clusterStore.getState()): boolean {
+  if (!c.awsProfile) return false;
+  if (looksLikeAuthError(connOf(c.name, s).error) && connOf(c.name, s).status === "offline") return true;
+  if (s.sso === null) return false; // not read yet: no button that vanishes a moment later
+  const st = s.sso[c.name]?.state;
+  return st !== "valid" && st !== "refreshable";
+}
+
+let ssoCheck: Promise<void> | null = null;
+
+/** Reads the sign-in status of every context with an AWS profile (one at a time). */
+export function checkSso(): Promise<void> {
+  ssoCheck ??= (async () => {
+    const names = clusterStore.getState().contexts.filter((c) => c.awsProfile).map((c) => c.name);
+    try {
+      const sso = names.length > 0 ? await backend.awsSsoStatus(names) : {};
+      clusterStore.setState({ sso });
+    } catch {
+      clusterStore.setState({ sso: {} });
+    } finally {
+      ssoCheck = null;
+    }
+    scheduleExpiry();
+  })();
+  return ssoCheck;
+}
+
+let ssoWatchers = 0;
+let ssoTimer: ReturnType<typeof setInterval> | null = null;
+let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+const onWake = () => {
+  if (document.visibilityState === "visible") void checkSso();
+};
+
+/** A check right after the soonest valid token expires, so its button returns on time. */
+function scheduleExpiry(): void {
+  if (expiryTimer) clearTimeout(expiryTimer);
+  expiryTimer = null;
+  if (ssoWatchers === 0) return;
+  const soonest = Object.values(clusterStore.getState().sso ?? {})
+    .filter((st) => st.state === "valid" && st.expiresAt)
+    .map((st) => Date.parse(st.expiresAt!))
+    .filter((t) => Number.isFinite(t) && t > Date.now())
+    .sort((a, b) => a - b)[0];
+  // within the poll interval anyway, or so far out that the poll gets there first
+  if (soonest !== undefined && soonest - Date.now() < SSO_POLL_MS) {
+    expiryTimer = setTimeout(() => void checkSso(), soonest - Date.now() + 1000);
+  }
+}
+
+/**
+ * Keeps the SSO status fresh while the caller shows it: every minute, when the window becomes
+ * visible or focused again (the user may have run `aws sso login` in a terminal), when a token
+ * expires, and when the contexts change. Returns the stop function; watchers are counted.
+ */
+export function watchSso(): () => void {
+  if (ssoWatchers++ === 0) {
+    void checkSso();
+    ssoTimer = setInterval(() => void checkSso(), SSO_POLL_MS);
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+  }
+  let stopped = false;
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    if (--ssoWatchers > 0) return;
+    if (ssoTimer) clearInterval(ssoTimer);
+    if (expiryTimer) clearTimeout(expiryTimer);
+    ssoTimer = expiryTimer = null;
+    window.removeEventListener("focus", onWake);
+    document.removeEventListener("visibilitychange", onWake);
+  };
+}
+
 /** Re-reads the kubeconfig contexts (context picker). */
 export async function refreshContexts(): Promise<void> {
   const list = await backend.listContexts();
   clusterStore.setState({ contexts: list.contexts, files: list.files, kubeCurrent: list.current });
+  if (ssoWatchers > 0) void checkSso();
 }
 
 // ── discovery lookups ──────────────────────────────────────────────────────

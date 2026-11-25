@@ -7,7 +7,7 @@ import { favouriteSummary, treeSummary } from "../palette/favourites/model";
 import { nsSlotOf } from "../palette/favourites/slots";
 import { noteNamespaceUsed, recallFavourite, recallLayout, useFav } from "../palette/favourites/store";
 import { contextDetail } from "../store/context-label";
-import { awsSsoLogin, refreshContexts, resourceFor, switchContext, useCluster, useNamespaces } from "../store/cluster";
+import { awsSsoLogin, clusterStore, needsSsoLogin, refreshContexts, resourceFor, switchContext, useCluster, useNamespaces, watchSso } from "../store/cluster";
 import { focusedPane, paneView, setNamespace, useWorkspace } from "../store/layout";
 import { useSettings } from "../store/settings";
 import { flash } from "../store/status";
@@ -74,11 +74,21 @@ function FilterInput() {
   );
 }
 
+/** The sign-in button's tip: what runs, and why it is offered. */
+function ssoHint(context: string, profile: string): string {
+  const st = clusterStore.getState().sso?.[context];
+  const why =
+    st?.state === "expired" && st.expiresAt ? `signed out ${new Date(st.expiresAt).toLocaleString()}` : st?.state === "unknown" ? "not signed in" : st ? "the cluster refused the credentials" : "";
+  return `aws sso login (${profile})${why ? ` · ${why}` : ""}`;
+}
+
 export default function ContextSidebar() {
   const contexts = useCluster((s) => s.contexts);
   const active = useCluster((s) => s.context);
   const status = useCluster((s) => s.status);
   const signingIn = useCluster((s) => s.signingIn);
+  // which contexts offer a sign-in: a string, so the rows rebuild only when that set changes
+  const loginNeeded = useCluster((s) => s.contexts.filter((c) => needsSsoLogin(c, s)).map((c) => c.name).join("\n"));
   const flags = useSettings((s) => s.contexts);
   const { names, synced, forbidden } = useNamespaces();
   // the focused pane's namespace, or null when it has none
@@ -103,11 +113,14 @@ export default function ContextSidebar() {
   useEffect(() => {
     refreshContexts().catch((e: unknown) => toasts.error(`Reading contexts failed: ${String(e)}`));
   }, []);
+  // the sign-in buttons follow the AWS token cache while the sidebar is open
+  useEffect(() => watchSso(), []);
   // the filter belongs to this visit
   useEffect(() => () => setFilter(""), []);
 
   const rows = useMemo(() => {
     const out: PanelRow[] = [];
+    const needLogin = new Set(loginNeeded.split("\n"));
     const filtering = filter.trim() !== "";
     const section = (id: string, label: string, items: PanelRow[], extra?: Partial<PanelRow>) => {
       // a filter looks into folded sections too
@@ -133,9 +146,11 @@ export default function ContextSidebar() {
             current,
             labels: labels.length > 0 ? labels : undefined,
             trailing: current ? STATUS_WORD[status] : undefined,
-            login: c.awsProfile
-              ? { run: () => awsSsoLogin(c.name), busy: signingIn === c.name, hint: `aws sso login (${c.awsProfile})` }
-              : undefined,
+            // signed in: no button; it returns when the token expires or the cluster refuses it
+            login:
+              c.awsProfile && (signingIn === c.name || needLogin.has(c.name))
+                ? { run: () => awsSsoLogin(c.name), busy: signingIn === c.name, hint: ssoHint(c.name, c.awsProfile) }
+                : undefined,
             // the same call as the context picker: it confirms live sessions that would end
             // resolves false when the confirm was answered "Stay": the focus then stays here
             activate: () => switchContext(c.name).catch((e: unknown) => (toasts.error(String(e)), false)),
@@ -191,7 +206,7 @@ export default function ContextSidebar() {
     ];
     section("favourites", "Favourites", favItems);
     return out;
-  }, [contexts, active, status, flags, names, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn]);
+  }, [contexts, active, status, flags, names, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn, loginNeeded]);
 
   return (
     <>

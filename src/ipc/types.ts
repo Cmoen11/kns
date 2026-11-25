@@ -49,6 +49,21 @@ export interface ContextInfo {
   awsProfile?: string;
 }
 
+/**
+ * Whether a context's AWS profile has a usable SSO token, read from the AWS CLI's token cache:
+ * - valid: the access token holds until `expiresAt`
+ * - refreshable: it expired, but the CLI renews it from its refresh token
+ * - expired: `aws sso login` is needed
+ * - unknown: no token for the profile in the cache
+ */
+export type SsoState = "valid" | "refreshable" | "expired" | "unknown";
+
+export interface SsoStatus {
+  state: SsoState;
+  /** RFC 3339: when the access token expires */
+  expiresAt?: string;
+}
+
 export interface ContextList {
   contexts: ContextInfo[];
   current?: string;
@@ -260,6 +275,8 @@ export interface BaseBackend {
   connect(context: string): Promise<ClusterInfo>;
   /** Runs `aws sso login` for the context's AWS profile (the CLI opens the browser) and resolves when it is done. */
   awsSsoLogin(context: string): Promise<void>;
+  /** The sign-in status of each of `contexts` that signs in with an AWS profile (no process, no network). */
+  awsSsoStatus(contexts: string[]): Promise<Record<string, SsoStatus>>;
   discover(context: string): Promise<ApiResource[]>;
 
   // tables
