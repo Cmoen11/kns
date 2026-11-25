@@ -3,6 +3,7 @@
 // Feature contracts map in ./tauri/<pkg>.ts (one owner each) and are spread in below.
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { agentsTauri } from "./tauri/agents";
+import { catalogTauri } from "./tauri/catalog";
 import { call, toError } from "./tauri/call";
 import { debugTauri } from "./tauri/debug";
 import { devTauri } from "./tauri/dev";
@@ -94,5 +95,6 @@ export const tauriBackend: Backend = {
   ...agentsTauri,
   ...eventsTauri,
   ...healthTauri,
+  ...catalogTauri,
   ...updateTauri,
 };

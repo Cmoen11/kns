@@ -18,6 +18,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `�
 - Panes: `+` opens the next view beside the current one, `leader r` / `leader d` split, `Alt+h/j/k/l` or `Alt+arrows` move focus (`Alt+⌘+arrows` on macOS), `leader z` zoom, `leader x` close. Workspace per context is restored on start.
 - Panes in different contexts: `Ctrl/⌘+Enter` in the context picker opens the pane's view beside it in that context, `leader C` changes the focused pane's context, `:pods @staging` too. Reads, RBAC, write tiers and the protected line follow each pane's context.
 - Favourites: `Mod+Shift+S` saves a view, `Mod+1..9` recalls it; `Mod+Shift+L` saves a layout, `Alt+1..9` recalls it; `'` opens the picker.
+- Organisation catalog (optional, [docs/catalog.md](docs/catalog.md)): a Backstage-style file of teams, systems and environments. Team members who may only use a few namespaces get their team's namespaces in pickers, "all namespaces" tables and health; rows name the system and team; the sidebar shows the system's owner, links and repositories; `:env prod` moves a view to another environment.
 - Namespace health: a badge per namespace in the context sidebar (`Mod+B`), `!` on a namespace row opens its faults, `:faults` for all of them. Recent actions in the activity panel (`Mod+J`).
 
 ### Debug

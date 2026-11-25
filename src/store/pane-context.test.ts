@@ -19,6 +19,7 @@ const WINDOW_READERS: Record<string, string> = {
   "sidepanels/ActivityPanel.tsx": "window-wide rows: forwards, connection health",
   "status/index.ts": "records window context switches",
   "status/health.ts": "namespace health of the window's context (sidebar badges)",
+  "catalog/store.ts": "follows the kubeconfig's context list (not the window's context) to protect production contexts",
   "palette/Picker.tsx": "the window mode of the context picker",
   "palette/sources.ts": "palette context rows switch the window",
   "palette/favourites/store.ts": "a saved layout fills the window's workspace",

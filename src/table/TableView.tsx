@@ -1,5 +1,6 @@
 // The `table` and `containers` views (docs/ux.md §12). Each builds a GridSource from its view
 // state and live data; the Grid and the TableModel do the rest.
+import { noteAllForbidden, useTeamWide } from "../catalog/teamwide";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Json, Row, TableQuery } from "../ipc/types";
 import type { Filter, Sort } from "../types";
@@ -31,26 +32,34 @@ function ResourceTable({ pane, view, focused, visible }: ViewProps<"table">) {
   const namespaced = res?.namespaced ?? true;
   const resource = view.gvr.resource;
   const namespace = namespaced && view.namespace !== "*" ? view.namespace : undefined;
+  // "all namespaces" for a user who may not list across them: the team's namespaces (catalog) or
+  // the ones used here, as one table (docs/catalog.md)
+  const teamWide = useTeamWide(context, namespaced && view.namespace === "*", view.gvr);
 
   const selectors = scopeSelectors(view.scope);
   const labelSelector = labelSelectorOf(view.filters, selectors.labelSelector);
+  const teamKey = teamWide?.join(",") ?? "";
   const query = useMemo<TableQuery | null>(
-    () => (context ? { context, gvr: view.gvr, namespace, labelSelector, fieldSelector: selectors.fieldSelector } : null),
+    () => (context ? { context, gvr: view.gvr, namespace, namespaces: teamWide ?? undefined, labelSelector, fieldSelector: selectors.fieldSelector } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [context, view.gvr.group, view.gvr.version, view.gvr.resource, namespace, labelSelector, selectors.fieldSelector],
+    [context, view.gvr.group, view.gvr.version, view.gvr.resource, namespace, teamKey, labelSelector, selectors.fieldSelector],
   );
   const snap = useTable(query, { live: visible, pane });
   const key = query ? tableKey(query) : "";
 
-  // listing across all namespaces is forbidden (RBAC only grants one): fall back to the
-  // kubeconfig context's namespace, as kubectl would use it
+  // listing across all namespaces is forbidden (RBAC only grants one): remember it, so the next
+  // render asks for the team's namespaces; with none known, fall back to the kubeconfig
+  // context's namespace, as kubectl would use it
   const ownNamespace = useCluster((s) => s.contexts.find((c) => c.name === context)?.namespace);
   const allForbidden = namespaced && view.namespace === "*" && snap.state === "forbidden";
   useEffect(() => {
-    if (!allForbidden || !ownNamespace) return;
+    if (!allForbidden) return;
+    // the first time: remembered; the next render asks for the team's namespaces, if any are known
+    if (!teamWide && noteAllForbidden(context, view.gvr)) return;
+    if (!ownNamespace) return;
     setNamespace(ownNamespace, pane);
     flash(`Listing ${resource} in all namespaces is forbidden: showing ${ownNamespace}`, "warn");
-  }, [allForbidden, ownNamespace, pane, resource]);
+  }, [allForbidden, ownNamespace, pane, resource, context, view.gvr, teamWide]);
 
   // changed cells (§9.4). Declared after useTable: the subscription exists once its effect ran.
   useEffect(() => {

@@ -34,6 +34,8 @@ export const DEFAULT_SETTINGS: Settings = {
   actionLog: "all",
   nsProblemsFirst: false,
   stripNsPrefix: false,
+  catalogUser: "",
+  catalogTeams: [],
 };
 
 const oneOf = <T,>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
@@ -90,6 +92,10 @@ export function sanitizeSettings(raw: unknown, d: Settings = DEFAULT_SETTINGS): 
     actionLog: oneOf(r.actionLog, ["all", "writes", "off"] as const, d.actionLog),
     nsProblemsFirst: bool(r.nsProblemsFirst, d.nsProblemsFirst),
     stripNsPrefix: bool(r.stripNsPrefix, d.stripNsPrefix),
+    catalogUser: typeof r.catalogUser === "string" ? r.catalogUser.trim().slice(0, 200) : d.catalogUser,
+    catalogTeams: Array.isArray(r.catalogTeams)
+      ? [...new Set(r.catalogTeams.filter((t): t is string => typeof t === "string" && /^[A-Za-z0-9._-]{1,63}$/.test(t)))].slice(0, 20)
+      : [...d.catalogTeams],
   };
 }
 
@@ -97,7 +103,7 @@ export function sanitizeSettings(raw: unknown, d: Settings = DEFAULT_SETTINGS): 
 export const settingsStore = persistedStore<Settings>({
   key: PERSIST_KEYS.settings,
   version: 1,
-  defaults: () => ({ ...DEFAULT_SETTINGS, contexts: {}, debugImages: [...DEFAULT_SETTINGS.debugImages] }),
+  defaults: () => ({ ...DEFAULT_SETTINGS, contexts: {}, debugImages: [...DEFAULT_SETTINGS.debugImages], catalogTeams: [] }),
   sanitize: sanitizeSettings,
 });
 

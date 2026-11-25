@@ -1,10 +1,12 @@
 // The namespace picker (docs/ux.md §8.1) and the context picker (§8.2, §8.3): the palette's list
 // component, 400 wide, with their own keys (pin a namespace slot, toggle a protected context).
 import { contextDetail } from "../store/context-label";
+import { useKnownNamespaces } from "../catalog/namespaces";
+import { nsDetail } from "../catalog/model";
 import { useEffect, useMemo, useState } from "react";
 import { LAYERS } from "../actions";
 import {
-  openPaneInContext, paneView, refreshContexts, setNamespace, setNamespaceAllPanes, setPaneContext, switchContext, toasts, useCluster, useNamespaces,
+  openPaneInContext, paneView, refreshContexts, setNamespace, setNamespaceAllPanes, setPaneContext, switchContext, toasts, useCluster,
   showOverlay, usePaneContext, type OverlayProps,
 } from "../foundation";
 import { CONTEXT_ALIAS_OVERLAY } from "./overlays";
@@ -43,37 +45,49 @@ function NamespacePicker({ allPanes }: { allPanes: boolean }) {
   const pane = currentSnapshot().pane;
   // the namespaces of the focused pane's context (§8.3)
   const context = usePaneContext(pane);
-  const { names, synced, forbidden } = useNamespaces(context || undefined);
+  const known = useKnownNamespaces(context || undefined);
+  const { synced, forbidden } = known;
   const slots = useFav((s) => s.nsSlots[context]);
   const view = pane ? paneView(pane) : undefined;
   const current = view?.kind === "table" ? view.namespace : undefined;
 
   const entries = useMemo(() => {
     const safe = slots ?? [];
+    const byName = new Map(known.searchable.map((k) => [k.name, k]));
+    const names = known.shown.map((k) => k.name);
     const entry = (ns: string, positions: readonly number[] = []): Entry => {
       const slot = ns === "*" ? 0 : nsSlotOf(safe, ns);
+      const k = byName.get(ns);
+      const labels = [slot > 0 && safe[slot - 1]?.pinned ? "PIN" : "", k?.mine && !forbidden ? "TEAM" : ""].filter(Boolean);
       return {
         value: ns,
         row: {
-          key: ns, label: ns === "*" ? "all namespaces" : ns, positions, current: ns === current,
+          key: ns, label: ns === "*" ? (forbidden && known.scope.mine.length > 0 ? "all namespaces (the team's)" : "all namespaces") : ns, positions, current: ns === current,
           slot: ns === "*" ? "0" : slot > 0 ? String(slot) : "",
-          labels: slot > 0 && safe[slot - 1]?.pinned ? ["PIN"] : undefined,
+          labels: labels.length > 0 ? labels : undefined,
+          detail: nsDetail(k?.info),
         },
       };
     };
     const q = text.trim();
     if (q === "") {
-      // slots first, in slot order; the rest alphabetically
+      // slots first, in slot order; the rest as known.shown orders them (the team's first)
       const slotted = safe.filter((s): s is NonNullable<typeof s> => !!s && names.includes(s.name)).map((s) => s.name);
       return [entry("*"), ...slotted.map((n) => entry(n)), ...names.filter((n) => !slotted.includes(n)).map((n) => entry(n))];
     }
-    const out = rank(["*", ...names], q, { text: (n) => (n === "*" ? "all namespaces" : n) }).map((r) => entry(r.item, r.positions));
+    // a system's title and its team find its namespace too (catalog)
+    const all = known.searchable.map((k) => k.name);
+    const keywords = (n: string) => {
+      const info = byName.get(n)?.info;
+      return info ? [info.system.title, info.system.name, info.team?.title ?? "", info.team?.name ?? ""].filter(Boolean) : [];
+    };
+    const out = rank(["*", ...all], q, { text: (n) => (n === "*" ? "all namespaces" : n), keywords }).map((r) => entry(r.item, r.positions));
     // listing may be forbidden or still syncing: the typed name is accepted as it is (§8.1)
-    if (!names.includes(q) && /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(q)) {
+    if (!all.includes(q) && /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(q)) {
       out.push({ value: q, row: { key: `typed:${q}`, label: q, slot: "", tag: "use as typed" } });
     }
     return out;
-  }, [names, slots, text, current]);
+  }, [known, forbidden, slots, text, current]);
 
   const list = usePickerList(entries, text);
   const use = (i: number) => {
@@ -118,7 +132,7 @@ function NamespacePicker({ allPanes }: { allPanes: boolean }) {
       selected={list.selected}
       onPick={(i) => use(i)}
       onHover={list.setSel}
-      error={forbidden ? "Listing namespaces is forbidden: type the name" : null}
+      error={forbidden ? (known.shown.length > 0 ? null : "Listing namespaces is forbidden: type the name") : null}
       empty={synced ? "No matching namespace" : "syncing"}
     />
   );

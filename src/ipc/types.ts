@@ -7,6 +7,7 @@
 // and are re-exported from here. `Backend` (end of file) is the composition of all of them.
 import type {
   AgentsBackend,
+  CatalogBackend,
   DebugBackend,
   DevBackend,
   DiagBackend,
@@ -102,6 +103,11 @@ export interface TableQuery {
   gvr: Gvr;
   /** undefined or "" = all namespaces (ignored for cluster-scoped) */
   namespace?: string;
+  /**
+   * Instead of `namespace`: one table over these namespaces (multins.rs), for a user who may
+   * not list across all of them (a team's namespaces on a shared cluster).
+   */
+  namespaces?: string[];
   labelSelector?: string;
   fieldSelector?: string;
 }
@@ -334,4 +340,5 @@ export type Backend = BaseBackend &
   AgentsBackend &
   EventsBackend &
   HealthBackend &
-  UpdateBackend;
+  UpdateBackend &
+  CatalogBackend;

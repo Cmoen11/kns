@@ -51,7 +51,8 @@ export interface HealthBackend {
   /**
    * Starts the context's namespace-health watch (pods, deployments, statefulsets and daemonsets
    * across every namespace, server-side Table rows) and reports a snapshot whenever the counts
-   * change, at most once a second. The stop function ends it.
+   * change, at most once a second. The stop function ends it. With `namespaces` it watches only
+   * those (a user who may not list pods across all namespaces; at most 40).
    */
-  subscribeNsHealth(context: string, onSnapshot: (s: NsHealthSnapshot) => void): Unsubscribe;
+  subscribeNsHealth(context: string, onSnapshot: (s: NsHealthSnapshot) => void, namespaces?: readonly string[]): Unsubscribe;
 }

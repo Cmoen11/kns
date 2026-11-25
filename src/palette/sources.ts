@@ -1,10 +1,11 @@
 // What the palette lists (docs/ux.md §6.1): resources from discovery, the actions that were
 // runnable where it was opened (with their keys), favourites, layouts, namespaces, contexts,
 // panes and live undos. Each item knows how to run itself.
+import { knownNamespaceNames } from "../catalog/namespaces";
 import { contextDetail } from "../store/context-label";
 import { contextFlags } from "../store/settings";
 import {
-  crumbsOf, focusPane, getCluster, namespaceNames, openView, paneIndex, paneNamespace, paneOrder, paneView, registry, resourceFor, setNamespace,
+  crumbsOf, focusPane, getCluster, openView, paneIndex, paneNamespace, paneOrder, paneView, registry, resourceFor, setNamespace,
   switchContext, tableView, toasts, type ActionId,
 } from "../foundation";
 import { TOOLS } from "../hub/catalog";
@@ -146,7 +147,7 @@ export function namespaceItems(pane: PaneId | null): Item[] {
   };
   return [
     { key: "ns:*", group: "Namespaces", label: "all namespaces", keywords: ["*"], disabled: view.namespace === "*", reason: view.namespace === "*" ? "current" : undefined, run: use("*") },
-    ...namespaceNames().map((ns): Item => ({ key: `ns:${ns}`, group: "Namespaces", label: ns, disabled: ns === view.namespace, reason: ns === view.namespace ? "current" : undefined, run: use(ns) })),
+    ...knownNamespaceNames().map((ns): Item => ({ key: `ns:${ns}`, group: "Namespaces", label: ns, disabled: ns === view.namespace, reason: ns === view.namespace ? "current" : undefined, run: use(ns) })),
   ];
 }
 

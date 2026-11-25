@@ -3,6 +3,7 @@
 // Feature contracts are mocked in ./mock/<pkg>.ts (one owner each, typed as the full XBackend) and
 // spread in below; ./mock/events.ts is the mock event bus.
 import { agentsMock } from "./mock/agents";
+import { TEAM_CONTEXT, TEAM_NAMESPACES, catalogMock, mockForbidden } from "./mock/catalog";
 import { debugMock } from "./mock/debug";
 import { devMock } from "./mock/dev";
 import { installKnsMock } from "./mock/devtools";
@@ -19,6 +20,7 @@ import type {
   ApiResource,
   Backend,
   Column,
+  ContextInfo,
   EventRow,
   ExecSession,
   Gvr,
@@ -31,9 +33,11 @@ import type {
   TableQuery,
 } from "./types";
 
-const CONTEXTS = [
+const CONTEXTS: ContextInfo[] = [
   { name: "default", cluster: "k3s-home", user: "admin", namespace: "default" },
   { name: "staging", cluster: "k3s-staging", user: "dev", awsProfile: "sso-dev-eks" },
+  // a team member on a shared cluster: only a few namespaces (mock/catalog.ts)
+  TEAM_CONTEXT,
 ];
 
 const NAMESPACES = ["default", "kube-system", "flux-system", "shop", "support", "games", "kafka", "payments"];
@@ -234,15 +238,22 @@ function rowsFor(q: TableQuery): Row[] {
     tables.set(key, all);
   }
   const selected = q.labelSelector || q.fieldSelector;
-  if (!q.namespace && !selected) return all;
-  return all.filter((x) => (!q.namespace || !x.namespace || x.namespace === q.namespace) && matchesLabels(q.labelSelector, x.labels) && matchesFields(q.fieldSelector, x));
+  const among = q.namespaces?.length ? new Set(q.namespaces) : null;
+  if (!q.namespace && !selected && !among) return all;
+  return all.filter(
+    (x) =>
+      (!q.namespace || !x.namespace || x.namespace === q.namespace) &&
+      (!among || !x.namespace || among.has(x.namespace)) &&
+      matchesLabels(q.labelSelector, x.labels) &&
+      matchesFields(q.fieldSelector, x),
+  );
 }
 
 /**
  * Namespace health of the mock cluster (contract/health.ts), derived from the same rows the tables
  * show with the table's own fault rule, so a badge counts the rows the faults views of that namespace list.
  */
-export function mockNsHealth(context: string): NsHealthSnapshot {
+export function mockNsHealth(context: string, only?: readonly string[]): NsHealthSnapshot {
   const by = new Map<string, NsHealth>();
   const at = (ns: string) => by.get(ns) ?? (by.set(ns, { namespace: ns, podsFailing: 0, podsWarn: 0, workloads: [] }), by.get(ns)!);
   let pods = 0;
@@ -250,7 +261,7 @@ export function mockNsHealth(context: string): NsHealthSnapshot {
   for (const resource of ["pods", "deployments", "statefulsets", "daemonsets"] as const) {
     const gvr = { group: resource === "pods" ? "" : "apps", version: "v1", resource };
     const names = (COLUMNS[resource] ?? DEFAULT_COLUMNS).map((c) => c.name.toLowerCase());
-    for (const row of rowsFor({ context, gvr })) {
+    for (const row of rowsFor({ context, gvr, namespaces: only ? [...only] : undefined })) {
       if (!row.namespace) continue;
       if (resource === "pods") pods++;
       else workloads++;
@@ -340,6 +351,15 @@ export const mockBackend: Backend = {
   subscribeTable: (query, onEvent) => {
     let alive = true;
     onEvent({ type: "state", state: "syncing" });
+    const namespaced = RESOURCES.find((x) => x.gvr.resource === query.gvr.resource && x.gvr.group === query.gvr.group)?.namespaced ?? true;
+    if (mockForbidden(query, namespaced)) {
+      const where = query.namespace ? `in the namespace "${query.namespace}"` : "at the cluster scope";
+      const t = setTimeout(() => onEvent({ type: "state", state: "forbidden", message: `${query.gvr.resource} is forbidden: User "team-dev" cannot list resource "${query.gvr.resource}" ${where}` }), 80);
+      return () => clearTimeout(t);
+    }
+    if (query.context === TEAM_CONTEXT.name && query.namespaces?.length) {
+      query = { ...query, namespaces: query.namespaces.filter((n) => TEAM_NAMESPACES.includes(n)) };
+    }
     const columns = COLUMNS[query.gvr.resource] ?? DEFAULT_COLUMNS;
     const start = setTimeout(() => {
       if (!alive) return;
@@ -528,13 +548,19 @@ export const mockBackend: Backend = {
   ...agentsMock,
   ...eventsMock,
   ...updateMock,
+  ...catalogMock,
 
   // namespace health: a first `syncing`, then the counts every 3s when they changed (the real
   // backend sends at most one per second, only on change)
-  subscribeNsHealth: (context, onSnapshot) => {
+  subscribeNsHealth: (context, onSnapshot, namespaces) => {
     let last = "";
+    if (context === TEAM_CONTEXT.name && !namespaces?.length) {
+      const t = setTimeout(() => onSnapshot({ context, state: "forbidden", message: 'pods: pods is forbidden: User "team-dev" cannot list resource "pods" at the cluster scope', namespaces: [], pods: 0, workloads: 0 }), 200);
+      return () => clearTimeout(t);
+    }
+    const only = context === TEAM_CONTEXT.name ? namespaces?.filter((n) => TEAM_NAMESPACES.includes(n)) : namespaces;
     const send = () => {
-      const s = mockNsHealth(context);
+      const s = mockNsHealth(context, only);
       const key = JSON.stringify(s);
       if (key === last) return;
       last = key;

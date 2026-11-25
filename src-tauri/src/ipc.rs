@@ -258,6 +258,10 @@ pub struct TableQuery {
     pub gvr: Gvr,
     #[serde(default)]
     pub namespace: Option<String>,
+    /// Instead of `namespace`: one table over these namespaces (multins.rs), for a user who
+    /// may not list across all of them.
+    #[serde(default)]
+    pub namespaces: Option<Vec<String>>,
     #[serde(default)]
     pub label_selector: Option<String>,
     #[serde(default)]

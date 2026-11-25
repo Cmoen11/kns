@@ -322,6 +322,10 @@ export interface Settings {
   nsProblemsFirst: boolean;
   /** tables: a name that starts with its namespace and a dash shows without that prefix */
   stripNsPrefix: boolean;
+  /** organisation catalog (docs/catalog.md): who the user is, an email address or user name */
+  catalogUser: string;
+  /** organisation catalog: the teams to scope to (`:team`); empty = the user's own */
+  catalogTeams: string[];
 }
 
 export type NsSlot = { name: string; pinned: boolean } | null;

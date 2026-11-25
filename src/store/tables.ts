@@ -77,7 +77,7 @@ export interface Tables {
 
 /** Stable key of a query; `undefined`, `""` and `"*"` all mean all namespaces. */
 export function tableKey(q: TableQuery): string {
-  const ns = !q.namespace || q.namespace === "*" ? "" : q.namespace;
+  const ns = q.namespaces?.length ? `[${q.namespaces.join(",")}]` : !q.namespace || q.namespace === "*" ? "" : q.namespace;
   return [q.context, q.gvr.group, q.gvr.version, q.gvr.resource, ns, q.labelSelector ?? "", q.fieldSelector ?? ""].join("\u0001");
 }
 

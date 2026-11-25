@@ -38,6 +38,7 @@ async fn subscribe(state: &AppState, gvr: Gvr, namespace: Option<&str>) -> anyho
         context: CTX.into(),
         gvr,
         namespace: namespace.map(str::to_string),
+        namespaces: None,
         label_selector: None,
         field_selector: None,
     };
@@ -461,6 +462,7 @@ async fn check(state: &AppState) -> anyhow::Result<()> {
         context: CTX.into(),
         gvr: Gvr::new("", "v1", "pods"),
         namespace: Some(NS.into()),
+        namespaces: None,
         label_selector: Some("app in (".into()),
         field_selector: None,
     };

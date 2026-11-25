@@ -3,7 +3,9 @@
 import { registry, type ActionDef } from "../../actions";
 import { engine, isRebindable, keymap, platform } from "../../keys";
 import { ZOOM_STEPS, contextFlags, setContextFlags, setSettings } from "../../store/settings";
-import type { NameProxyStatus } from "../../ipc/types";
+import type { Catalog, NameProxyStatus } from "../../ipc/types";
+import { scopeTeams, userOf } from "../../catalog/model";
+import { flash } from "../../store/status";
 import type { Mode, Settings } from "../../types";
 import { confirm } from "../../ui";
 import type { ItemRow, ListRow } from "./list-model";
@@ -100,7 +102,12 @@ function setNameProxy(on: boolean, port?: number): void {
 }
 
 /** Rows for the current settings. `contexts` are the kube context names; `names` the name proxy state (null: unknown). */
-export function buildSettingsRows(s: Settings, contexts: readonly string[], names: NameProxyStatus | null = null): ListRow[] {
+export function buildSettingsRows(
+  s: Settings,
+  contexts: readonly string[],
+  names: NameProxyStatus | null = null,
+  catalog: { catalog: Catalog | null; error: string | null } = { catalog: null, error: null },
+): ListRow[] {
   const rows: ListRow[] = [
     { type: "group", key: "g:appearance", label: "Appearance" },
     choice("mode", "Mode", "System follows the OS, live", MODES, s.mode, (mode) => setSettings({ mode })),
@@ -133,6 +140,37 @@ export function buildSettingsRows(s: Settings, contexts: readonly string[], name
         type: "item", key: `ctx:${c}:alias`, cells: [`${c}: alias`, "the name on tabs and pickers; :ctx and @ take it too"],
         value: f.alias ?? "none",
         change: () => void engine.run("context.alias", { source: "api", args: [`@${c}`] }),
+      },
+    );
+  }
+
+  // organisation catalog (docs/catalog.md): the file, who you are, the team scope
+  const c = catalog.catalog;
+  const me = userOf(c, s.catalogUser);
+  const teams = scopeTeams(c, s.catalogUser, s.catalogTeams);
+  rows.push(
+    { type: "group", key: "g:catalog", label: "Catalog" },
+    {
+      type: "item", key: "catalog:file", cells: ["Catalog file", catalog.error ?? (c ? `${c.teams.length} teams, ${c.systems.length} systems, ${c.clusters.length} clusters` : "teams, systems and environments (Backstage entities)")],
+      value: c ? c.source : catalog.error ? "error" : "none",
+      change: () => void engine.run("catalog.open", { source: "api", args: ["choose"] }),
+    },
+  );
+  if (c) {
+    rows.push(
+      {
+        type: "item", key: "catalog:me", cells: ["You", me ? `member of ${me.memberOf.join(", ") || "no team"}` : ":catalog me <email>"],
+        value: me ? me.name : s.catalogUser || "unknown",
+        change: () => flash("type :catalog me <your email or user name>"),
+      },
+      {
+        type: "item", key: "catalog:teams", cells: ["Team scope", s.catalogTeams.length ? "chosen with :team; Enter goes back to your own" : "your teams; :team <team,...> to choose"],
+        value: teams.join(", ") || "none",
+        change: () => setSettings({ catalogTeams: [] }),
+      },
+      {
+        type: "item", key: "catalog:forget", cells: ["Forget the catalog", "the file is left alone"], value: "",
+        change: () => void engine.run("catalog.open", { source: "api", args: ["forget"] }),
       },
     );
   }

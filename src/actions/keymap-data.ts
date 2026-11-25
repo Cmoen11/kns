@@ -73,6 +73,10 @@ function rows() {
     a("context.protect", "global", "", "protect context", { command: "protect", opens: "dialog" }),
     a("namespace.pick", "global", "Mod+N | leader n", "namespace", { opens: "dialog", command: "ns" }),
     a("namespace.pickAllPanes", "global", "Mod+Shift+N", "namespace, all panes", { opens: "dialog" }),
+    // organisation catalog (docs/catalog.md)
+    a("catalog.open", "global", "", "catalog choose|reload|forget|me <email>", { command: "catalog" }),
+    a("catalog.team", "global", "", "team scope <team,...>|-", { command: "team" }),
+    a("catalog.env", "global", "", "same view in environment <env>", { command: "env" }),
     a("namespace.all", "table.namespaced", "0", "all namespaces"),
     a("namespace.favN", "table.namespaced", digits(""), "namespace 1-9"),
     a("namespace.use", "k.namespaces", "u", "use namespace", { hint: 10 }),

@@ -7,7 +7,10 @@ import { favouriteSummary, treeSummary } from "../palette/favourites/model";
 import { nsSlotOf } from "../palette/favourites/slots";
 import { noteNamespaceUsed, recallFavourite, recallLayout, useFav } from "../palette/favourites/store";
 import { contextDetail } from "../store/context-label";
-import { awsSsoLogin, clusterStore, needsSsoLogin, refreshContexts, resourceFor, switchContext, useCluster, useNamespaces, watchSso } from "../store/cluster";
+import { awsSsoLogin, clusterStore, needsSsoLogin, refreshContexts, resourceFor, switchContext, useCluster, watchSso } from "../store/cluster";
+import { useKnownNamespaces } from "../catalog/namespaces";
+import { nsDetail, systemOfNamespace } from "../catalog/model";
+import { systemRows } from "../catalog/system-rows";
 import { focusedPane, paneView, setNamespace, useTabs, useWorkspace } from "../store/layout";
 import { useSettings } from "../store/settings";
 import { flash } from "../store/status";
@@ -92,7 +95,8 @@ export default function ContextSidebar() {
   const flags = useSettings((s) => s.contexts);
   // open context tabs (§8.2): their rows say so, a click goes to the tab
   const tabs = useTabs();
-  const { names, synced, forbidden } = useNamespaces();
+  const known = useKnownNamespaces(active);
+  const { synced, forbidden } = known;
   // the focused pane's namespace, or null when it has none
   const namespace = useWorkspace((ws) => {
     const v = ws ? viewOf(ws, ws.focused) : undefined;
@@ -163,12 +167,17 @@ export default function ContextSidebar() {
     );
 
     const blocked = namespace === null;
+    const names = known.shown.map((k) => k.name);
+    const byName = new Map(known.shown.map((k) => [k.name, k]));
     const nsRow = (ns: string): PanelRow => {
       const slot = ns === "*" ? 0 : nsSlotOf(slots ?? [], ns);
+      const k = byName.get(ns);
       return {
         key: `ns:${ns}`,
         section: "namespaces",
         label: ns === "*" ? "all namespaces" : ns,
+        detail: nsDetail(k?.info),
+        labels: k?.mine && !forbidden ? ["TEAM"] : undefined,
         current: ns === namespace,
         trailing: ns === "*" ? "0" : slot > 0 ? String(slot) : undefined,
         health: healthOn ? ns : undefined,
@@ -177,12 +186,21 @@ export default function ContextSidebar() {
       };
     };
     const ordered = byNs ? problemsFirst(names, byNs) : names;
-    const nsItems = ["*", ...ordered].filter((ns) => matches(filter, ns === "*" ? "all namespaces" : ns)).map(nsRow);
-    section("namespaces", "Namespaces", nsItems, {
+    const nsItems = ["*", ...ordered]
+      .filter((ns) => matches(filter, ns === "*" ? "all namespaces" : ns, byName.get(ns)?.info?.system.title, byName.get(ns)?.info?.team?.title))
+      .map(nsRow);
+    section("namespaces", known.scope.teams.length > 0 && forbidden ? `Namespaces · ${known.scope.teams.join(", ")}` : "Namespaces", nsItems, {
       count: names.length,
-      trailing: forbidden ? "forbidden" : !synced ? "syncing" : healthOn && (healthState === "forbidden" || healthState === "error") ? "health unknown" : undefined,
-      trailingTip: healthOn && (healthState === "forbidden" || healthState === "error") ? `Namespace health: ${healthState}${healthMessage ? ` (${healthMessage})` : ""}` : undefined,
+      trailing: forbidden ? (names.length > 0 ? "not listed" : "forbidden") : !synced ? "syncing" : healthOn && (healthState === "forbidden" || healthState === "error") ? "health unknown" : undefined,
+      trailingTip: forbidden && names.length > 0
+        ? "The cluster does not let you list namespaces: these are your team's (catalog) and the ones you used"
+        : healthOn && (healthState === "forbidden" || healthState === "error") ? `Namespace health: ${healthState}${healthMessage ? ` (${healthMessage})` : ""}` : undefined,
     });
+
+    // what the catalog says about the focused namespace
+    const system = namespace && namespace !== "*" ? (known.scope.info.get(namespace)?.system ?? systemOfNamespace(known.scope.catalog, namespace)) : undefined;
+    const sysItems = systemRows(system, known.scope).filter((r) => matches(filter, r.label, r.detail));
+    if (sysItems.length > 0) section("system", `System · ${namespace}`, sysItems);
 
     const bySlot = <T extends { slot?: number }>(list: readonly T[]) => [...list].sort((a, b) => (a.slot ?? 10) - (b.slot ?? 10));
     const favItems: PanelRow[] = [
@@ -210,7 +228,7 @@ export default function ContextSidebar() {
     ];
     section("favourites", "Favourites", favItems);
     return out;
-  }, [contexts, active, status, flags, tabs, names, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn, loginNeeded]);
+  }, [contexts, active, status, flags, tabs, known, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn, loginNeeded]);
 
   return (
     <>

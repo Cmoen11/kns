@@ -3,6 +3,7 @@
 // Called once from main.tsx, before the first render. Keep register() cheap: heavy code is lazy.
 import { register as ops } from "./actions/ops";
 import { register as agents } from "./agents";
+import { register as catalog } from "./catalog";
 import { register as debug } from "./debug";
 import { register as dev } from "./dev";
 import { register as diag } from "./diag";
@@ -32,6 +33,8 @@ export function registerFeatures(): void {
   sidepanels();
   // status colours: namespace health, the titlebar summary, the action log's central hooks
   status();
+  // organisation catalog: loaded at start when one was chosen
+  catalog();
   // feature foundation (docs/plan-features.md §2.8): stub register()s with placeholder views
   text();
   dev();

@@ -26,6 +26,15 @@ const POLL_EVERY: Duration = Duration::from_secs(10);
 
 /// Starts a subscription and returns its stream id at once; all progress is reported through `sink`.
 pub async fn subscribe_table(state: &AppState, query: TableQuery, sink: impl Sink<TableEvent>) -> Result<String> {
+    let namespaces = crate::multins::namespaces_of(&query);
+    if !namespaces.is_empty() {
+        return crate::multins::subscribe(state, query, namespaces, sink).await;
+    }
+    subscribe_one(state, query, sink).await
+}
+
+/// One subscription of one namespace (or all); `subscribe_table` without `namespaces`.
+pub async fn subscribe_one(state: &AppState, query: TableQuery, sink: impl Sink<TableEvent>) -> Result<String> {
     let session = state.session(&query.context).await?;
     let handle = state.register_stream();
     let id = handle.id.clone();

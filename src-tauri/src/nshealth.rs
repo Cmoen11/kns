@@ -16,7 +16,9 @@
 //!
 //! RBAC: a kind that cannot be listed cluster-wide ends in `forbidden` (final, no retry spam). No
 //! pods means state `forbidden` and no counts (the UI shows "unknown"); a forbidden workload kind
-//! means `partial`. No per-namespace fallback: hundreds of watches would cost more than the badge.
+//! means `partial`. A user who may only list a few namespaces (a team, docs: catalog) passes
+//! them: the four kinds then run over those namespaces (`TableQuery.namespaces`, multins.rs),
+//! at most `multins::MAX_NAMESPACES` of them; never hundreds.
 use std::{
     collections::{BTreeMap, HashMap},
     time::{Duration, Instant},
@@ -384,7 +386,7 @@ impl Aggregate {
 
 /// Starts the health watch of `context` and returns its stream id at once (`stop_stream` ends it,
 /// and so does a page reload). Snapshots go to `sink`; the first one says `syncing`.
-pub async fn subscribe_ns_health(state: &AppState, context: String, sink: impl Sink<NsHealthSnapshot>) -> Result<String> {
+pub async fn subscribe_ns_health(state: &AppState, context: String, namespaces: Option<Vec<String>>, sink: impl Sink<NsHealthSnapshot>) -> Result<String> {
     // builds (or reuses) the session first, so a broken kubeconfig fails the call, not the stream
     state.session(&context).await?;
     let handle = state.register_stream();
@@ -396,7 +398,7 @@ pub async fn subscribe_ns_health(state: &AppState, context: String, sink: impl S
         let mut inner = Vec::new();
         for kind in KINDS {
             let sender = tx.clone();
-            let query = TableQuery { context: context.clone(), gvr: kind.gvr(), namespace: None, label_selector: None, field_selector: None };
+            let query = TableQuery { context: context.clone(), gvr: kind.gvr(), namespace: None, namespaces: namespaces.clone(), label_selector: None, field_selector: None };
             match table::subscribe_table(&app, query, FnSink(move |e| sender.send((kind, e)).is_ok())).await {
                 Ok(id) => inner.push(id),
                 Err(e) => {
@@ -450,8 +452,13 @@ pub mod cmd {
     use crate::ipc::{NsHealthSnapshot, Result};
 
     #[tauri::command]
-    pub async fn subscribe_ns_health(state: tauri::State<'_, AppState>, context: String, channel: tauri::ipc::Channel<NsHealthSnapshot>) -> Result<String> {
-        super::subscribe_ns_health(&state, context, channel).await
+    pub async fn subscribe_ns_health(
+        state: tauri::State<'_, AppState>,
+        context: String,
+        namespaces: Option<Vec<String>>,
+        channel: tauri::ipc::Channel<NsHealthSnapshot>,
+    ) -> Result<String> {
+        super::subscribe_ns_health(&state, context, namespaces, channel).await
     }
 }
 

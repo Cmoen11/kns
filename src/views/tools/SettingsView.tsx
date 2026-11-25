@@ -6,6 +6,7 @@ import { LAYERS, useCluster, useScopeLayer, type ViewProps } from "../../foundat
 import { keymap } from "../../keys";
 import { useNames } from "../../dev/names";
 import { useSettings } from "../../store/settings";
+import { useCatalog } from "../../catalog/store";
 import { EmptyState } from "../../ui";
 import { takeKeysJump } from "./controllers";
 import { ListPane } from "./ListPane";
@@ -26,7 +27,8 @@ export default function SettingsView({ pane, focused }: ViewProps<"settings">) {
   const registryVersion = useSyncExternalStore(subscribeRegistry, registry.version);
   const names = useMemo(() => contexts.map((c) => c.name), [contexts]);
   const proxy = useNames((s) => s.status);
-  const rows = useMemo(() => buildSettingsRows(settings, names, proxy), [settings, names, proxy, keymapVersion, registryVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  const catalog = useCatalog((s) => s);
+  const rows = useMemo(() => buildSettingsRows(settings, names, proxy, catalog), [settings, names, proxy, catalog, keymapVersion, registryVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [onKeymapRow, setOnKeymapRow] = useState(false);
   const onCurrent = useCallback((row: ItemRow | undefined, filtering: boolean) => setOnKeymapRow(!!row?.actionId && !filtering), []);

@@ -6,6 +6,9 @@ import { createStore } from "zustand/vanilla";
 import { backend } from "../ipc";
 import type { NsHealth, NsHealthSnapshot, Unsubscribe } from "../ipc/types";
 import { clusterStore } from "../store/cluster";
+import { fallbackNamespaces } from "../catalog/namespaces";
+import { catalogStore } from "../catalog/store";
+import { favStore } from "../palette/favourites/store";
 import { getSettings, settingsStore } from "../store/settings";
 import { knows, shareEntries, totals, type HealthTotals } from "./health-model";
 
@@ -36,19 +39,41 @@ export function applySnapshot(s: NsHealthSnapshot): void {
 
 let stop: Unsubscribe | null = null;
 let running: string | null = null;
+/** the namespaces the running watch covers; null = all of them */
+let runningOver: string | null = null;
+/** contexts that refused the cluster-wide watch this session: they use the fallback namespaces */
+const refusedAll = new Set<string>();
 
 function sync(): void {
   const c = clusterStore.getState();
   const want = getSettings().nsHealth && c.status === "connected" && c.context ? c.context : null;
-  if (want === running) return;
+  // a team member may not list pods across all namespaces: watch the team's (catalog) or the
+  // used ones instead, at most 40 (nshealth.rs)
+  const over = want && refusedAll.has(want) ? fallbackNamespaces(want) : null;
+  const overKey = over && over.length > 0 ? over.join(",") : null;
+  if (want === running && overKey === runningOver) return;
   stop?.();
   stop = null;
   running = want;
+  runningOver = overKey;
   healthStore.setState(EMPTY);
   if (!want) return;
-  stop = backend.subscribeNsHealth(want, (s) => {
-    if (running === want && s.context === want) applySnapshot(s);
-  });
+  stop = backend.subscribeNsHealth(
+    want,
+    (s) => {
+      if (running !== want || s.context !== want) return;
+      if (s.state === "forbidden" && runningOver === null && !refusedAll.has(want)) {
+        refusedAll.add(want);
+        // retried over the team's namespaces when there are any; else the forbidden state stays
+        if (fallbackNamespaces(want).length > 0) {
+          queueMicrotask(sync);
+          return;
+        }
+      }
+      applySnapshot(s);
+    },
+    overKey ? over! : undefined,
+  );
 }
 
 let started = false;
@@ -58,5 +83,8 @@ export function initHealth(): void {
   started = true;
   clusterStore.subscribe(sync);
   settingsStore.subscribe(sync);
+  // the fallback namespaces follow the catalog and the namespaces used
+  catalogStore.subscribe(sync);
+  favStore.subscribe(sync);
   sync();
 }

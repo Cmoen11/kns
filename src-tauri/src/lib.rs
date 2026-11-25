@@ -14,6 +14,8 @@ pub mod session;
 pub mod state;
 pub mod store;
 pub mod table;
+pub mod multins;
+pub mod catalog;
 
 // feature foundation (A1, docs/plan-features.md §2.1)
 pub mod clip;
@@ -241,6 +243,10 @@ pub fn run() {
             mcp::cmd::mcp_audit_tail,
             // status colours
             nshealth::cmd::subscribe_ns_health,
+            catalog::cmd::catalog_load,
+            catalog::cmd::catalog_choose,
+            catalog::cmd::catalog_forget,
+            catalog::cmd::catalog_open,
             // auto-update
             update::cmd::update_status,
             update::cmd::update_check,

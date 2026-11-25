@@ -1,7 +1,8 @@
 // Runs a parsed `:` command against the live app (docs/ux.md §6.2). The grammar itself is in
 // parse.ts; this file only wires it to the registry, discovery and the pane API.
+import { knownNamespaceNames } from "../../catalog/namespaces";
 import {
-  connOf, contextName, engine, ensureConnected, focusedPane, getCluster, paneContext, namespaceNames, openView, paneNamespace, registry, resolveContext, resolveResource, tableView,
+  connOf, contextName, engine, ensureConnected, focusedPane, getCluster, paneContext, openView, paneNamespace, registry, resolveContext, resolveResource, tableView,
   type ActionId,
 } from "../../foundation";
 import type { PaneId } from "../../types";
@@ -59,7 +60,7 @@ export function commandEnv(): CompleteEnv {
     commands,
     isResource: (alias) => resolveResource(alias) !== undefined,
     resources: resourceNames(commands),
-    namespaces: namespaceNames(),
+    namespaces: knownNamespaceNames(),
     // aliases complete too: `:ctx pr` → `prod`
     contexts: [...cluster.contexts.map((c) => contextName(c.name)), ...cluster.contexts.map((c) => c.name)],
     favourites: fav.favorites.map((f) => f.name),
