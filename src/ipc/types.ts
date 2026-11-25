@@ -14,6 +14,7 @@ import type {
   DiffBackend,
   EventsBackend,
   FwdBackend,
+  GithubBackend,
   HealthBackend,
   LogsBackend,
   PackBackend,
@@ -341,4 +342,5 @@ export type Backend = BaseBackend &
   EventsBackend &
   HealthBackend &
   UpdateBackend &
-  CatalogBackend;
+  CatalogBackend &
+  GithubBackend;

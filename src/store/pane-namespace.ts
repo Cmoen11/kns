@@ -31,6 +31,8 @@ export function viewNamespace(v: ViewState | undefined, follow: (pane: PaneId) =
       return nsOf(v.ref);
     case "reach":
       return nsOf(v.from);
+    case "deploys":
+      return v.namespace || undefined;
     case "diff":
       return "ref" in v.left ? nsOf(v.left.ref) : nsOf(v.left.revision.owner);
     case "logs":

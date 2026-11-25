@@ -8,6 +8,7 @@ export * from "./diag";
 export * from "./diff";
 export * from "./events";
 export * from "./fwd";
+export * from "./github";
 export * from "./health";
 export * from "./logs";
 export * from "./pack";

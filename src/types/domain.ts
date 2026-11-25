@@ -153,7 +153,9 @@ export type TextSource =
   | { by: "pack"; refs: ObjectRef[] }
   | { by: "bundle"; id: string }
   | { by: "snippet"; runId: string }
-  | { by: "doc"; anchor: string };
+  | { by: "doc"; anchor: string }
+  /** commits and pull requests between two refs of a catalog repository (deploys view, src/catalog/deploys) */
+  | { by: "changes"; repo: string; base: string; head: string };
 export interface TextView {
   kind: "text";
   title: string;
@@ -169,13 +171,21 @@ export interface ReachView {
   to: ObjectRef;
   port?: number | string;
 }
+/** What each environment of a catalog system runs, from its ops repository (docs/catalog.md). */
+export interface DeploysView {
+  kind: "deploys";
+  /** the catalog system's name */
+  system: string;
+  /** its namespace: what the live versions are read from */
+  namespace: string;
+}
 export interface HubView {
   kind: "hub";
   tool?: ToolId;
 }
 
 export type FeatureViewState =
-  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView;
+  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView;
 
 export type ViewState = TableView | ContainersView | DocView | LogsView | ShellView | ToolView | FeatureViewState;
 export type ViewKind = ViewState["kind"];

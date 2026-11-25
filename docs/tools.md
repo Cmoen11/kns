@@ -178,6 +178,18 @@ What kns knows about Argo CD, at two levels. Most people who work in a workload 
 - **Not for:** rollbacks, sync windows, app diffs against Git; use the Argo CD UI or CLI.
 - **Example:** `:argo` in the mock's `default` context: `checkout` is Degraded, `orders` OutOfSync with auto-sync off (`W` says so, `Y` syncs it). In `staging` the Applications are not served, yet `d` on `deploy/web` in `shop` says `Managed By: Argo CD Application shop/web`.
 
+<a id="deploys"></a>
+### Deploys
+
+What each environment of a system runs, and what changed between them. Needs an [organisation catalog](catalog.md#deploys) whose system has an ops repository with an image-file template, and the GitHub CLI (`gh auth login`); kns reads GitHub through `gh` and holds no token.
+
+- **Open:** `:deploys` for the system of the focused pane's namespace, `:deploys <system or namespace>` for another.
+- **What it shows:** one group per app, one row per environment with the image tag from the ops repository. In the environment of the pane's context the row says what runs live (the catalog's version label on the deployment): `live`, `live 1.4.9 ≠ 1.5.0` (warning), or `not running here`. The production row says when it is behind: `test has 1.5.0`.
+- **Keys:** `Enter` opens the commits and pull requests between production's tag and that row's tag in the app repository (a text view; `c` copies it), `o` opens the compare on github.com, `r` reads the ops repository again, `/` filters.
+- **Safety:** read only; Rust reads only repositories of the loaded catalog and opens only their GitHub pages.
+- **Not for:** promoting a version (copying the test tag to prod as a pull request); not built yet.
+- **Example:** `:deploys` on namespace `shop` in the mock: `orders` runs 1.5.0 in test and 1.4.0 in prod, and Enter on its prod row lists the commits from v1.4.0 to v1.5.0; `web` runs 2.2.0 live where the ops repository says v2.3.0.
+
 <a id="crash"></a>
 ### Crash card
 

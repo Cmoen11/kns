@@ -13,8 +13,15 @@ use crate::ipc::{BackendError, Result};
 
 /// A login waits for a person in a browser.
 const LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
-/// A GUI app on macOS starts with `/usr/bin:/bin:...`: Homebrew's `aws` is not on it.
+/// A GUI app on macOS starts with `/usr/bin:/bin:...`: Homebrew's `aws` (and `gh`) is not on it.
 const EXTRA_PATH: &[&str] = &["/opt/homebrew/bin", "/usr/local/bin", "/usr/local/aws-cli"];
+
+/// `PATH` with the places Homebrew and the CLI installers use: what a CLI kns runs is looked up in.
+pub fn tool_path() -> std::ffi::OsString {
+    let mut path = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect::<Vec<_>>()).unwrap_or_default();
+    path.extend(EXTRA_PATH.iter().map(PathBuf::from));
+    std::env::join_paths(path).unwrap_or_default()
+}
 
 /// A profile name as the AWS CLI accepts it, and never an option (`-x`).
 fn valid_profile(p: &str) -> bool {
@@ -129,10 +136,8 @@ pub async fn login(context: &str) -> Result<()> {
     };
     let args = login_args(&profile, &config);
 
-    let mut path = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect::<Vec<_>>()).unwrap_or_default();
-    path.extend(EXTRA_PATH.iter().map(PathBuf::from));
     let mut cmd = Command::new("aws");
-    cmd.args(&args).env("PATH", std::env::join_paths(path).unwrap_or_default());
+    cmd.args(&args).env("PATH", tool_path());
     cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).kill_on_drop(true);
     #[cfg(windows)]
     cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW

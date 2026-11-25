@@ -61,8 +61,8 @@ export const MOCK_CATALOG: Catalog = {
     { name: "docs", title: "Docs site", description: "No namespace of its own", owner: "platform", environments: [], expectedSecrets: [], links: [], components: [] },
   ],
   clusters: [
-    { name: "eks-test", title: "eks-test", environment: "test", contextMatch: ["eks-test", "k3s-home"], protected: false, labels: { team: "tags.datadoghq.com/team", system: "tags.datadoghq.com/system" } },
-    { name: "eks-prod", title: "eks-prod", environment: "prod", contextMatch: ["eks-prod", "k3s-staging"], protected: true, labels: { team: "tags.datadoghq.com/team", system: "tags.datadoghq.com/system" } },
+    { name: "eks-test", title: "eks-test", environment: "test", contextMatch: ["eks-test", "k3s-home"], protected: false, labels: { team: "tags.datadoghq.com/team", system: "tags.datadoghq.com/system", version: "tags.datadoghq.com/version" } },
+    { name: "eks-prod", title: "eks-prod", environment: "prod", contextMatch: ["eks-prod", "k3s-staging"], protected: true, labels: { team: "tags.datadoghq.com/team", system: "tags.datadoghq.com/system", version: "tags.datadoghq.com/version" } },
   ],
   warnings: [],
 };

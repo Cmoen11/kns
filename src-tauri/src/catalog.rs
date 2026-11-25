@@ -345,15 +345,45 @@ pub fn link_set(c: &Catalog) -> std::collections::HashSet<String> {
     out
 }
 
+/// The GitHub repositories (`owner/repo`, lowercase) of the loaded catalog: the only ones
+/// `crate::github` reads, and whose pages `catalog_open` opens.
+static REPOS: std::sync::RwLock<Option<std::collections::HashSet<String>>> = std::sync::RwLock::new(None);
+
+/// Every repository of a catalog's components, lowercase (GitHub names are case-insensitive).
+pub fn repo_set(c: &Catalog) -> std::collections::HashSet<String> {
+    c.systems.iter().flat_map(|s| &s.components).filter_map(|comp| comp.repo.as_ref()).map(|r| r.to_lowercase()).collect()
+}
+
 fn remember_links(c: Option<&Catalog>) {
     if let Ok(mut l) = LINKS.write() {
         *l = c.map(link_set);
     }
+    if let Ok(mut r) = REPOS.write() {
+        *r = c.map(repo_set);
+    }
 }
 
-/// Whether the loaded catalog has this link.
+/// Whether the loaded catalog has this repository (`owner/repo`).
+pub fn knows_repo(repo: &str) -> bool {
+    REPOS.read().ok().and_then(|r| r.as_ref().map(|s| s.contains(&repo.to_lowercase()))).unwrap_or(false)
+}
+
+/// A page under `https://github.com/<repo>/` of a repository `known` accepts: a compare, a commit,
+/// a pull request. Only plain URL characters after the repository; no query tricks are needed.
+pub fn github_page_of(url: &str, known: impl Fn(&str) -> bool) -> bool {
+    let Some(rest) = url.strip_prefix("https://github.com/") else { return false };
+    let mut parts = rest.splitn(3, '/');
+    let (Some(owner), Some(name)) = (parts.next(), parts.next()) else { return false };
+    let tail = parts.next().unwrap_or("");
+    let safe = |s: &str| s.bytes().all(|b| b.is_ascii_alphanumeric() || b"-._~/".contains(&b));
+    // `a...b` (a compare) is fine; a `.` or `..` segment is not
+    let no_dot_segment = !tail.split('/').any(|seg| seg == "." || seg == "..");
+    url.len() <= 2000 && !owner.is_empty() && !name.is_empty() && safe(owner) && safe(name) && safe(tail) && no_dot_segment && known(&format!("{owner}/{name}"))
+}
+
+/// Whether the loaded catalog has this link, or it is a page of one of its repositories.
 pub fn knows_link(url: &str) -> bool {
-    LINKS.read().ok().and_then(|l| l.as_ref().map(|s| s.contains(url))).unwrap_or(false)
+    LINKS.read().ok().and_then(|l| l.as_ref().map(|s| s.contains(url))).unwrap_or(false) || github_page_of(url, knows_repo)
 }
 
 // ───────────────────────── the file ─────────────────────────
@@ -451,7 +481,8 @@ pub mod cmd {
         }
     }
 
-    /// Opens a link of the loaded catalog in the browser; any other URL is refused.
+    /// Opens a link of the loaded catalog, or a page of one of its GitHub repositories, in the
+    /// browser; any other URL is refused.
     #[tauri::command]
     pub async fn catalog_open(app: tauri::AppHandle, url: String) -> Result<()> {
         if !super::knows_link(&url) {
@@ -525,6 +556,24 @@ mod tests {
         c.systems[0].links.push(Link { url: "https://example.com/shop".into(), title: "Runbook".into() });
         f.add("catalogs", "Catalog[]", &vec![c, Catalog { source: "empty.yaml".into(), ..Default::default() }]);
         f.check();
+    }
+
+    #[test]
+    fn github_pages_of_catalog_repositories_only() {
+        let c = build(&docs(), "catalog.yaml");
+        let repos = repo_set(&c);
+        assert_eq!(repos, ["org/shop-api".to_string()].into_iter().collect());
+        let known = |r: &str| repos.contains(&r.to_lowercase());
+        assert!(github_page_of("https://github.com/org/shop-api/compare/v1.0.0...v1.1.0", known));
+        assert!(github_page_of("https://github.com/Org/Shop-Api/pull/12", known));
+        assert!(github_page_of("https://github.com/org/shop-api", known));
+        assert!(!github_page_of("https://github.com/org/other/compare/a...b", known));
+        assert!(!github_page_of("https://github.com.evil.example/org/shop-api", known));
+        assert!(!github_page_of("http://github.com/org/shop-api", known));
+        assert!(!github_page_of("https://github.com/org/shop-api/x?y=1", known));
+        assert!(!github_page_of("https://github.com/org/shop-api/../../evil/repo", known));
+        assert!(!github_page_of("https://github.com/org/shop-api/a b", known));
+        assert!(!github_page_of("https://github.com/org/shop-api/%2e%2e/x", known));
     }
 
     #[test]

@@ -11,6 +11,7 @@ import { diagTauri } from "./tauri/diag";
 import { diffTauri } from "./tauri/diff";
 import { eventsTauri } from "./tauri/events";
 import { fwdTauri } from "./tauri/fwd";
+import { githubTauri } from "./tauri/github";
 import { healthTauri } from "./tauri/health";
 import { logsTauri } from "./tauri/logs";
 import { packTauri } from "./tauri/pack";
@@ -96,5 +97,6 @@ export const tauriBackend: Backend = {
   ...eventsTauri,
   ...healthTauri,
   ...catalogTauri,
+  ...githubTauri,
   ...updateTauri,
 };

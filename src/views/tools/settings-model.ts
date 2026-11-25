@@ -3,7 +3,7 @@
 import { registry, type ActionDef } from "../../actions";
 import { engine, isRebindable, keymap, platform } from "../../keys";
 import { ZOOM_STEPS, contextFlags, setContextFlags, setSettings } from "../../store/settings";
-import type { Catalog, NameProxyStatus } from "../../ipc/types";
+import type { Catalog, GithubStatus, NameProxyStatus } from "../../ipc/types";
 import { scopeTeams, userOf } from "../../catalog/model";
 import { flash } from "../../store/status";
 import type { Mode, Settings } from "../../types";
@@ -107,6 +107,8 @@ export function buildSettingsRows(
   contexts: readonly string[],
   names: NameProxyStatus | null = null,
   catalog: { catalog: Catalog | null; error: string | null } = { catalog: null, error: null },
+  /** the GitHub CLI (`:deploys`); null = not asked yet */
+  github: GithubStatus | null = null,
 ): ListRow[] {
   const rows: ListRow[] = [
     { type: "group", key: "g:appearance", label: "Appearance" },
@@ -167,6 +169,11 @@ export function buildSettingsRows(
         type: "item", key: "catalog:teams", cells: ["Team scope", s.catalogTeams.length ? "chosen with :team; Enter goes back to your own" : "your teams; :team <team,...> to choose"],
         value: teams.join(", ") || "none",
         change: () => setSettings({ catalogTeams: [] }),
+      },
+      {
+        type: "item", key: "catalog:github", cells: ["GitHub", github?.loggedIn ? "through the gh CLI, for :deploys" : (github?.message ?? "the gh CLI, for :deploys")],
+        value: !github ? "…" : github.loggedIn ? (github.login ?? "logged in") : github.installed ? "not logged in" : "no gh",
+        change: () => flash(github?.loggedIn ? "kns reads GitHub through gh; it holds no token" : "install the GitHub CLI and run `gh auth login`"),
       },
       {
         type: "item", key: "catalog:forget", cells: ["Forget the catalog", "the file is left alone"], value: "",

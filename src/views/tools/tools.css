@@ -51,6 +51,11 @@
 
 /* home: name, then a narrow muted column */
 .tl[data-view="home"] .tl-cell + .tl-cell { flex: 0 1 auto; max-width: 50%; }
+/* deploys: environment, tag, then what is live */
+/* a row without a status glyph keeps the glyph's room, so the columns line up */
+.tl[data-view="deploys"] .tl-row.row > .tl-cell:first-child { margin-left: calc(var(--k-glyph) + var(--k-luft-2)); }
+.tl[data-view="deploys"] .tl-cell:first-of-type { flex: 0 0 8em; }
+.tl[data-view="deploys"] .tl-cell:nth-of-type(2) { flex: 0 1 14em; color: inherit; font-variant-numeric: tabular-nums; }
 /* messages: fixed time column, then the text */
 .tl[data-view="messages"] .tl-cell:first-of-type { flex: none; color: var(--k-text-muted); font-variant-numeric: tabular-nums; }
 .tl[data-view="messages"] .tl-cell + .tl-cell { color: inherit; }

@@ -5,6 +5,7 @@
 import type { Forward, ForwardQuery, ForwardTarget, FwdBackend, NameProxyStatus, ObjRef, ServiceInfo } from "../types";
 import { emitMock } from "./events";
 import { delay, fail, mockForwards, mockId } from "./shared";
+import { MOCK_LIVE_VERSIONS } from "./github";
 
 /** Services the mock knows in detail; anything else is a plain http service. */
 const SERVICES: Record<string, Omit<ServiceInfo, "ref">> = {
@@ -67,12 +68,20 @@ export interface MockObject {
   namespace: string;
   name: string;
   cells?: (string | number)[];
+  /** labels beside `app` */
+  labels?: Record<string, string>;
 }
 const extraObjects: Record<string, MockObject[]> = {
   services: Object.entries(SERVICES).map(([key, s]) => {
     const [namespace, name] = key.split("/");
     return { namespace, name, cells: [s.type, "10.43.9.9", "<none>", s.ports.map((p) => `${p.port}/${p.protocol}`).join(","), "12d"] };
   }),
+  // the shop's Argo CD apps (`<system>-<app>`, catalog appPrefix) with their version label (deploys view)
+  deployments: Object.entries(MOCK_LIVE_VERSIONS).map(([name, version]) => ({
+    namespace: "shop",
+    name,
+    labels: { "tags.datadoghq.com/system": "shop", "tags.datadoghq.com/service": name, "tags.datadoghq.com/version": version, "tags.datadoghq.com/env": "test" },
+  })),
 };
 
 /** Feature mocks add the objects their flows need (B-dev: deploy/orders). */

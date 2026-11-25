@@ -17,7 +17,7 @@ export interface ListPaneProps {
   pane: PaneId;
   focused: boolean;
   /** selects the column layout in tools.css */
-  name: "home" | "aliases" | "messages" | "settings";
+  name: "home" | "aliases" | "messages" | "settings" | "deploys";
   rows: readonly ListRow[];
   /** column labels (aliases) */
   head?: readonly string[];

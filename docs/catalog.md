@@ -14,6 +14,23 @@ Without a catalog nothing changes.
 - **Namespace rows say what they are.** The system's title and the owning team, a `TEAM` label on your team's namespaces, and a search that finds a namespace by system or team name.
 - **System section in the context sidebar** for the focused namespace: description, owning team with its links (chat channel, wiki), the system's repositories (Enter or `o` opens them), the Secrets the namespace is expected to have.
 - **Environments.** `:env prod` moves the focused pane to the context that is `prod` in the catalog, same view and namespace; it refuses when the system does not run there. A context the catalog calls production is protected once (Settings can turn that off; kns does not turn it on again).
+- **Deploys** (`:deploys`, needs the [GitHub CLI](https://cli.github.com)). For the system of the focused pane's namespace: what each environment of each app runs, read from the system's ops repository, beside the version the pane's context runs live. See [Deploys](#deploys).
+
+<a id="deploys"></a>
+## Deploys
+
+`:deploys` (or `:deploys <system or namespace>`) opens a list for a system whose ops repository (a `kns.dev/gitops` component) has a `kns.dev/gitops-image-file` template such as `{app}/eks-{env}/image.yaml`.
+
+- kns lists the files of the repository's default branch, keeps those that match the template (`{app}` and `{env}` are one path segment each) and reads `image.name` and `image.tag` from each.
+- One group per app, one row per environment (in the order of the catalog's clusters) with its tag. The group names the workload (`<kns.dev/gitops-app-prefix><app>`) and the app repository: the component the image is named after (the last segment of `image.name`, as a component or repository name), else the component behind the workload.
+- In the environment of the pane's context the row also says what runs: the value of the cluster's `kns.dev/version-label` on the deployment of that name in the system's namespace. `live` when it is the tag, `live 1.4.9 ≠ 1.5.0` (a warning) when it is not, `not running here` when there is no such deployment. `v1.2.0` and `1.2.0` are the same version.
+- The production row (the environment of a `kns.dev/protected` cluster, else one called `prod`) says when it is behind the newest environment: `test has 1.5.0`.
+- `Enter` opens **changes**: the commits and pull requests between production's tag and that row's tag (on the production row: the newest environment's tag) in the app repository. Each tag is tried as written and with or without a leading `v`. PR numbers come from `(#123)` and `Merge pull request #123` in the commit titles. `o` opens the same compare on github.com, `r` reads the ops repository again, `/` filters.
+- Read only. Promoting a version (a pull request against the ops repository) is not part of kns yet.
+
+### GitHub
+
+kns asks the GitHub CLI: `gh api --hostname github.com …`, with the login you made with `gh auth login`. kns never sees or stores a token. It finds `gh` on the `PATH` and in `/opt/homebrew/bin` and `/usr/local/bin` (a macOS app does not get the shell's `PATH`). Without `gh`, or without a login, the deploys view says so and nothing else changes.
 
 ## Commands and settings
 
@@ -26,6 +43,7 @@ Without a catalog nothing changes.
 | `:catalog show` | what is loaded |
 | `:team <team,...>` / `:team -` | scope to other teams / back to your own |
 | `:env <env>` | the focused pane in another environment |
+| `:deploys [system]` | what each environment of the system runs ([Deploys](#deploys)) |
 
 Settings > Catalog shows the file, you, the team scope and its errors.
 
@@ -89,6 +107,7 @@ metadata:
     kns.dev/protected: "true"
     kns.dev/team-label: tags.datadoghq.com/team
     kns.dev/system-label: tags.datadoghq.com/system
+    kns.dev/version-label: tags.datadoghq.com/version   # the version a workload runs (:deploys)
 spec: { type: kubernetes-cluster, owner: group:platform }
 ```
 
@@ -98,5 +117,6 @@ A component behind a workload is the one that lists it in `kns.dev/workloads`, e
 
 - The window never sends a path. Rust opens the file dialog, reads the file and keeps its path in `<config>/catalog-source.path`, which `save_state` cannot write.
 - Errors name the file and the line, never its contents.
-- Only `http(s)` links are kept, and Rust opens only links that are in the loaded catalog (and the GitHub page of its repositories).
+- Only `http(s)` links are kept, and Rust opens only links that are in the loaded catalog and pages under `https://github.com/<repo>/` of its repositories (a compare, a pull request), with plain URL characters and no `.`/`..` segments.
+- GitHub is read through `gh`, never with a token of kns's own. The window names a repository and refs, never a URL: Rust reads only repositories of the loaded catalog, and checks every repository name, ref and image-file template before it becomes an argument. Nothing is written to GitHub.
 - The catalog may list colleagues' email addresses. It stays on your machine; kns sends it nowhere.

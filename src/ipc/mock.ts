@@ -12,6 +12,7 @@ import { diagMock, mockPodStatus } from "./mock/diag";
 import { diffMock } from "./mock/diff";
 import { eventsMock } from "./mock/events";
 import { fwdMock, mockExtraObjects, mockRollout } from "./mock/fwd";
+import { githubMock } from "./mock/github";
 import { logsMock } from "./mock/logs";
 import { packMock } from "./mock/pack";
 import { updateMock } from "./mock/update";
@@ -247,7 +248,7 @@ function rowsFor(q: TableQuery): Row[] {
     // named objects the feature mocks describe in detail (svc/kafka, deploy/orders, ...)
     for (const x of mockExtraObjects(q.gvr.resource)) {
       const row = makeRow(q.gvr.resource, x.namespace, 0);
-      all.push({ ...row, uid: `${q.gvr.resource}-${x.namespace}-${x.name}`, name: x.name, labels: { app: x.name }, cells: [x.name, ...(x.cells ?? row.cells.slice(1))] });
+      all.push({ ...row, uid: `${q.gvr.resource}-${x.namespace}-${x.name}`, name: x.name, labels: { app: x.name, ...x.labels }, cells: [x.name, ...(x.cells ?? row.cells.slice(1))] });
     }
     tables.set(key, all);
   }
@@ -568,6 +569,7 @@ export const mockBackend: Backend = {
   ...eventsMock,
   ...updateMock,
   ...catalogMock,
+  ...githubMock,
 
   // namespace health: a first `syncing`, then the counts every 3s when they changed (the real
   // backend sends at most one per second, only on change)
