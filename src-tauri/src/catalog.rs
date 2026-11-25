@@ -406,7 +406,7 @@ pub async fn read(path: &Path) -> Result<Catalog> {
     }
     let bytes = tokio::fs::read(path).await.map_err(|e| BackendError::new(0, "Catalog", format!("{shown}: {e}")))?;
     let text = String::from_utf8(bytes).map_err(|_| BackendError::new(0, "Catalog", format!("{shown}: not UTF-8 text")))?;
-    let docs = crate::objects::from_yaml(text).await.map_err(|e| {
+    let docs = crate::objects::from_yaml_stream(text).await.map_err(|e| {
         // the parser's position, never the text around it
         let at = e.message.split_whitespace().skip_while(|w| *w != "line").take(2).collect::<Vec<_>>().join(" ");
         BackendError::new(0, "Catalog", format!("{shown}: not YAML{}", if at.is_empty() { String::new() } else { format!(" ({at})") }))
@@ -591,6 +591,12 @@ mod tests {
         tokio::fs::write(&good, "kind: Group\nmetadata: {name: t}\n---\nkind: Resource\nmetadata: {name: eks-test}\nspec: {type: kubernetes-cluster}\n").await.unwrap();
         let c = read(&good).await.unwrap();
         assert_eq!((c.teams.len(), c.clusters.len()), (1, 1));
+
+        // an organisation has more entities than the YAML parser's default 1024 documents
+        let big = dir.join("big.yaml");
+        let stream = (0..3000).map(|i| format!("kind: User\nmetadata: {{name: u{i}}}\nspec: {{profile: {{email: u{i}@example.com}}, memberOf: [t]}}\n")).collect::<Vec<_>>().join("---\n");
+        tokio::fs::write(&big, format!("kind: Group\nmetadata: {{name: t}}\n---\n{stream}")).await.unwrap();
+        assert_eq!(read(&big).await.unwrap().users.len(), 3000);
 
         let bad = dir.join("secret.yaml");
         tokio::fs::write(&bad, "password: hunter2\n  : [unbalanced\n").await.unwrap();

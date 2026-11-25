@@ -28,13 +28,26 @@ pub async fn to_yaml(value: Json) -> Result<String> {
 
 /// Parses a (multi-document) YAML stream; empty documents are dropped.
 pub async fn from_yaml(text: String) -> Result<Vec<Json>> {
-    on_big_stack(move || parse_yaml(&text)).await
+    on_big_stack(move || parse_yaml(&text, None)).await
 }
 
-fn parse_yaml(text: &str) -> Result<Vec<Json>> {
+/// A long stream of small documents (an organisation catalog has thousands): the parser's
+/// default budget stops at 1024 documents and 250 000 nodes.
+pub async fn from_yaml_stream(text: String) -> Result<Vec<Json>> {
+    let mut budget = serde_saphyr::budget::Budget::default();
+    budget.max_documents = 200_000;
+    budget.max_nodes = 5_000_000;
+    budget.max_events = 20_000_000;
+    on_big_stack(move || parse_yaml(&text, Some(budget))).await
+}
+
+fn parse_yaml(text: &str, budget: Option<serde_saphyr::budget::Budget>) -> Result<Vec<Json>> {
     // YAML 1.1 octals, as kubectl reads them: `defaultMode: 0644` is 420, not the float 644.0.
     let mut options = serde_saphyr::Options::default();
     options.legacy_octal_numbers = true;
+    if budget.is_some() {
+        options.budget = budget;
+    }
     let docs: Vec<Json> = serde_saphyr::from_multiple_with_options(text, options)
         .map_err(|e| BackendError::new(0, "InvalidYaml", e.to_string()))?;
     Ok(docs.into_iter().filter(|d| !d.is_null()).collect())
@@ -352,7 +365,7 @@ mod tests {
 
     #[test]
     fn yaml_octals_like_kubectl() {
-        let docs = parse_yaml("mode: 0644\nquoted: \"0644\"\nexec: 0755\nro: 0400\nplain: 420\nzero: 0\n").expect("yaml");
+        let docs = parse_yaml("mode: 0644\nquoted: \"0644\"\nexec: 0755\nro: 0400\nplain: 420\nzero: 0\n", None).expect("yaml");
         assert_eq!(docs, [json!({ "mode": 420, "quoted": "0644", "exec": 493, "ro": 256, "plain": 420, "zero": 0 })]);
     }
 
@@ -365,6 +378,6 @@ mod tests {
             "number": 420, "real": 1.5,
         });
         let yaml = serde_saphyr::to_string(&object).expect("emit");
-        assert_eq!(parse_yaml(&yaml).expect("parse"), [object], "{yaml}");
+        assert_eq!(parse_yaml(&yaml, None).expect("parse"), [object], "{yaml}");
     }
 }
