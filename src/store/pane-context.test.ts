@@ -30,6 +30,8 @@ const WINDOW_READERS: Record<string, string> = {
   "panes/scope-sync.ts": "re-syncs scopes when any discovery changes",
   "shell/BottomRow.tsx": "the window's connection health",
   "agents/publish.ts": "re-publishes when a connection changes",
+  "table/warm.ts": "re-derives the warm tabs' table queries when discovery changes",
+  "shell/ContextTabs.tsx": "the tab strip: the window's context is the active tab",
 };
 
 const PATTERNS: RegExp[] = [

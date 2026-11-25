@@ -2,7 +2,7 @@
 // guard, TERM scope sync and the lifetime rule. The terminals themselves live in ./sessions (lazy).
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
-import { getWorkspace, setPaneScope, type LiveSession } from "../../foundation";
+import { getWorkspace, openWorkspaces, setPaneScope, type LiveSession } from "../../foundation";
 // subscribe-only: the foundation exports no "workspace changed" hook outside React
 import { layoutStore } from "../../store/layout";
 import type { PaneId, ViewState } from "../../types";
@@ -151,15 +151,17 @@ function syncScopes(): void {
 }
 
 /**
- * The whole lifetime model (§4.6): a session whose id no pane history holds any more is disposed
- * (pane closed, history truncated, context switched); a live session that is no longer its pane's
- * current entry is ended and keeps its scrollback.
+ * The whole lifetime model (§4.6): a session whose id no pane history of an open tab holds any
+ * more is disposed (pane closed, history truncated, tab closed); a live session that is no longer
+ * its pane's current entry is ended and keeps its scrollback. A shell in a warm tab (§8.2) is
+ * still its pane's current entry, so it keeps running while another tab is on screen.
  */
 function reconcile(): void {
   const sessions = store.getState().sessions;
   const ids = Object.keys(sessions);
   if (ids.length === 0 && liveScoped.size === 0) return;
-  const refs = sessionRefs(getWorkspace());
+  const panes = Object.assign({}, ...openWorkspaces().map((w) => w.panes));
+  const refs = sessionRefs({ panes });
   for (const id of ids) {
     if (!refs.all.has(id)) {
       runtime?.dispose(id);

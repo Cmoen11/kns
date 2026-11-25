@@ -4,7 +4,7 @@
 import { LAYERS } from "../actions";
 import {
   focusedContext, flash, getCluster, openPaneInContext, setPaneContext, focusedPane, isOverlayOpen, paneOrder, paneView, registerActions, resourceFor, setNamespace,
-  setNamespaceAllPanes, switchContext, type ActionContext,
+  setNamespaceAllPanes, switchContext, closeTab, stepTab, openTabs, type ActionContext,
 } from "../foundation";
 import { contextFlags } from "../store/settings";
 import { takeMenuRequest } from "../ui";
@@ -76,6 +76,17 @@ registerActions({
     if (name === undefined) return open("palette.picker", LAYERS.pickerContext, { kind: "ctx", pane: false });
     dismiss();
     if (!(await switchContext(name)) && focusedContext() !== name) flash(`no context "${name}"`, "warn");
+  },
+  // context tabs (§8.2): every switch opens or goes to a tab; the tab left behind stays warm
+  "tab.next": { enabled: () => openTabs().length > 1 || "only one tab is open", run: () => void stepTab(1) },
+  "tab.previous": { enabled: () => openTabs().length > 1 || "only one tab is open", run: () => void stepTab(-1) },
+  "tab.close": {
+    enabled: () => openTabs().length > 1 || "the last tab stays open",
+    run: async (ctx) => {
+      const name = ctx.args[0];
+      if (name !== undefined && !openTabs().includes(name)) return flash(`no tab "${name}"`, "warn");
+      await closeTab(name);
+    },
   },
   // §8.3: the focused pane only; `:pane ctx staging` restarts the pane there
   "context.pickPane": {

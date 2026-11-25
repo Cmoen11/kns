@@ -133,7 +133,7 @@ Legend: `===` focused pane, `|` at row start is the cursor bar, `#` square and `
 - **Windows:** native caption buttons and Win11 snap layouts, 138px reserved on the right. Tauri's overlay style is macOS-only, so the route is a plugin or native hit-testing [verify].
 - **Windows fallback:** if neither works, the standard OS title bar is used and the 32px row stays where it is as an ordinary app bar with no drag region and no reserved 138px. Nothing moves into the bottom row. The cost is the OS title bar height (about 31px), which is two table rows.
 - Everything non-interactive is a drag region. Padding-inline 8, group gap 12, item gap 6.
-- Left: context name (UI S 12px), then `cluster / user` and server version (UI type, muted). Opens the context picker. `cluster / user` hides under 1280 wide; it is always in the context picker and the `home` view.
+- Left: context tabs (§8.2), or the context name when one tab is open (UI S 12px), then `cluster / user` and server version (UI type, muted). Opens the context picker. `cluster / user` hides under 1280 wide; it is always in the context picker and the `home` view.
 - Centre: palette trigger, a key chip plus the text "Search or run". It is not an input field.
 - Right: `READ ONLY` and `PROTECTED` labels (label style), then the active layout name with `edited` when it has diverged.
 - No favourites strip, no logo. The app name appears only in the OS window title.
@@ -547,6 +547,7 @@ Consequences: close is leader `x`, palette is `Ctrl+Shift+P` or leader `p`, name
 | `⌥↑/↓` (macOS) | Editor | Move line (pane focus is `⌥⌘arrows`) |
 | `Ctrl+Shift+↑/↓` / `⌃⌥↑/↓` | Editor | Add cursor above / below. Not `⌃⇧↑/↓` on macOS (Mission Control) and not `Ctrl+Alt+arrows` on Windows (AltGr pair) |
 | `Ctrl/⌘+Shift+K` | App | Context picker. Delete line is unbound |
+| `Ctrl+Tab`, `Ctrl+Shift+Tab` | App | Next / previous context tab (§8.2); in TERM they go to the shell, `leader Tab` works there |
 | `Ctrl/⌘+Shift+L` | App | Save layout. Select all matches is unbound |
 | `Ctrl/⌘+S` | App | Review |
 | `Ctrl/⌘+W`, `Ctrl/⌘+K`, `Ctrl/⌘+N`, leader, `F6` | App | As global |
@@ -958,7 +959,14 @@ All WebView2 rows depend on `AreBrowserAcceleratorKeysEnabled = false` (§18.24)
 
 - The window has a context: it decides which saved workspace is on screen and is the context of every pane that does not have its own (§8.3).
 - `Ctrl/⌘+Shift+K` opens the picker; `:ctx x` switches directly. Rows show name, cluster, user, connection state and the `PROTECTED` and `READ ONLY` labels. In the picker `Ctrl/⌘+Enter` / `Alt+Enter` do not switch the window: they open the focused pane's view beside it, in that context (§8.3).
-- A switch swaps the whole workspace to that context's saved one in the same frame; tables show `syncing`. The workspace left behind keeps its shells (§4.6).
+- **Tabs.** Every switch opens the context as a tab in the titlebar (after the active one) or goes to its tab. The active tab is the window's context. With one tab the titlebar shows the plain context switcher.
+  - A switch swaps the whole workspace to that context's saved one in the same frame. The workspace remembers where you were: panes, views, history, namespaces and each pane's cursor row.
+  - A tab that is not on screen stays **warm**: its contexts stay connected, the tables of its panes keep their watch (switching back paints current rows, no `syncing`), its shells keep running and its panes keep their marks. Other views (logs, describe) re-read when the tab is on screen again.
+  - At most six tabs are open. Opening a seventh closes the least recently used one, preferring a tab whose shells would not end; when its shells would end, a dialog lists them first.
+  - `Ctrl+Tab` / `Ctrl+Shift+Tab` go to the next / previous tab in strip order (`:tab next`, `:tab prev`); `leader Tab` / `leader Shift+Tab` do the same and also work in a shell, where `Ctrl+Tab` belongs to the shell (§5.3). `Ctrl+F4` / `⌃⌘W` / `leader X` closes the active tab (`:tab close [name]`), as do a tab's close button and a middle click. The last tab stays open.
+  - Closing a tab ends its connection, watches and shells (a dialog lists the shells first) and goes to the most recently used other tab. Its workspace stays saved: opening the context again lands where it was.
+  - A protected context's tab shows the warn glyph and the protected line, so prod is never a quiet tab. A read-only one shows `RO`.
+  - The open tabs are saved with the workspaces and restored on start; the warm tabs connect at once.
 - With the single `default` context the picker still works and shows connection state.
 - **Protected context.** Set with `:protect on`, `Ctrl/⌘+T` in the picker, or the Contexts section of settings. Stored in `Settings.contexts`.
   - Signal: the `PROTECTED` label with the warn glyph in the titlebar, and a 2px `--k-text` line under the titlebar. The line uses a theme token, not the warn hue.
@@ -1549,6 +1557,7 @@ There is none. The reference says animation is "ikke bestemt ennå", so the simp
 29. **Zoom is webview zoom.** If you would rather have no zoom at all, it is one setting to remove.
 30. **Row option is 20 or 28.**
 33. **Parked workspaces keep shells alive**, up to four workspaces and eight shells. That costs memory against the "low memory" goal; the caps are the mitigation.
+    Warm context tabs (§8.2) cost the same way: every open tab keeps its connections, the table watches of its panes and its shells, against memory and API-server load. The caps are six tabs and the eight-shell limit of §4.6.
 34. **AltGr and the right Alt key.** Only the left Alt triggers `Alt+…` chords on a Norwegian layout. `getModifierState('AltGraph')` in WebView2 is [verify]; the exact-modifier rule is the backstop.
 35. **macOS Option is not Meta in shells.** Needed for `[ ] { } | \ @ $`. `Esc` is the Meta prefix.
 36. **Terminal copy mode, MOVE mode and the three-way rebase** are new designs with no k9s precedent. They exist so nothing needs the mouse.

@@ -63,6 +63,10 @@ function rows() {
     a("update.command", "global", "", "check for updates", { command: "update", menu: "Help/Check for Updates" }),
     a("menu.open", "global", "Shift+F10 | Menu", "menu", { mac: "Shift+F10" }),
     a("context.pick", "global", "Mod+Shift+K", "context", { opens: "dialog", command: "ctx" }),
+    // Ctrl+Tab goes to the shell in TERM (§5.3); the leader forms work everywhere
+    a("tab.next", "global", "Ctrl+Tab | leader Tab", "next context tab", { command: "tab next" }),
+    a("tab.previous", "global", "Ctrl+Shift+Tab | leader Shift+Tab", "previous context tab", { command: "tab prev" }),
+    a("tab.close", "global", "Ctrl+F4 | leader X", "close context tab", { mac: "Ctrl+Cmd+W | leader X", command: "tab close" }),
     a("context.pickPane", "global", "leader C", "context, this pane", { opens: "dialog", command: "pane ctx" }),
     a("context.protect", "global", "", "protect context", { command: "protect", opens: "dialog" }),
     a("namespace.pick", "global", "Mod+N | leader n", "namespace", { opens: "dialog", command: "ns" }),

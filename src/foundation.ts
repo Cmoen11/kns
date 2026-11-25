@@ -9,6 +9,7 @@ export {
   focusedPane, useFocusedPane, paneView, usePaneView, paneState, paneOrder, paneIndex,
   getWorkspace, useWorkspace, setWorkspace,
   focusPane, splitPane, closePane, closeOtherPanes, reopenPane, toggleZoom, toggleFollow, liveSessions,
+  openWorkspaces, openTabs, useTabs, allLiveSessions,
   paneContext, focusedContext, openInContext, openPaneInContext, usePaneContext, focusedIsForeign, setPaneContext, useMixedContexts, workspaceContexts,
   type OpenOptions,
 } from "./store/layout";
@@ -30,7 +31,7 @@ export {
 
 // cluster
 export {
-  useCluster, getCluster, windowContext, switchContext, reconnect, refreshContexts, connOf, useConn, ensureConnected,
+  useCluster, getCluster, windowContext, switchContext, closeTab, stepTab, reconnect, refreshContexts, connOf, useConn, ensureConnected,
   resolveResource, resourceFor, kindOf, useResource, useDiscovery, useNamespaces, namespaceNames,
   type ClusterState, type ContextConn,
 } from "./store/cluster";
