@@ -134,6 +134,10 @@ export const KUBECTL_TEMPLATES: Readonly<Record<string, Template>> = {
   "flux.reconcile": (t, x) => ["annotate", "--overwrite", ...obj(t), `reconcile.fluxcd.io/requestedAt=${x.now ?? new Date().toISOString()}`],
   "flux.reconcileWithSource": (t, x) => ["annotate", "--overwrite", ...obj(t), `reconcile.fluxcd.io/requestedAt=${x.now ?? new Date().toISOString()}`],
   "flux.suspendResume": (t, x) => ["patch", ...obj(t), "--type=merge", "-p", suspendJson(x.suspend ?? true)],
+  "argo.refresh": (t) =>
+    ["annotate", "--overwrite", ...obj(t), t.gvr.resource === "applicationsets" ? "argocd.argoproj.io/application-set-refresh=true" : "argocd.argoproj.io/refresh=normal"],
+  "argo.hardRefresh": (t) => ["annotate", "--overwrite", ...obj(t), "argocd.argoproj.io/refresh=hard"],
+  "argo.sync": (t) => ["patch", ...obj(t), "--type=merge", "-p", '{"operation":{"initiatedBy":{"username":"kns"},"sync":{"prune":false}}}'],
   "node.cordon": (t) => ["cordon", t.name],
   "node.uncordon": (t) => ["uncordon", t.name],
   "pod.debug": (t, x) =>

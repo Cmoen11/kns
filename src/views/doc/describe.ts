@@ -2,6 +2,7 @@
 // (docs/ux.md §13.1). Pure: `now` is passed in so ages are deterministic.
 import { stringify } from "yaml";
 import type { EventRow, Json } from "../../ipc/types";
+import { argoOwner, argoOwnerText } from "../../actions/ops/argo";
 import { isObj, type JsonObject } from "./yaml-helpers";
 
 const obj = (v: Json | undefined): JsonObject => (isObj(v) ? v : {});
@@ -77,6 +78,46 @@ function selectorText(sel: Json | undefined): string {
   return parts.length ? parts.join(",") : "<none>";
 }
 
+/** `Flux Kustomization flux-system/apps` or `Argo CD Application shop/web`, from what the controller stamped on the object. */
+function managedBy(root: JsonObject): string | null {
+  const labels = obj(obj(root.metadata).labels);
+  for (const [prefix, kind] of [["kustomize.toolkit.fluxcd.io", "Kustomization"], ["helm.toolkit.fluxcd.io", "HelmRelease"]] as const) {
+    const name = str(labels[`${prefix}/name`]);
+    if (name) return `Flux ${kind} ${has(labels[`${prefix}/namespace`]) ? `${str(labels[`${prefix}/namespace`])}/` : ""}${name}`;
+  }
+  const argo = argoOwner(root);
+  return argo ? `Argo CD ${argoOwnerText(argo)}` : null;
+}
+
+/** An Argo CD Application: what it deploys from where to where, and how it stands. */
+function argoApp(o: Out, root: JsonObject): void {
+  const spec = obj(root.spec);
+  const status = obj(root.status);
+  const sources = [obj(spec.source), ...arr(spec.sources).map(obj)].filter((s) => has(s.repoURL));
+  const st = [str(obj(status.sync).status), str(obj(status.health).status)].filter(Boolean).join(" · ");
+  if (st) o.kv("Status", st);
+  if (has(obj(status.sync).revision)) o.kv("Revision", str(obj(status.sync).revision));
+  if (has(spec.project)) o.kv("Project", str(spec.project));
+  for (const s of sources) {
+    const where = [str(s.path), str(s.chart) && `chart ${str(s.chart)}`].filter(Boolean).join(" ");
+    o.kv("Source", clip(`${str(s.repoURL)}${where ? ` ${where}` : ""}${has(s.targetRevision) ? ` @ ${str(s.targetRevision)}` : ""}`));
+  }
+  const dest = obj(spec.destination);
+  if (has(dest.server) || has(dest.name)) o.kv("Destination", `${str(dest.name) || str(dest.server)}${has(dest.namespace) ? ` / ${str(dest.namespace)}` : ""}`);
+  const automated = obj(obj(spec.syncPolicy).automated);
+  o.kv("Auto-sync", isObj(obj(spec.syncPolicy).automated) ? [automated.selfHeal === true ? "self-heal" : "", automated.prune === true ? "prune" : ""].filter(Boolean).join(", ") || "on" : "off");
+  const op = obj(status.operationState);
+  if (has(op.phase)) o.kv("Last Sync", `${str(op.phase)}${has(op.message) ? `: ${clip(str(op.message))}` : ""}`);
+  const rows = arr(status.resources)
+    .map(obj)
+    .filter((r) => str(r.status) === "OutOfSync" || !["", "Healthy"].includes(str(obj(r.health).status)))
+    .map((r) => [str(r.kind), has(r.namespace) ? `${str(r.namespace)}/${str(r.name)}` : str(r.name), str(r.status), str(obj(r.health).status) || "-", clip(str(obj(r.health).message))]);
+  if (rows.length) {
+    o.head("Resources Not Synced Or Healthy");
+    o.table(["KIND", "NAME", "SYNC", "HEALTH", "MESSAGE"], rows);
+  }
+}
+
 function metadata(o: Out, root: JsonObject, now: number): void {
   const meta = obj(root.metadata);
   o.kv("Name", str(meta.name));
@@ -88,6 +129,8 @@ function metadata(o: Out, root: JsonObject, now: number): void {
   o.kv("Annotations", pairs(meta.annotations));
   const owners = arr(meta.ownerReferences).map((r) => `${str(obj(r).kind)}/${str(obj(r).name)}`);
   if (owners.length) o.kv("Controlled By", owners);
+  const gitops = managedBy(root);
+  if (gitops) o.kv("Managed By", gitops);
   if (arr(meta.finalizers).length) o.kv("Finalizers", arr(meta.finalizers).map((f) => str(f)));
 }
 
@@ -317,6 +360,7 @@ function dataKeys(o: Out, root: JsonObject, secret: boolean): void {
 
 /** CRDs and every kind without its own section: Flux summary, conditions, then spec and status. */
 function generic(o: Out, root: JsonObject, now: number): void {
+  if (str(root.apiVersion).startsWith("argoproj.io/") && str(root.kind) === "Application") argoApp(o, root);
   const spec = obj(root.spec);
   const status = obj(root.status);
   const ready = obj(arr(status.conditions).find((c) => obj(c).type === "Ready"));

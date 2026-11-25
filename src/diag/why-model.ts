@@ -15,6 +15,8 @@ const WHY_KINDS: readonly (readonly [string, string])[] = [
   ["networking.k8s.io", "ingresses"],
   ["batch", "jobs"],
   ["batch", "cronjobs"],
+  ["argoproj.io", "applications"],
+  ["argoproj.io", "applicationsets"],
 ];
 
 /** Every `*.toolkit.fluxcd.io` kind (Kustomization, HelmRelease, sources): `target_of` matches the suffix. */
@@ -23,7 +25,7 @@ const FLUX_SUFFIX = ".toolkit.fluxcd.io";
 export const canWhy = (gvr: Gvr | undefined): boolean =>
   !!gvr && (gvr.group.endsWith(FLUX_SUFFIX) || WHY_KINDS.some(([g, r]) => gvr.group === g && gvr.resource === r));
 
-export const WHY_SCOPE_REASON = "why knows pods, workloads, Services, Ingresses, Jobs, CronJobs and Flux objects";
+export const WHY_SCOPE_REASON = "why knows pods, workloads, Services, Ingresses, Jobs, CronJobs, Flux objects and Argo CD Applications";
 
 export type WhyRow =
   | { type: "finding"; key: string; finding: number; data: Finding }
@@ -38,7 +40,7 @@ export function nextSteps(ref: ObjRef): { label: string; view: ViewState }[] {
   const r = toView(ref);
   const what = refLabel(ref);
   const out: { label: string; view: ViewState }[] = [{ label: `describe ${what}`, view: doc(r, "describe") }];
-  const logless = ref.gvr.resource === "services" || ref.gvr.resource === "ingresses" || ref.gvr.resource === "cronjobs" || ref.gvr.group.endsWith(FLUX_SUFFIX);
+  const logless = ref.gvr.resource === "services" || ref.gvr.resource === "ingresses" || ref.gvr.resource === "cronjobs" || ref.gvr.group.endsWith(FLUX_SUFFIX) || ref.gvr.group === "argoproj.io";
   if (!logless) {
     out.push({
       label: `logs of ${what}`,

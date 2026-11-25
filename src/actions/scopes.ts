@@ -15,7 +15,7 @@ export const SCOPES = [
   // resource kinds and capabilities of the cursor row's kind
   "k.namespaces", "k.pods", "k.deployments", "k.replicasets", "k.cronjobs", "k.nodes", "k.secrets",
   "can.logs", "can.shell", "can.scale", "can.restart", "can.setImage", "can.forward", "can.usedBy", "can.env",
-  "flux", "flux.managed",
+  "flux", "flux.managed", "argo", "argo.app",
   // feature view kinds (docs/plan-features.md §2.7, §2.8)
   "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text",
   // modes that replace NORMAL in a pane
@@ -114,6 +114,8 @@ export interface TableKind {
   flux?: boolean;
   /** the cursor row is managed by Flux */
   fluxManaged?: boolean;
+  /** an Argo CD kind (applications, applicationsets) */
+  argo?: boolean;
 }
 
 const WORKLOADS = new Set(["deployments", "statefulsets", "daemonsets"]);
@@ -141,6 +143,8 @@ export function tableScopes(k: TableKind): ScopeId[] {
   if (ENV.has(r)) out.push("can.env");
   if (k.flux) out.push("flux");
   if (k.fluxManaged) out.push("flux.managed");
+  if (k.argo && r === "applications") out.push("argo.app");
+  if (k.argo) out.push("argo");
   if (k.namespaced) out.push("table.namespaced");
   if (k.namespaced && k.allNamespaces) out.push("table.allns");
   // h and l scroll as a pair, only on kinds with no logs action (§5.4)
@@ -260,6 +264,8 @@ export function knownSegments(): ScopeId[][] {
     { resource: "customresourcedefinitions", namespaced: false },
     { resource: "kustomizations", namespaced: true, flux: true, allNamespaces: true },
     { resource: "helmreleases", namespaced: true, flux: true, fluxManaged: true },
+    { resource: "applications", namespaced: true, argo: true, allNamespaces: true },
+    { resource: "applicationsets", namespaced: true, argo: true },
     { resource: "widgets", namespaced: true, scalable: true },
   );
   for (const table of kinds) base(tableScopes(table));

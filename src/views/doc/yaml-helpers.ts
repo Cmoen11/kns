@@ -2,6 +2,7 @@
 // detection and the secret document. Pure; no CodeMirror, no backend.
 import { LineCounter, isMap, isScalar, isSeq, parseDocument, stringify, type Node } from "yaml";
 import type { BackendError, Json } from "../../ipc/types";
+import { argoOwner, argoOwnerText } from "../../actions/ops/argo";
 
 export type JsonObject = { [k: string]: Json };
 export const isObj = (v: Json | undefined): v is JsonObject => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -132,6 +133,19 @@ export function fluxOwner(text: string): FluxOwner | null {
     if (typeof name === "string" && typeof namespace === "string") return { resource, name, namespace };
   }
   return null;
+}
+
+/**
+ * The Argo CD Application that applied this manifest (`Application ns/app`), from its tracking
+ * annotation or instance label; null when there is none or the text does not parse.
+ */
+export function argoOwnerOfText(text: string): string | null {
+  try {
+    const owner = argoOwner(parseDocument(text).toJS());
+    return owner ? argoOwnerText(owner) : null;
+  } catch {
+    return null;
+  }
 }
 
 // ── secrets ────────────────────────────────────────────────────────────────

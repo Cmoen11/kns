@@ -62,6 +62,7 @@ function ReviewLines({ pane }: { pane: PaneId }) {
   const warnings = useDocUi(pane, (s) => s.review?.warnings);
   const conflict = useDocUi(pane, (s) => s.review?.conflict ?? null);
   const flux = useDocUi(pane, (s) => s.review?.flux ?? null);
+  const argo = useDocUi(pane, (s) => s.review?.argo ?? null);
   const applying = useDocUi(pane, (s) => s.review?.applying ?? false);
   return (
     <div className="doc-lines t-ui" role="status">
@@ -110,6 +111,14 @@ function ReviewLines({ pane }: { pane: PaneId }) {
             Managed by Flux ({flux.resource === "kustomizations" ? "Kustomization" : "HelmRelease"} {flux.namespace}/{flux.name}): this change will be reverted
           </span>
           <span className="doc-line-hint"><ActionHint action="review.suspendFlux" label="suspend it first" /></span>
+        </div>
+      )}
+      {argo && (
+        <div className="doc-line" data-state="warn">
+          <Glyph state="warn" />
+          <span className="doc-line-text">
+            Managed by Argo CD ({argo}): the app shows OutOfSync, and its next sync (at once with self-heal) reverts this change. Change it in Git to keep it.
+          </span>
         </div>
       )}
       {/* the two ways out of REVIEW, always on screen (the header toolbar is revealed on hover) */}

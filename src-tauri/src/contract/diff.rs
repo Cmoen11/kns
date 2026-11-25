@@ -7,6 +7,7 @@ use crate::ipc::{Json, ObjRef};
 #[serde(rename_all = "camelCase")]
 pub enum ManagerClass {
     Flux,
+    Argo,
     Kns,
     Kubectl,
     Controller,
@@ -60,7 +61,7 @@ mod tests {
         f.add(
             "fieldOwners",
             "FieldOwner[]",
-            &[ManagerClass::Flux, ManagerClass::Kns, ManagerClass::Kubectl, ManagerClass::Controller, ManagerClass::Other]
+            &[ManagerClass::Flux, ManagerClass::Argo, ManagerClass::Kns, ManagerClass::Kubectl, ManagerClass::Controller, ManagerClass::Other]
                 .into_iter()
                 .map(|manager_class| FieldOwner {
                     path: "/spec/replicas".into(),

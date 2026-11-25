@@ -14,8 +14,8 @@ use crate::{
 
 // ───────────────────────── managers ─────────────────────────
 
-/// Which kind of writer a field manager is. Flux is tested before the generic controller match
-/// (`kustomize-controller` is both).
+/// Which kind of writer a field manager is. Flux and Argo CD are tested before the generic
+/// controller match (`kustomize-controller` and `argocd-application-controller` are both).
 pub fn classify(manager: &str) -> ManagerClass {
     let m = manager.to_ascii_lowercase();
     if m.starts_with("kustomize-controller")
@@ -26,6 +26,8 @@ pub fn classify(manager: &str) -> ManagerClass {
         || m.starts_with("flux-")
     {
         ManagerClass::Flux
+    } else if crate::argo::is_argo_manager(&m) {
+        ManagerClass::Argo
     } else if m == "kns" || m.starts_with("kns-") {
         ManagerClass::Kns
     } else if m.starts_with("kubectl") {
@@ -332,6 +334,8 @@ mod tests {
             ("kustomize-controller", ManagerClass::Flux),
             ("helm-controller", ManagerClass::Flux),
             ("gotk-sync", ManagerClass::Flux),
+            ("argocd-controller", ManagerClass::Argo),
+            ("argocd-application-controller", ManagerClass::Argo),
             ("kns", ManagerClass::Kns),
             ("kubectl", ManagerClass::Kubectl),
             ("kubectl-client-side-apply", ManagerClass::Kubectl),

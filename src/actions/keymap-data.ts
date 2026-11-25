@@ -264,6 +264,10 @@ function rows() {
     a("flux.reconcileWithSource", "flux", "Mod+Shift+R", "reconcile with source", { write: true, command: "reconcile source" }),
     a("flux.trace", "flux.managed", "Q", "trace", { tier: "P1" }),
 
+    (g("Argo CD"), a("argo.refresh", "argo", "R", "refresh", { write: true, hint: 10, command: "refresh" })),
+    a("argo.sync", "argo.app", "Y", "sync", { write: true, hint: 11, command: "sync" }),
+    a("argo.hardRefresh", "argo.app", "Mod+Shift+R", "hard refresh", { write: true, command: "refresh hard" }),
+
     (g("Logs"), a("logs.autoscroll", "logs", "s", "autoscroll", { hint: 10 })),
     a("logs.wrap", "logs", "w", "wrap", { hint: 11 }),
     a("logs.timestamps", "logs", "t", "timestamps", { hint: 12 }),

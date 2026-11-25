@@ -13,6 +13,14 @@ export const fieldOwners = [
   },
   {
     "manager": "kubectl-scale",
+    "managerClass": "argo",
+    "operation": "Update",
+    "path": "/spec/replicas",
+    "subresource": "scale",
+    "time": "2026-11-22T10:00:00Z"
+  },
+  {
+    "manager": "kubectl-scale",
     "managerClass": "kns",
     "operation": "Update",
     "path": "/spec/replicas",

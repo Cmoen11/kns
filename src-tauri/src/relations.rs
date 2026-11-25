@@ -3,7 +3,8 @@
 //! `relations(ref)` returns one tree rooted at the object:
 //! - **owner**: the controller chain upward (pod → ReplicaSet → Deployment), then the Flux object
 //!   that applied the top one (`kustomize.toolkit.fluxcd.io/*`, `helm.toolkit.fluxcd.io/*` labels)
-//!   and its source. Each owner is the child of the one below it.
+//!   and its source, or the Argo CD Application that applied it (`argo::argo_owner`: tracking
+//!   annotation or instance label). Each owner is the child of the one below it.
 //! - **owned**: what it controls (Deployment → ReplicaSets → pods, CronJob → Jobs → pods).
 //! - **traffic**: Services that select its pods and the Ingresses in front of them; for a Service its
 //!   pods and Ingresses; for an Ingress its backend Services and their pods.
@@ -236,6 +237,7 @@ pub fn status_of(kind: &str, o: &Json) -> Option<String> {
             let hosts: Vec<&str> = arr(&o["spec"]["rules"]).iter().filter_map(|r| r["host"].as_str()).take(2).collect();
             (!hosts.is_empty()).then(|| hosts.join(", "))
         }
+        "Application" => app_status(o),
         _ => match cond("Ready").as_deref() {
             Some("True") => Some(if o["spec"]["suspend"].as_bool() == Some(true) { "Ready · suspended".into() } else { "Ready".into() }),
             Some("False") => Some("not Ready".into()),
@@ -243,6 +245,13 @@ pub fn status_of(kind: &str, o: &Json) -> Option<String> {
             None => None,
         },
     }
+}
+
+/// `Synced · Healthy` from an Argo CD Application's status.
+pub fn app_status(o: &Json) -> Option<String> {
+    let (sync, health) = (s(&o["status"]["sync"]["status"]), s(&o["status"]["health"]["status"]));
+    let parts: Vec<&str> = [sync, health].into_iter().filter(|x| !x.is_empty()).collect();
+    (!parts.is_empty()).then(|| parts.join(" · "))
 }
 
 // ───────────────────────── tree building ─────────────────────────
@@ -386,6 +395,22 @@ impl Ctx<'_> {
                 }
             }
             return Some(node);
+        }
+        // Argo CD applied it. The Application is often in a cluster (or a namespace) this user
+        // cannot read, so the node comes from the object's own tracking data either way.
+        if let Some(owner) = crate::argo::argo_owner(o) {
+            let served = self.gvr_of_kind(None, crate::argo::GROUP, "Application").await;
+            let gvr = served.clone().unwrap_or_else(|| Gvr::new(crate::argo::GROUP, "v1alpha1", "applications"));
+            let aref = child_ref(self.base, gvr.clone(), owner.namespace.as_deref(), &owner.app);
+            let status = match (&served, &owner.namespace) {
+                (None, _) => Some("Argo CD (Applications are not served in this cluster)".into()),
+                (Some(_), None) => Some("Argo CD (the object does not record the namespace)".into()),
+                (Some(_), Some(ns)) => match self.session.get(&api_path(&gvr, Some(ns), Some(&owner.app))).await {
+                    Ok(v) => status_of("Application", &v).or_else(|| Some("Argo CD".into())),
+                    Err(e) => Some(format!("Argo CD, {}", not_read(&e))),
+                },
+            };
+            return self.b.node(&aref, RelationKind::Owner, status);
         }
         None
     }

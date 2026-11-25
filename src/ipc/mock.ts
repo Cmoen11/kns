@@ -3,6 +3,7 @@
 // Feature contracts are mocked in ./mock/<pkg>.ts (one owner each, typed as the full XBackend) and
 // spread in below; ./mock/events.ts is the mock event bus.
 import { agentsMock } from "./mock/agents";
+import { appState, argoManaged, mockApplication, NO_ARGO_CONTEXT, trackingAnnotation } from "./mock/argo";
 import { TEAM_CONTEXT, TEAM_NAMESPACES, catalogMock, mockForbidden } from "./mock/catalog";
 import { debugMock } from "./mock/debug";
 import { devMock } from "./mock/dev";
@@ -89,6 +90,8 @@ const RESOURCES: ApiResource[] = [
   res("kustomize.toolkit.fluxcd.io", "v1", "kustomizations", "Kustomization", true, ["ks"]),
   res("helm.toolkit.fluxcd.io", "v2", "helmreleases", "HelmRelease", true, ["hr"]),
   res("source.toolkit.fluxcd.io", "v1", "gitrepositories", "GitRepository", true, ["gitrepo"]),
+  res("argoproj.io", "v1alpha1", "applications", "Application", true, ["app", "apps"]),
+  res("argoproj.io", "v1alpha1", "applicationsets", "ApplicationSet", true, ["appset", "appsets"]),
 ];
 
 const col = (name: string, type = "string", priority = 0): Column => ({ name, type, format: "", description: "", priority });
@@ -106,6 +109,8 @@ const COLUMNS: Record<string, Column[]> = {
   helmreleases: [col("Name"), col("Age"), col("Ready"), col("Status")],
   cronjobs: [col("Name"), col("Schedule"), col("Suspend", "boolean"), col("Active", "integer"), col("Last Schedule"), col("Age")],
   jobs: [col("Name"), col("Status"), col("Completions"), col("Duration"), col("Age")],
+  // the printer columns of the Argo CD CRD
+  applications: [col("Name"), col("Sync Status"), col("Health Status"), col("Revision", "string", 10), col("Project", "string", 10)],
 };
 const DEFAULT_COLUMNS = [col("Name"), col("Age")];
 
@@ -207,6 +212,10 @@ function makeRow(resource: string, ns: string | undefined, i: number): Row {
       const okay = rnd() > 0.2;
       return { ...base, name: app, cells: [app, a, okay ? "True" : "False", okay ? "Applied revision: main@sha1:" + hex(8) : "kustomize build failed: ..."] };
     }
+    case "applications": {
+      const st = appState(app);
+      return { ...base, uid: `app-${ns}-${app}`, name: app, cells: [app, st.sync, st.health, "4f2c9e1a7b3d", ns ?? ""] };
+    }
     case "cronjobs":
       return { ...base, name: `${app}-nightly`, cells: [`${app}-nightly`, "0 3 * * *", false, 0, "8h", a] };
     case "jobs":
@@ -218,7 +227,9 @@ function makeRow(resource: string, ns: string | undefined, i: number): Row {
   }
 }
 
-const COUNT: Record<string, number> = { pods: 9, nodes: 1, namespaces: NAMESPACES.length, events: 12 };
+const COUNT: Record<string, number> = { pods: 9, nodes: 1, namespaces: NAMESPACES.length, events: 12, applications: 7, applicationsets: 1 };
+/** Kinds the mock only has in the namespaces Argo CD deploys to. */
+const ARGO_ONLY = new Set(["applications", "applicationsets"]);
 const tables = new Map<string, Row[]>();
 
 function rowsFor(q: TableQuery): Row[] {
@@ -229,7 +240,10 @@ function rowsFor(q: TableQuery): Row[] {
     all = [];
     const per = COUNT[q.gvr.resource] ?? 4;
     if (r && !r.namespaced) for (let i = 0; i < per; i++) all.push(makeRow(q.gvr.resource, undefined, i));
-    else for (const ns of NAMESPACES) for (let i = 0; i < per; i++) all.push(makeRow(q.gvr.resource, ns, i));
+    else for (const ns of NAMESPACES) {
+      if (ARGO_ONLY.has(q.gvr.resource) && (q.gvr.group !== "argoproj.io" || !argoManaged(ns))) continue;
+      for (let i = 0; i < per; i++) all.push(makeRow(q.gvr.resource, ns, i));
+    }
     // named objects the feature mocks describe in detail (svc/kafka, deploy/orders, ...)
     for (const x of mockExtraObjects(q.gvr.resource)) {
       const row = makeRow(q.gvr.resource, x.namespace, 0);
@@ -296,6 +310,7 @@ const kindOf = (gvr: Gvr) => RESOURCES.find((r) => sameGvr(r.gvr, gvr))?.kind ??
 
 function yamlFor(ref: ObjRef): string {
   const apiVersion = ref.gvr.group ? `${ref.gvr.group}/${ref.gvr.version}` : ref.gvr.version;
+  const tracking = Object.entries(trackingAnnotation(ref)).map(([k, v]) => `\n    ${k}: ${v}`).join("");
   return `apiVersion: ${apiVersion}
 kind: ${kindOf(ref.gvr)}
 metadata:
@@ -303,7 +318,7 @@ metadata:
   labels:
     app: ${ref.name.split("-")[0]}
   annotations:
-    kns.dev/mock: "true"
+    kns.dev/mock: "true"${tracking}
 spec:
   replicas: 2
   selector:
@@ -346,7 +361,8 @@ export const mockBackend: Backend = {
         ]),
       ),
     ),
-  discover: () => delay(RESOURCES),
+  // staging is a team member's view of a workload cluster: Argo CD runs elsewhere, so its kinds are not served
+  discover: (context) => delay(context === NO_ARGO_CONTEXT || context === TEAM_CONTEXT.name ? RESOURCES.filter((r) => r.gvr.group !== "argoproj.io") : RESOURCES),
 
   subscribeTable: (query, onEvent) => {
     let alive = true;
@@ -401,11 +417,14 @@ export const mockBackend: Backend = {
     const row = tables.get(`${ref.context}/${ref.gvr.group}/${ref.gvr.resource}`)?.find((r) => r.name === ref.name && r.namespace === ref.namespace);
     const app = ref.name.split("-")[0];
     const owners = (row?.owners ?? []).map((o) => ({ apiVersion: o.apiVersion, kind: o.kind, name: o.name, uid: o.uid, controller: true }));
+    if (ref.gvr.group === "argoproj.io" && ref.gvr.resource === "applications") return delay(mockApplication(ref, row?.created ?? ago(86_400_000)));
+    const tracking = trackingAnnotation(ref);
     return delay({
       apiVersion: ref.gvr.group ? `${ref.gvr.group}/${ref.gvr.version}` : ref.gvr.version,
       kind: kindOf(ref.gvr),
       metadata: {
         name: ref.name, namespace: ref.namespace ?? null, uid: row?.uid ?? hex(12), creationTimestamp: row?.created ?? ago(86_400_000), labels: { app },
+        ...(Object.keys(tracking).length ? { annotations: tracking } : {}),
         ...(owners.length ? { ownerReferences: owners } : {}),
       },
       spec: {

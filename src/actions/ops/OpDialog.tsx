@@ -85,7 +85,7 @@ export default function OpDialog({ props, close }: OverlayProps<AskRequest>) {
       {opts.flux && (
         <div className="ops-flux">
           <p>
-            Managed by Flux ({opts.flux.owner}). {opts.flux.effect}
+            Managed by {opts.flux.by ?? "Flux"} ({opts.flux.owner}). {opts.flux.effect}
           </p>
           {opts.flux.offer && (
             <Checkbox label={`Suspend ${opts.flux.owner} first`} checked={suspendFlux} onChange={(e) => setSuspendFlux(e.target.checked)} />

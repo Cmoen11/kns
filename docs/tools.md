@@ -157,7 +157,7 @@ One small palette for state, the same in every theme and in light and dark: ok (
 <a id="why"></a>
 ### Why is this broken?
 
-Findings with evidence for a pod, a workload or a Service, worst first. kns reads status, events, probes, endpoints and owners, and shows the lines that prove each finding. Also for an Ingress (backend Service or port missing, no ready pods behind it, TLS Secret missing, cert-manager Certificate not Ready), a Flux object (Ready=False message, Stalled, suspended, a `dependsOn` that is missing or not Ready, a source that is not Ready, a revision that did not apply) and a Job or CronJob (failed with its reason, failing pods diagnosed, last run failed, suspended, never scheduled, a run that hangs).
+Findings with evidence for a pod, a workload or a Service, worst first. kns reads status, events, probes, endpoints and owners, and shows the lines that prove each finding. Also for an Ingress (backend Service or port missing, no ready pods behind it, TLS Secret missing, cert-manager Certificate not Ready), a Flux object (Ready=False message, Stalled, suspended, a `dependsOn` that is missing or not Ready, a source that is not Ready, a revision that did not apply), a Job or CronJob (failed with its reason, failing pods diagnosed, last run failed, suspended, never scheduled, a run that hangs) and an Argo CD Application (`*Error` and `*Warning` conditions, a failed last sync with the resources that failed, Degraded or Missing resources by name, the resources that are OutOfSync and whether auto-sync will fix it) or ApplicationSet (ErrorOccurred, parameters not generated).
 
 - **Not for:** application bugs that leave Kubernetes healthy; read the logs for those. When kns finds nothing it says "no known cause" instead of guessing.
 - **Keys:** `W` on a row (`+W` opens it beside and follows the cursor); `Enter` on a finding follows its evidence; `c` copies the findings.
@@ -165,6 +165,18 @@ Findings with evidence for a pod, a workload or a Service, worst first. kns read
 - **Mouse:** the why button on a hovered row, or right-click a row.
 - **Example:** `W` on `deploy/crashy`: CrashLoopBackOff, exit code 1, the last log lines. `W` on `svc/db`: no endpoints, selector matches no pods.
 - **Previous logs:** when the kubelet no longer has the previous run (it answers "unable to retrieve container logs for …" as the log text) or the call fails, the evidence uses the current run's tail, or leaves the log row out; that kubelet text is never shown as a log line (packs and trap bundles say so in a note).
+
+<a id="argo"></a>
+### Argo CD
+
+What kns knows about Argo CD, at two levels. Most people who work in a workload cluster cannot read the Application objects (Argo CD often runs in a management cluster), so the first level needs nothing but the objects themselves.
+
+- **Managed objects (no Application access needed):** an object with the `argocd.argoproj.io/tracking-id` annotation (`<app>:<group>/<kind>:<namespace>/<name>`, the app written `<namespace>_<app>` with apps in any namespace) or the `argocd.argoproj.io/instance` label belongs to that Application. Argo's legacy `app.kubernetes.io/instance` label counts only when an Argo CD field manager wrote the object (Helm sets the same label). kns then shows `Managed By: Argo CD Application shop/web` in describe, puts the Application in `:relations` (its status when it can be read, else why not), marks Argo-owned fields `A` in field owners (`:drift` works as for Flux), and warns in the edit review and in the delete, scale and suspend dialogs that the next sync (at once with self-heal) puts Git's version back.
+- **Applications and ApplicationSets (when the cluster serves them):** `:argo`, `:apps` or `:app` lists Applications; the status cell combines HEALTH and SYNC (Degraded and Missing are errors, OutOfSync and an unknown sync are warnings, so `!` lists the apps that need you). Describe shows source, destination, revision, auto-sync and the resources that are not synced or healthy. `W` explains what is wrong.
+- **Keys:** `R` refresh (an ApplicationSet regenerates), `Mod+Shift+R` hard refresh, `Y` sync. **Commands:** `:refresh`, `:refresh hard`, `:sync`.
+- **Safety:** refresh and sync are writes through the usual confirm tiers (sync always asks). Sync applies the target revision the way `argocd app sync` does, without prune, and is refused while a sync is running. Refresh is an annotation; sync sets `operation` on the Application. `:kubectl` copies both.
+- **Not for:** rollbacks, sync windows, app diffs against Git; use the Argo CD UI or CLI.
+- **Example:** `:argo` in the mock's `default` context: `checkout` is Degraded, `orders` OutOfSync with auto-sync off (`W` says so, `Y` syncs it). In `staging` the Applications are not served, yet `d` on `deploy/web` in `shop` says `Managed By: Argo CD Application shop/web`.
 
 <a id="crash"></a>
 ### Crash card
@@ -233,7 +245,7 @@ Can this pod talk to that Service? From a pod, kns checks the chain step by step
 <a id="relations"></a>
 ### Relations
 
-A tree from an object up through its owners to the Flux Kustomization or HelmRelease and its source, down to what it owns (ReplicaSets, pods, Jobs), across to the Services and Ingresses in front of it, and to the ConfigMaps, Secrets, PVCs and ServiceAccount it uses.
+A tree from an object up through its owners to the Flux Kustomization or HelmRelease and its source (or the Argo CD Application that applied it, read from the object's tracking annotation, so it shows also when the Application itself is in another cluster), down to what it owns (ReplicaSets, pods, Jobs), across to the Services and Ingresses in front of it, and to the ConfigMaps, Secrets, PVCs and ServiceAccount it uses.
 
 - **Commands:** `:relations` on a row (or in a containers view). **In the view:** `j`/`k` move, `h`/`Left` collapse, `l`/`Right` expand, `Enter` describes the node (`Ctrl+Enter` beside), `Mod+R` re-reads.
 - **Mouse:** "relations" in the row menu; the toolbar's collapse, expand and refresh; double-click a node.
@@ -277,7 +289,7 @@ Run a saved command in a pod once and read the output as text.
 <a id="kubectl"></a>
 ### Copy as kubectl
 
-Copies the kubectl command for the last thing you did on the cursor row (describe, YAML, edit, logs, shell, port-forward, delete, kill, scale, restart, trigger, suspend, Flux reconcile/suspend, cordon, debug), else for the focused view (table → `get` with namespace, label filter and wide; describe / YAML / JSON / edit; logs with container, previous, timestamps and time range; shell), with `--context` and `-n` spelled out.
+Copies the kubectl command for the last thing you did on the cursor row (describe, YAML, edit, logs, shell, port-forward, delete, kill, scale, restart, trigger, suspend, Flux reconcile/suspend, Argo CD refresh/sync, cordon, debug), else for the focused view (table → `get` with namespace, label filter and wide; describe / YAML / JSON / edit; logs with container, previous, timestamps and time range; shell), with `--context` and `-n` spelled out.
 
 - **Commands:** `:kubectl`. **Mouse:** "copy as kubectl" in the row menu.
 - Values are single-quoted where needed (the same in bash, zsh and PowerShell); a value with `'` is refused. Views without an equivalent (why, diff, env, hub) say so. kns only copies the text.
@@ -324,10 +336,10 @@ Compare two objects, an object with an earlier revision, or the live object with
 <a id="owners"></a>
 ### Field owners
 
-Marks every field of an object with the manager that last set it, from managedFields: `F` Flux, `K` kns, `k` kubectl, `C` a controller, `o` other. Hover a letter for the manager, the operation and how long ago.
+Marks every field of an object with the manager that last set it, from managedFields: `F` Flux, `A` Argo CD, `K` kns, `k` kubectl, `C` a controller, `o` other. Hover a letter for the manager, the operation and how long ago.
 
 - **Keys:** `O` in a YAML view (`y` on a row first). **Commands:** `:owners`, `:drift`, typed while the YAML view has focus (from a table they are refused).
-- **Drift:** `:drift` folds a Flux-managed object down to the fields a human (kubectl, kns) set that Flux does not own, plus the lines that say which object it is; on an object Flux does not manage it changes nothing.
+- **Drift:** `:drift` folds an object managed by Flux or Argo CD down to the fields a human (kubectl, kns) set that the GitOps controller does not own, plus the lines that say which object it is; on an object neither manages it changes nothing.
 - **Mouse:** the Owners toggle in the YAML view's toolbar. **Try** in the hub toggles owners in an open YAML view.
 - **Not for:** objects without managedFields.
 - **Example:** `kubectl scale deploy/web --replicas=2 -n kns-spike`, then `y` on `deploy/web` and `O`: `spec.replicas` shows `k`.

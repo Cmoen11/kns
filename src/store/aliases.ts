@@ -7,6 +7,8 @@ export const sameGvr = (a: Gvr, b: Gvr): boolean => a.resource === b.resource &&
 
 /** Flux kinds get the `flux` scope (reconcile, suspend). */
 export const isFluxGroup = (group: string): boolean => group.endsWith(".toolkit.fluxcd.io");
+/** Argo CD kinds get the `argo` scope (refresh, sync). */
+export const isArgoGroup = (group: string): boolean => group === "argoproj.io";
 
 export interface AliasMap {
   /** alias -> resource; the first resource that claims a name keeps it (core and apps come first) */
@@ -38,6 +40,8 @@ export function buildAliases(resources: readonly ApiResource[]): AliasMap {
     add(r.singular);
     add(r.kind);
     for (const s of r.shortNames) add(s);
+    // `:argo` lists the Applications (their short names app / apps come from discovery)
+    if (isArgoGroup(r.gvr.group) && r.gvr.resource === "applications") add("argo");
     if (r.gvr.group) {
       add(`${r.gvr.resource}.${r.gvr.group}`);
       add(`${r.singular || r.kind}.${r.gvr.group}`);

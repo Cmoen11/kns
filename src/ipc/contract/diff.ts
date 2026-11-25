@@ -1,7 +1,7 @@
 // Field ownership and revisions (docs/plan-features.md §3 D). Owner D. Mirror: contract/diff.rs.
 import type { Json, ObjRef } from "../types";
 
-export type ManagerClass = "flux" | "kns" | "kubectl" | "controller" | "other";
+export type ManagerClass = "flux" | "argo" | "kns" | "kubectl" | "controller" | "other";
 
 /** One field and a manager that set it; a field several managers own has one row per manager. */
 export interface FieldOwner {

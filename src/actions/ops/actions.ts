@@ -8,19 +8,25 @@ import { permitted } from "./access";
 import {
   cordonPatch, fluxOwner, isCordoned, isSuspended, labelsOf, ownerOf, reconcilePatch, replicasOf, sourceRefOf, suspendPatch, type FluxRef,
 } from "./flux";
+import { appSetRefreshPatch, argoOwner, operationPhase, refreshPatch, syncPatch, type ArgoRef } from "./argo";
 import { errorText } from "./bulk";
 import { canReapply } from "./reapply-rule";
-import { currentTargets, onFlux, onResource, onScalable, onTable, resolveFlux, resourceOfKind, type Targets } from "./targets";
+import { currentTargets, onArgo, onArgoApp, onFlux, onResource, onScalable, onTable, resolveFlux, resourceOfKind, type Targets } from "./targets";
 import { deleteTier } from "./tiers";
 import { confirmWrite, report, reportReadError, runOn, undoWrite } from "./write";
 
 const read = (ref: ObjRef): Promise<Json | null> => backend.getJson(ref).catch(() => null);
 
-/** The Flux owner of a single target, for the "will be reverted" notice. */
-const fluxOf = (obj: Json | null, effect: string): { owner: FluxRef; effect: string } | null => {
-  const owner = fluxOwner(labelsOf(obj));
-  return owner ? { owner, effect } : null;
-};
+/** The Flux or Argo CD owner of a single target, for the "will be reverted" notice. */
+function gitOpsOf(
+  obj: Json | null,
+  effect: { flux: string; argo: string },
+): { flux?: { owner: FluxRef; effect: string }; argo?: { owner: ArgoRef; effect: string } } {
+  const flux = fluxOwner(labelsOf(obj));
+  if (flux) return { flux: { owner: flux, effect: effect.flux } };
+  const argo = argoOwner(obj);
+  return argo ? { argo: { owner: argo, effect: effect.argo } } : {};
+}
 
 // ── delete and kill ────────────────────────────────────────────────────────
 
@@ -35,7 +41,12 @@ async function deleteTargets(kill: boolean): Promise<void> {
     isDelete: true,
     deleteOptions: !kill,
     body: kill ? "Deletes with grace period 0: the containers get no time to shut down." : undefined,
-    flux: kill ? null : fluxOf(obj, "Flux recreates it on the next reconcile."),
+    ...(kill
+      ? {}
+      : gitOpsOf(obj, {
+          flux: "Flux recreates it on the next reconcile.",
+          argo: "Argo CD recreates it on its next sync (at once with self-heal); until then the app is OutOfSync.",
+        })),
   });
   if (!answer) return;
   // "re-apply last known YAML" (§14): only for one object that nothing would recreate anyway
@@ -73,7 +84,10 @@ async function scaleTargets(): Promise<void> {
     verb: "scale",
     tier: 0,
     replicas: { current: replicasOf(obj) },
-    flux: fluxOf(obj, "If the replica count is set in Git, Flux puts it back on the next reconcile."),
+    ...gitOpsOf(obj, {
+      flux: "If the replica count is set in Git, Flux puts it back on the next reconcile.",
+      argo: "If the replica count is set in Git, Argo CD puts it back on its next sync (at once with self-heal).",
+    }),
   });
   if (!answer || answer.replicas === undefined) return;
   const to = answer.replicas;
@@ -131,7 +145,12 @@ async function toggleSuspend(warnFlux: boolean): Promise<void> {
   const answer = await confirmWrite(t, {
     verb: suspend ? "suspend" : "resume",
     tier: 0,
-    flux: warnFlux && single ? fluxOf(firstState.value ?? null, "If spec.suspend is set in Git, Flux puts it back on the next reconcile.") : null,
+    ...(warnFlux && single
+      ? gitOpsOf(firstState.value ?? null, {
+          flux: "If spec.suspend is set in Git, Flux puts it back on the next reconcile.",
+          argo: "If spec.suspend is set in Git, Argo CD puts it back on its next sync.",
+        })
+      : {}),
   });
   if (!answer) return;
   const was = new Map(states.map((s) => [s.item, s.ok ? isSuspended(s.value) : undefined]));
@@ -165,6 +184,35 @@ async function reconcile(withSource: boolean): Promise<void> {
   }, { verb: "reconcile" });
   const detail = withSource ? (sources > 0 ? "with source" : "(no source to reconcile)") : undefined;
   report("Reconcile requested for", t, results, { detail });
+}
+
+// ── Argo CD ────────────────────────────────────────────────────────────────
+
+/** Refresh: the controller compares with Git again (hard also drops its manifest cache); an ApplicationSet regenerates. */
+async function argoRefresh(hard: boolean): Promise<void> {
+  const t = currentTargets();
+  if (!t) return;
+  const appSet = t.resource === "applicationsets";
+  if (!(await confirmWrite(t, { verb: hard && !appSet ? "hard refresh" : "refresh", tier: 0 }))) return;
+  const results = await runOn(t, (ref) => backend.patchObject(ref, appSet ? appSetRefreshPatch() : refreshPatch(hard), "merge"), { verb: "refresh" });
+  report(hard && !appSet ? "Hard refresh requested for" : "Refresh requested for", t, results);
+}
+
+/** Sync to the target revision, as `argocd app sync` does: an `operation` the controller runs. Never prunes. */
+async function argoSync(): Promise<void> {
+  const t = currentTargets();
+  if (!t) return;
+  const answer = await confirmWrite(t, {
+    verb: "sync",
+    tier: 1,
+    body: "Applies the target revision from Git to the destination. Resources that are no longer in Git are kept (no prune).",
+  });
+  if (!answer) return;
+  const results = await runOn(t, async (ref) => {
+    if (operationPhase(await read(ref)) === "Running") throw new Error("a sync is already running");
+    await backend.patchObject(ref, syncPatch(), "merge");
+  }, { verb: "sync" });
+  report("Sync started for", t, results);
 }
 
 async function cordon(on: boolean): Promise<void> {
@@ -273,6 +321,9 @@ registerActions({
   "flux.reconcile": { when: onFlux, enabled: () => permitted("patch"), run: safe(() => reconcile(false)) },
   "flux.reconcileWithSource": { when: onFlux, enabled: () => permitted("patch"), run: safe(() => reconcile(true)) },
   "flux.suspendResume": { when: onFlux, enabled: () => permitted("patch"), run: safe(() => toggleSuspend(false)) },
+  "argo.refresh": { when: onArgo, enabled: () => permitted("patch"), run: safe(() => argoRefresh(false)) },
+  "argo.hardRefresh": { when: onArgoApp, enabled: () => permitted("patch"), run: safe(() => argoRefresh(true)) },
+  "argo.sync": { when: onArgoApp, enabled: () => permitted("patch"), run: safe(argoSync) },
   "node.cordon": { when: () => onResource("nodes"), enabled: () => permitted("patch"), run: safe(() => cordon(true)) },
   "node.uncordon": { when: () => onResource("nodes"), enabled: () => permitted("patch"), run: safe(() => cordon(false)) },
 
