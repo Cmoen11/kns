@@ -20,8 +20,8 @@ export interface AskOptions {
   deleteOptions?: boolean;
   /** the replica count field; `current` prefills it */
   replicas?: { current: number | null };
-  /** "will be reverted" notice; `offer` adds the suspend checkbox */
-  flux?: { owner: string; effect: string; offer: boolean };
+  /** "will be reverted" notice; `offer` adds the suspend checkbox; `by` names the GitOps tool (default Flux) */
+  flux?: { owner: string; effect: string; offer: boolean; by?: string };
   /**
    * Facts shown after `facts` (an agent proposal adds `requested by`, plan-features §5.5). Values
    * from an agent must already be cleaned (`cleanUntrusted`).

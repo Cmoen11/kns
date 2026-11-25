@@ -45,6 +45,10 @@ pub enum Target {
     CronJob,
     /// any `*.toolkit.fluxcd.io` object with a Ready condition (Kustomization, HelmRelease, sources)
     Flux,
+    /// Argo CD Application
+    ArgoApp,
+    /// Argo CD ApplicationSet
+    ArgoAppSet,
 }
 
 /// The kinds `:why` has rules for (the UI's `canWhy` mirrors this list).
@@ -60,6 +64,8 @@ pub fn target_of(gvr: &Gvr) -> Option<Target> {
         ("batch", "jobs") => Some(Target::Job),
         ("batch", "cronjobs") => Some(Target::CronJob),
         (g, _) if g.ends_with(c3::FLUX_SUFFIX) => Some(Target::Flux),
+        (crate::argo::GROUP, "applications") => Some(Target::ArgoApp),
+        (crate::argo::GROUP, "applicationsets") => Some(Target::ArgoAppSet),
         _ => None,
     }
 }
@@ -1077,7 +1083,7 @@ pub async fn diagnose(state: &AppState, context: &str, obj_ref: &ObjRef) -> Resu
     let at = Timestamp::now().to_string();
     let mut out = Out::default();
     let Some(target) = target_of(&obj_ref.gvr) else {
-        out.check(&format!("no rules for {} yet (pods, workloads, Services, Ingresses, Jobs, CronJobs and Flux objects)", obj_ref.gvr.resource));
+        out.check(&format!("no rules for {} yet (pods, workloads, Services, Ingresses, Jobs, CronJobs, Flux objects and Argo CD Applications)", obj_ref.gvr.resource));
         return Ok(finish(obj_ref, out, at));
     };
     let session = state.session(context).await?;
@@ -1141,6 +1147,15 @@ pub async fn diagnose(state: &AppState, context: &str, obj_ref: &ObjRef) -> Resu
             workload_rules(obj_ref, target, &input, &mut out);
         }
         Target::Ingress | Target::Job | Target::CronJob | Target::Flux => c3::run(state, &session, target, obj_ref, obj, &mut out).await?,
+        Target::ArgoApp | Target::ArgoAppSet => {
+            let events = events_of(state, context, obj_ref, &mut out).await;
+            let input = argo::ArgoInput { obj, events };
+            if target == Target::ArgoApp {
+                argo::application_rules(obj_ref, &input, &mut out);
+            } else {
+                argo::applicationset_rules(obj_ref, &input, &mut out);
+            }
+        }
     }
     Ok(finish(obj_ref, out, at))
 }
@@ -1155,6 +1170,7 @@ pub mod cmd {
     }
 }
 
+mod argo;
 mod c3;
 pub use c3::flux_source_ref;
 

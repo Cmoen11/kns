@@ -1,8 +1,10 @@
 // Mock of DiffBackend (contract/diff.ts). Owner D.
 // Field owners match the paths of the base mock's getYaml body (src/ipc/mock.ts yamlFor), so the
 // YAML gutter has a letter on real lines: Flux owns most of it, `kubectl-scale` owns spec.replicas
-// (the one drift field), a controller the status. The `worker` app is not Flux-managed.
+// (the one drift field), a controller the status. The `worker` app is not Flux-managed, and in the
+// namespaces Argo CD deploys to (mock/argo.ts) `argocd-controller` owns what Flux owns elsewhere.
 import type { DiffBackend, FieldOwner, Json, ObjRef, Revision } from "../types";
+import { argoManaged } from "./argo";
 import { delay, fail } from "./shared";
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
@@ -13,7 +15,9 @@ const C0 = "/spec/template/spec/containers/0";
 function owners(ref: ObjRef): FieldOwner[] {
   const app = ref.name.split("-")[0];
   const flux = app !== "worker";
-  const base: Omit<FieldOwner, "path"> = flux
+  const base: Omit<FieldOwner, "path"> = flux && argoManaged(ref.namespace)
+    ? { manager: "argocd-controller", managerClass: "argo", operation: "Apply", time: ago(DAY) }
+    : flux
     ? { manager: "kustomize-controller", managerClass: "flux", operation: "Apply", time: ago(DAY) }
     : { manager: "kubectl-client-side-apply", managerClass: "kubectl", operation: "Update", time: ago(3 * DAY) };
   const applied = [

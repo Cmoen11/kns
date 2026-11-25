@@ -57,11 +57,14 @@ export function pointerLines(text: string): Map<string, LineRange> {
   return out;
 }
 
-export const LETTER: Record<ManagerClass, string> = { flux: "F", kns: "K", kubectl: "k", controller: "C", other: "o" };
-export const CLASS_WORD: Record<ManagerClass, string> = { flux: "Flux", kns: "kns", kubectl: "kubectl", controller: "controller", other: "other" };
+export const LETTER: Record<ManagerClass, string> = { flux: "F", argo: "A", kns: "K", kubectl: "k", controller: "C", other: "o" };
+export const CLASS_WORD: Record<ManagerClass, string> = { flux: "Flux", argo: "Argo CD", kns: "kns", kubectl: "kubectl", controller: "controller", other: "other" };
 
 /** Which manager's letter a line with several owners shows: a human's change first. */
-const RANK: Record<ManagerClass, number> = { kubectl: 0, kns: 1, other: 2, controller: 3, flux: 4 };
+const RANK: Record<ManagerClass, number> = { kubectl: 0, kns: 1, other: 2, controller: 3, flux: 4, argo: 5 };
+
+/** The GitOps controllers: what they own comes from Git and is put back on their next sync. */
+const GITOPS: ReadonlySet<ManagerClass> = new Set(["flux", "argo"]);
 
 /** A human's change, as opposed to Flux or a controller. */
 export const isHuman = (o: FieldOwner): boolean => o.managerClass === "kubectl" || o.managerClass === "kns" || o.managerClass === "other";
@@ -94,17 +97,23 @@ export function ownersByLine(owners: readonly FieldOwner[], lines: Map<string, L
 
 export const isFluxManaged = (owners: readonly FieldOwner[]): boolean => owners.some((o) => o.managerClass === "flux");
 
+/** The GitOps controller that applied the object ("Flux", "Argo CD"), from its field managers; null when none did. */
+export function gitOpsOf(owners: readonly FieldOwner[]): string | null {
+  if (isFluxManaged(owners)) return CLASS_WORD.flux;
+  return owners.some((o) => o.managerClass === "argo") ? CLASS_WORD.argo : null;
+}
+
 const underStatus = (p: string) => p === "/status" || p.startsWith("/status/");
 
 /**
- * Drift: fields of a Flux-managed object that a human manager (kubectl, kns, other) set and Flux
- * does not own. Status and controller-owned fields are not drift.
+ * Drift: fields of a GitOps-managed object (Flux, Argo CD) that a human manager (kubectl, kns,
+ * other) set and the GitOps controller does not own. Status and controller-owned fields are not drift.
  */
 export function driftPaths(owners: readonly FieldOwner[]): string[] {
-  const flux = new Set(owners.filter((o) => o.managerClass === "flux").map((o) => o.path));
+  const gitops = new Set(owners.filter((o) => GITOPS.has(o.managerClass)).map((o) => o.path));
   const out = new Set<string>();
   for (const o of owners) {
-    if (!isHuman(o) || o.subresource === "status" || underStatus(o.path) || flux.has(o.path)) continue;
+    if (!isHuman(o) || o.subresource === "status" || underStatus(o.path) || gitops.has(o.path)) continue;
     out.add(o.path);
   }
   return [...out].sort();

@@ -25,7 +25,7 @@ import { clearUi, controllers, freshEdits, getUi, patchReview, patchUi, type Doc
 import type { VimHost } from "./vim";
 import { PROMPT_LAYER, vimLayer, vimOwnsEscape, vimTakesChord } from "./vim-state";
 import {
-  classifyConflict, errorLines, errorText, fluxOwner, maskSecretPair, parseSecretEdit, secretDoc, secretManifest, toJsonText,
+  argoOwnerOfText, classifyConflict, errorLines, errorText, fluxOwner, maskSecretPair, parseSecretEdit, secretDoc, secretManifest, toJsonText,
   yamlSyntaxError, type Decoded,
 } from "./yaml-helpers";
 
@@ -799,9 +799,10 @@ export class Controller implements DocController {
     }
     this.setErrors([], null);
     const flux = fluxOwner(secret ? this.manifest : this.original);
+    const argo = flux ? null : argoOwnerOfText(secret ? this.manifest : this.original);
     const split = getUi(this.pane).review?.split ?? null;
     patchUi(this.pane, {
-      review: { dryRun: "running", message: null, warnings: [], conflict: null, flux, split, revealed: false, applying: false, before, after },
+      review: { dryRun: "running", message: null, warnings: [], conflict: null, flux, argo, split, revealed: false, applying: false, before, after },
     });
     setPaneScope(this.pane, { conflict: false, fluxManaged: flux !== null });
     replaceView(this.pane, asDoc({ ...this.view, mode: "review" }));

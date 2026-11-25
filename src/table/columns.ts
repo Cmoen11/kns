@@ -122,6 +122,8 @@ export function statusColumnId(resource: string, flux: boolean, ids: readonly st
   if (resource === "events") return ids.includes("type") ? "type" : null;
   if (resource === "containers") return ids.includes("state") ? "state" : null;
   if (DERIVED_STATUS.has(resource) && !ids.includes("status")) return null;
+  // Argo CD Applications print SYNC STATUS and HEALTH STATUS: the status cell combines both
+  if (ids.includes("health status") && ids.includes("sync status")) return "health status";
   for (const c of ["status", "phase", "state"]) if (ids.includes(c)) return c;
   return null;
 }

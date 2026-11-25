@@ -8,6 +8,7 @@ import { beginOperation, describeOperation, endOperation, stepOperation } from "
 import { contextFlags } from "../../store/settings";
 import { ask, type AskOptions, type AskResult } from "./ask";
 import { errorText, plural, runBulk, summarize, type ItemResult } from "./bulk";
+import { argoOwnerText, type ArgoRef } from "./argo";
 import { fluxOwnerText, suspendPatch, type FluxRef } from "./flux";
 import { pathOf, resolveFlux, targetsFor, type Targets } from "./targets";
 import { confirmText, dependentsNote, effectiveTier, type Tier } from "./tiers";
@@ -24,6 +25,8 @@ export interface ConfirmSpec {
   replicas?: { current: number | null };
   /** the Flux object managing the (single) target, and what Flux will do to this change */
   flux?: { owner: FluxRef; effect: string } | null;
+  /** the Argo CD Application managing the (single) target (no suspend offer: it may be out of reach) */
+  argo?: { owner: ArgoRef; effect: string } | null;
 }
 
 const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
@@ -41,7 +44,7 @@ export async function confirmWrite(t: Targets, spec: ConfirmSpec): Promise<AskRe
   const fluxTarget = spec.flux ? resolveFlux(spec.flux.owner, t.context) : null;
   let tier = effectiveTier(spec.tier, { protected: t.protected, bulkDelete: !!spec.isDelete && !single });
   // the replica field and the Flux notice need a dialog even when the tier needs none
-  if (tier === 0 && (spec.replicas || spec.flux)) tier = 1;
+  if (tier === 0 && (spec.replicas || spec.flux || spec.argo)) tier = 1;
   if (tier === 0) return {};
 
   const facts: { label: string; value: string }[] = single
@@ -66,7 +69,11 @@ export async function confirmWrite(t: Targets, spec: ConfirmSpec): Promise<AskRe
     confirmLabel: spec.confirmLabel ?? cap(spec.verb),
     deleteOptions: spec.deleteOptions,
     replicas: spec.replicas,
-    flux: spec.flux ? { owner: fluxOwnerText(spec.flux.owner), effect: spec.flux.effect, offer: fluxTarget !== null } : undefined,
+    flux: spec.flux
+      ? { owner: fluxOwnerText(spec.flux.owner), effect: spec.flux.effect, offer: fluxTarget !== null }
+      : spec.argo
+        ? { owner: argoOwnerText(spec.argo.owner), effect: spec.argo.effect, offer: false, by: "Argo CD" }
+        : undefined,
   };
   const answer = await ask(opts);
   if (!answer) return null;

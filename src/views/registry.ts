@@ -4,7 +4,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { baseMode, viewScopes, type ModeBadge, type ScopeId, type TableKind, type ViewScopeInfo } from "../actions/scopes";
 import { getCluster, kindOf, resourceFor } from "../store/cluster";
-import { isFluxGroup } from "../store/aliases";
+import { isArgoGroup, isFluxGroup } from "../store/aliases";
 import type { ObjectRef, PaneId, ViewKind, ViewState } from "../types";
 import { tableView } from "../store/workspace";
 import type { ActionId } from "../actions/registry";
@@ -184,6 +184,7 @@ export function tableKindOf(view: ViewOf<"table">): TableKind {
     allNamespaces: namespaced && view.namespace === "*",
     scalable: r ? r.subresources.includes("scale") : undefined,
     flux: isFluxGroup(view.gvr.group),
+    argo: isArgoGroup(view.gvr.group),
   };
 }
 

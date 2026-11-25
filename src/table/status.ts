@@ -85,6 +85,30 @@ function podLike(word: string, ready: string | undefined, restarts: string | und
 
 const truthy = (v: string | undefined) => v !== undefined && v.trim().toLowerCase() === "true";
 
+/**
+ * An Argo CD Application from its HEALTH STATUS and SYNC STATUS cells: health decides first
+ * (Degraded and Missing are errors), then a healthy app that is OutOfSync (or whose comparison
+ * failed, sync Unknown) is a warning. Progressing stays in progress: an app's age says nothing
+ * about how long its rollout has run.
+ */
+export function argoStatus(health: string, sync: string): Status {
+  const h = health.trim();
+  const s = sync.trim();
+  switch (h.toLowerCase()) {
+    case "degraded":
+    case "missing":
+      return { state: "error", word: h };
+    case "suspended":
+      return { state: "suspended", word: h };
+    case "progressing":
+      return { state: "progress", word: h };
+  }
+  if (s.toLowerCase() === "outofsync") return { state: "warn", word: "OutOfSync" };
+  if (s.toLowerCase() === "unknown" || s === "") return { state: "warn", word: "Sync unknown" };
+  if (h.toLowerCase() === "healthy") return { state: "ok", word: "Healthy" };
+  return { state: "unknown", word: h || "Unknown" };
+}
+
 /** null = the kind has no status: no glyph and no status column. */
 export function deriveStatus(i: StatusInput): Status | null {
   const { get, ageSec } = i;
@@ -139,6 +163,9 @@ export function deriveStatus(i: StatusInput): Status | null {
       return { state: parts.includes("ready") ? "ok" : "unknown", word: s };
     }
     default: {
+      const health = get("health status");
+      const sync = get("sync status");
+      if (health !== undefined && sync !== undefined) return argoStatus(health, sync);
       const s = get("status") ?? get("phase") ?? get("state");
       if (s !== undefined) return { state: classifyWord(s, ageSec), word: s };
       return null;

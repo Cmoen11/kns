@@ -215,7 +215,7 @@ const entries: ToolEntry[] = [
     id: "why", title: "Why is this broken?", group: "Debug",
     summary: "Findings with evidence for a pod, workload, Service, Ingress, Job or Flux object",
     help: {
-      answers: "Reads status, events, probes, endpoints and owners and explains what is wrong, each finding with the lines that prove it. Works on pods, workloads, Services, Ingresses (missing Service, port or TLS Secret, Certificate not Ready), Jobs and CronJobs, and Flux Kustomizations, HelmReleases and sources. Enter on a finding follows its evidence.",
+      answers: "Reads status, events, probes, endpoints and owners and explains what is wrong, each finding with the lines that prove it. Works on pods, workloads, Services, Ingresses (missing Service, port or TLS Secret, Certificate not Ready), Jobs and CronJobs, Flux Kustomizations, HelmReleases and sources, and Argo CD Applications and ApplicationSets. Enter on a finding follows its evidence.",
       notFor: "Application bugs that leave Kubernetes healthy; read the logs for those.",
       example: "`W` on pod/crashy in kns-spike: CrashLoopBackOff, exit code 1, last log lines.",
     },
@@ -403,7 +403,7 @@ const entries: ToolEntry[] = [
     id: "owners", title: "Field owners", group: "Diff",
     summary: "Which manager (Flux, kubectl, a controller) owns each field of an object",
     help: {
-      answers: "`O` in a YAML view marks every field with the manager that last set it: `F` Flux, `K` kns, `k` kubectl, `C` a controller, `o` other; hover a letter for the manager, operation and age. `:drift` folds a Flux-managed object down to the fields a human (kubectl, kns) set that Flux does not own.",
+      answers: "`O` in a YAML view marks every field with the manager that last set it: `F` Flux, `A` Argo CD, `K` kns, `k` kubectl, `C` a controller, `o` other; hover a letter for the manager, operation and age. `:drift` folds an object managed by Flux or Argo CD down to the fields a human (kubectl, kns) set that the GitOps controller does not own.",
       notFor: "Objects without managedFields: there is nothing to show.",
       example: "`y` on deploy/web in kns-spike after `kubectl scale`, then `O`: spec.replicas shows `k`.",
     },

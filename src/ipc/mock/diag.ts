@@ -7,6 +7,7 @@
 // previous run, so Enter on it lands on a matching line.
 import { cleanUntrusted } from "../../ui/untrusted";
 import type { DiagBackend, Diagnosis, EventRow, Evidence, Finding, Gvr, Json, LogLine, ObjRef, PodSeries, ReachCheck, ReachStep, RelationNode, TableQuery, TimelineRow, Trap } from "../types";
+import { ARGO_GVRS, argoDiagnosis, argoManaged, argoOwnerStatus } from "./argo";
 import { emitMock } from "./events";
 import { logsMock } from "./logs";
 import { delay, fail, mockId, nowIso } from "./shared";
@@ -238,7 +239,7 @@ async function diagnosis(ref: ObjRef): Promise<Diagnosis> {
   }
   const c3 = await c3Diagnosis(ref);
   if (c3) return done(c3.findings, c3.checked);
-  return done([], [`no rules for ${r} yet (pods, workloads, Services, Ingresses, Jobs, CronJobs and Flux objects)`]);
+  return done([], [`no rules for ${r} yet (pods, workloads, Services, Ingresses, Jobs, CronJobs, Flux objects and Argo CD Applications)`]);
 }
 
 // ── C3: Ingress, Flux, Job / CronJob (canned, matching the mock tables) ──────
@@ -269,6 +270,7 @@ const PODS: Gvr = { group: "", version: "v1", resource: "pods" };
 async function c3Diagnosis(ref: ObjRef): Promise<{ findings: Finding[]; checked: string[] } | null> {
   const r = ref.gvr.resource;
   const app = ref.name.split("-")[0];
+  if (ref.gvr.group === "argoproj.io") return argoDiagnosis(ref);
   if (ref.gvr.group === "networking.k8s.io" && r === "ingresses") {
     const checked = ["backend Services", "Service ports", "TLS secrets", "cert-manager Certificates", "address", "events"];
     if (app === "web" || app === "checkout") return { findings: [], checked };
@@ -454,7 +456,10 @@ function relations(ref: ObjRef): RelationNode {
   const n = (gvr: Gvr, name: string, relation: RelationNode["relation"], status?: string, children: RelationNode[] = [], namespace = ns): RelationNode => ({
     ref: { context: ref.context, gvr, namespace, name }, kind: KIND[gvr.resource] ?? gvr.resource, relation, status, children,
   });
-  const flux = n(G.ks, "apps", "owner", "Ready", [n(G.git, "flux-system", "owner", "Ready", [], "flux-system")], "flux-system");
+  // the namespaces Argo CD deploys to show its Application (read from the tracking annotation)
+  const flux = argoManaged(ns)
+    ? { ...n(ARGO_GVRS.apps, app, "owner", argoOwnerStatus(ref.context, app)), kind: "Application" }
+    : n(G.ks, "apps", "owner", "Ready", [n(G.git, "flux-system", "owner", "Ready", [], "flux-system")], "flux-system");
   const traffic = [n(G.svc, app, "traffic", "ClusterIP", [n(G.ing, `${app}-ingr-0`, "traffic", `${app}.example.test`)])];
   const uses = [n(G.cm, `${app}-env`, "uses"), n(G.secret, `${app}-secrets`, "uses"), n(G.secret, "regcred", "uses", "missing"), n(G.sa, "default", "uses")];
   if (app === "postgres" || app === "redis") uses.push(n(G.pvc, `data-${app}-0`, "uses", "Bound"));

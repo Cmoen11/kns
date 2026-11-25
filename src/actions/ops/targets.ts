@@ -5,6 +5,7 @@ import {
   connOf, focusedContext, focusedPane, getCluster, getSelection, isFluxGroup, kindOf, paneView, resourceFor, sameGvr, selectionTargets, toObjRef,
 } from "../../foundation";
 import { contextFlags } from "../../store/settings";
+import { isArgoGroup } from "./argo";
 import type { FluxRef } from "./flux";
 
 export interface Targets {
@@ -88,6 +89,15 @@ export const onResource = (...resources: string[]): boolean => {
 export const onFlux = (): boolean => {
   const gvr = tableGvr();
   return !!gvr && isFluxGroup(gvr.group);
+};
+/** An Argo CD Application or ApplicationSet table. */
+export const onArgo = (): boolean => {
+  const gvr = tableGvr();
+  return !!gvr && isArgoGroup(gvr.group) && (gvr.resource === "applications" || gvr.resource === "applicationsets");
+};
+export const onArgoApp = (): boolean => {
+  const gvr = tableGvr();
+  return !!gvr && isArgoGroup(gvr.group) && gvr.resource === "applications";
 };
 /** Kinds with the scale subresource, per discovery (deployments and statefulsets until it arrives). */
 export const onScalable = (): boolean => {

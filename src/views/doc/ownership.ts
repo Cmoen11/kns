@@ -1,6 +1,6 @@
 // Field-owner gutter for the YAML view (docs/plan-features.md §3 D; owner D): a letter per field
-// (F Flux, K kns, k kubectl, C controller, o other), hover = manager, operation and age. `:drift`
-// folds away everything except the fields a human changed under Flux.
+// (F Flux, A Argo CD, K kns, k kubectl, C controller, o other), hover = manager, operation and age. `:drift`
+// folds away everything except the fields a human changed under Flux or Argo CD.
 //
 // One entry in `editorExtensions` (cm.ts). It is self-contained because the controller rebuilds
 // the editor state on every load (`setState`), which would drop anything dispatched into it: the
@@ -13,7 +13,7 @@ import { backend, flash, paneContext, paneView, toObjRef } from "../../foundatio
 import type { FieldOwner } from "../../ipc/types";
 import { tip } from "../../ui";
 import { getOwners, ownersStore, patchOwners } from "../../diff/owners-state";
-import { driftHidden, driftPaths, isFluxManaged, ownersByLine, ownersTip, pointerLines } from "../../diff/owners-model";
+import { driftHidden, driftPaths, gitOpsOf, ownersByLine, ownersTip, pointerLines } from "../../diff/owners-model";
 
 class OwnerMarker extends GutterMarker {
   constructor(readonly letter: string, readonly cls: string, readonly text: string) {
@@ -44,7 +44,7 @@ class Folded extends WidgetType {
   toDOM(): HTMLElement {
     const el = document.createElement("div");
     el.className = "cm-k-driftfold";
-    el.textContent = `${this.lines} ${this.lines === 1 ? "line" : "lines"} Flux owns or nobody changed`;
+    el.textContent = `${this.lines} ${this.lines === 1 ? "line" : "lines"} from Git or nobody changed`;
     return el;
   }
 }
@@ -178,7 +178,8 @@ const plugin = ViewPlugin.fromClass(
       const sig = `${key}|${ui.drift}|${view.state.doc.length}`;
       if (this.shown && sig === this.sig) return;
       this.sig = sig;
-      const flux = isFluxManaged(owners);
+      const gitops = gitOpsOf(owners);
+      const flux = gitops !== null;
       const drift = ui.drift && flux;
       const { data, driftCount } = build(view.state, owners, drift);
       const effects: StateEffect<unknown>[] = [setData.of(data)];
@@ -189,9 +190,9 @@ const plugin = ViewPlugin.fromClass(
       const tell = `${key}|${ui.drift}`;
       if (tell !== this.told) {
         this.told = tell;
-        if (ui.drift && !flux) flash("not managed by Flux: no Flux-owned fields to compare against", "warn");
+        if (ui.drift && !flux) flash("not managed by Flux or Argo CD: no fields from Git to compare against", "warn");
         else if (owners.length === 0) flash("no managedFields on this object", "warn");
-        else if (drift && driftCount === 0) flash("no drift: Flux owns every field a human could have changed");
+        else if (drift && driftCount === 0) flash(`no drift: ${gitops} owns every field a human could have changed`);
       }
       patchOwners(pane, { fluxManaged: flux, driftCount, error: null, ...(ui.drift && !flux ? { drift: false } : {}) });
     }

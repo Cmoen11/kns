@@ -46,6 +46,8 @@ pub mod reach;
 pub mod relations;
 // D
 pub mod ownership;
+// Argo CD (managed objects, Applications)
+pub mod argo;
 // E
 pub mod logparse;
 // F

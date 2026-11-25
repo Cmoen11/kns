@@ -16,6 +16,8 @@ export interface ReviewState {
   /** version = the object changed (rebase); fieldManager = another manager owns a field (force) */
   conflict: "version" | "fieldManager" | null;
   flux: FluxOwner | null;
+  /** the Argo CD Application that applied the object (`Application ns/app`), when Flux did not */
+  argo?: string | null;
   /** user override of split/unified; null = by width */
   split: boolean | null;
   /** secret values shown in the diff */
