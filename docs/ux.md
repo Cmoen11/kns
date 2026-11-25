@@ -133,9 +133,14 @@ Legend: `===` focused pane, `|` at row start is the cursor bar, `#` square and `
 - **Windows:** native caption buttons and Win11 snap layouts, 138px reserved on the right. Tauri's overlay style is macOS-only, so the route is a plugin or native hit-testing [verify].
 - **Windows fallback:** if neither works, the standard OS title bar is used and the 32px row stays where it is as an ordinary app bar with no drag region and no reserved 138px. Nothing moves into the bottom row. The cost is the OS title bar height (about 31px), which is two table rows.
 - Everything non-interactive is a drag region. Padding-inline 8, group gap 12, item gap 6.
-- Left: context tabs (§8.2), or the context name when one tab is open (UI S 12px), then `cluster / user` and server version (UI type, muted). Opens the context picker. `cluster / user` hides under 1280 wide; it is always in the context picker and the `home` view.
+- **The titlebar is the context tab strip** (§8.2), like a browser's. Left: the sidebar toggle, one tab per open context, then `+` (opens the context picker). Even with one context open it is a tab, so the model is always visible.
+  - The active tab is a piece of pane surface (`--k-bg-pane`, hairline frame), medium weight; the others are text only (`--k-text-3`), with a hover background. Tabs size to their name (6em to 16em) and shrink only when the strip is full.
+  - A tab shows its context name, a glyph only when something needs attention (warn = protected, error = offline), `RO` for read-only, and a close button on hover and on the active tab. A protected tab also has the protected line under it.
+  - `cluster / user`, server version and connection state are in the tab's tooltip, the context picker and the `home` view, not in the strip. The namespace is the first crumb of each pane header (§8.1), not in the titlebar.
+  - Click goes to the tab, middle click closes it, right click: close, close other tabs, open a context.
+  - When the focused pane shows another context than its tab (§8.3), a muted `pane · <context>` (with the warn glyph when protected) follows the strip.
 - Centre: palette trigger, a key chip plus the text "Search or run". It is not an input field.
-- Right: `READ ONLY` and `PROTECTED` labels (label style), then the active layout name with `edited` when it has diverged.
+- Right: window buttons, health, the active layout name with `edited` when it has diverged. Protected and read-only are on the tabs; the titlebar's protected line follows the focused pane's context.
 - No favourites strip, no logo. The app name appears only in the OS window title.
 
 ### 2.5 Bottom row (20px, `--k-bg-app`)
@@ -959,7 +964,7 @@ All WebView2 rows depend on `AreBrowserAcceleratorKeysEnabled = false` (§18.24)
 
 - The window has a context: it decides which saved workspace is on screen and is the context of every pane that does not have its own (§8.3).
 - `Ctrl/⌘+Shift+K` opens the picker; `:ctx x` switches directly. Rows show name, cluster, user, connection state and the `PROTECTED` and `READ ONLY` labels. In the picker `Ctrl/⌘+Enter` / `Alt+Enter` do not switch the window: they open the focused pane's view beside it, in that context (§8.3).
-- **Tabs.** Every switch opens the context as a tab in the titlebar (after the active one) or goes to its tab. The active tab is the window's context. With one tab the titlebar shows the plain context switcher.
+- **Tabs.** Every switch opens the context as a tab in the titlebar (after the active one) or goes to its tab. The active tab is the window's context. Tabs are the titlebar (§2.4).
   - A switch swaps the whole workspace to that context's saved one in the same frame. The workspace remembers where you were: panes, views, history, namespaces and each pane's cursor row.
   - A tab that is not on screen stays **warm**: its contexts stay connected, the tables of its panes keep their watch (switching back paints current rows, no `syncing`), its shells keep running and its panes keep their marks. Other views (logs, describe) re-read when the tab is on screen again.
   - At most six tabs are open. Opening a seventh closes the least recently used one, preferring a tab whose shells would not end; when its shells would end, a dialog lists them first.
@@ -969,11 +974,11 @@ All WebView2 rows depend on `AreBrowserAcceleratorKeysEnabled = false` (§18.24)
   - The open tabs are saved with the workspaces and restored on start; the warm tabs connect at once.
 - With the single `default` context the picker still works and shows connection state.
 - **Protected context.** Set with `:protect on`, `Ctrl/⌘+T` in the picker, or the Contexts section of settings. Stored in `Settings.contexts`.
-  - Signal: the `PROTECTED` label with the warn glyph in the titlebar, and a 2px `--k-text` line under the titlebar. The line uses a theme token, not the warn hue.
+  - Signal: the warn glyph and a 2px `--k-text` line on the context's tab, and the same line under the whole titlebar while the focused pane is in that context. The line uses a theme token, not the warn hue.
   - Effect: every write becomes tier 2 (§14).
   - Turning it off is itself tier 2: type the context name.
 - **Read-only.** Set with `:ro on`, or in settings, per context. A `READ ONLY` label and the `RO` badge. Write keys are disabled and their hints removed.
-- With panes in several contexts (§8.3) the titlebar's context, its `PROTECTED` / `READ ONLY` labels and the protected line follow the **focused pane's** context; `:protect` and `:ro` apply to it.
+- With panes in several contexts (§8.3) the titlebar's protected line and the `pane · <context>` marker after the tabs follow the **focused pane's** context; `:protect` and `:ro` apply to it.
 
 ### 8.3 Context per pane
 
@@ -982,7 +987,7 @@ Like the namespace (§8.1), a pane can show another context than the window: sta
 - **Open one.** In the context picker `Ctrl/⌘+Enter` (right) or `Alt+Enter` (below) opens a copy of the focused pane's view in a new pane, in the picked context. `leader C` (`:pane ctx`) opens the picker for the focused pane only: Enter puts that pane in the context. `:pods @staging` opens pods of staging in the focused pane (`+` first: beside it).
 - **Inheritance.** Split, `+`, open beside and drills keep the source pane's context. A pane in another context than its source never follows it (a cursor names objects of one cluster).
 - **Changing a pane's context** restarts its history at the current view, re-read there: Esc never goes back to an object of the other cluster. A pane holding a live session (shell, attach, dirty edit) keeps its context; open the other one beside it. Panes following it stop following.
-- **Signals.** While panes of more than one context are on screen, every pane header starts with its context crumb (click: pick another context for that pane; a protected context shows the warn glyph). A protected context's pane draws the protected line under its header (`--k-text`, like the titlebar's). The titlebar shows the focused pane's context, and `pane · window <name>` when that is not the window's. The activity panel's health group has a connection row per extra context, and Recent is the log of the focused pane's context.
+- **Signals.** While panes of more than one context are on screen, every pane header starts with its context crumb (click: pick another context for that pane; a protected context shows the warn glyph). A protected context's pane draws the protected line under its header (`--k-text`, like the titlebar's). The titlebar shows `pane · <context>` after the tabs when the focused pane is not in its tab's context. The activity panel's health group has a connection row per extra context, and Recent is the log of the focused pane's context.
 - **Everything acts on the pane's context:** reads, `canI`, the write tiers (a protected context makes every write in its panes tier 2, whatever the window is), read-only, the action log, shells, port-forwards, env, `:why` and the other diagnosis views. An object of another context reached from an activity row, a finding or a forward opens beside, in its context.
 - **Connections.** A context a pane shows is connected when the pane appears and released (no retries, no namespace watch) when no pane shows it; its discovery stays cached.
 - **Persistence.** The context is saved with the pane and restored as it was, also when the kubeconfig no longer has it: the pane then says it is offline instead of showing another cluster. A saved layout remembers the panes that had their own context and recalls them in it; its other panes take the window's context. Favourite views do not carry a context.

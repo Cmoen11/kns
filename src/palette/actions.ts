@@ -4,7 +4,7 @@
 import { LAYERS } from "../actions";
 import {
   focusedContext, flash, getCluster, openPaneInContext, setPaneContext, focusedPane, isOverlayOpen, paneOrder, paneView, registerActions, resourceFor, setNamespace,
-  setNamespaceAllPanes, switchContext, closeTab, stepTab, openTabs, type ActionContext,
+  setNamespaceAllPanes, switchContext, closeTab, closeOtherTabs, stepTab, openTabs, type ActionContext,
 } from "../foundation";
 import { contextFlags } from "../store/settings";
 import { takeMenuRequest } from "../ui";
@@ -86,6 +86,14 @@ registerActions({
       const name = ctx.args[0];
       if (name !== undefined && !openTabs().includes(name)) return flash(`no tab "${name}"`, "warn");
       await closeTab(name);
+    },
+  },
+  "tab.closeOthers": {
+    enabled: () => openTabs().length > 1 || "only one tab is open",
+    run: async (ctx) => {
+      const name = ctx.args[0];
+      if (name !== undefined && !openTabs().includes(name)) return flash(`no tab "${name}"`, "warn");
+      await closeOtherTabs(name);
     },
   },
   // §8.3: the focused pane only; `:pane ctx staging` restarts the pane there
