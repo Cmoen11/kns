@@ -4,11 +4,18 @@
 import { LAYERS } from "../actions";
 import {
   focusedContext, flash, getCluster, openPaneInContext, setPaneContext, focusedPane, isOverlayOpen, paneOrder, paneView, registerActions, resourceFor, setNamespace,
-  setNamespaceAllPanes, switchContext, closeTab, closeOtherTabs, stepTab, openTabs, type ActionContext,
+  setNamespaceAllPanes, switchContext, closeTab, closeOtherTabs, stepTab, openTabs, resolveContext, showOverlay, type ActionContext,
 } from "../foundation";
-import { contextFlags } from "../store/settings";
 import { takeMenuRequest } from "../ui";
+import { aliasProblem, contextFlags, setContextAlias } from "../store/settings";
 import { setProtected } from "./context";
+import { CONTEXT_ALIAS_OVERLAY } from "./overlays";
+
+/** `@name` (kubeconfig name or alias) at the start of the args names the context; default: the focused pane's. */
+function contextArg(args: readonly string[]): { context: string | null; rest: readonly string[] } {
+  if (args[0]?.startsWith("@")) return { context: resolveContext(args[0].slice(1)), rest: args.slice(1) };
+  return { context: focusedContext() || null, rest: args };
+}
 import { nameAndSlot, saveLayoutDirect, saveViewDirect } from "./favourites/save";
 import { parseSlot } from "./favourites/slots";
 import { favouriteInSlot, layoutInSlot, namespaceInSlot, noteNamespaceUsed, recallFavourite, recallLayout } from "./favourites/store";
@@ -75,7 +82,7 @@ registerActions({
     const name = ctx.args[0];
     if (name === undefined) return open("palette.picker", LAYERS.pickerContext, { kind: "ctx", pane: false });
     dismiss();
-    if (!(await switchContext(name)) && focusedContext() !== name) flash(`no context "${name}"`, "warn");
+    if (!(await switchContext(name)) && focusedContext() !== resolveContext(name)) flash(`no context "${name}"`, "warn");
   },
   // context tabs (§8.2): every switch opens or goes to a tab; the tab left behind stays warm
   "tab.next": { enabled: () => openTabs().length > 1 || "only one tab is open", run: () => void stepTab(1) },
@@ -83,17 +90,31 @@ registerActions({
   "tab.close": {
     enabled: () => openTabs().length > 1 || "the last tab stays open",
     run: async (ctx) => {
-      const name = ctx.args[0];
-      if (name !== undefined && !openTabs().includes(name)) return flash(`no tab "${name}"`, "warn");
+      const name = ctx.args[0] === undefined ? undefined : resolveContext(ctx.args[0]);
+      if (name === null || (name !== undefined && !openTabs().includes(name))) return flash(`no tab "${ctx.args[0]}"`, "warn");
       await closeTab(name);
     },
   },
   "tab.closeOthers": {
     enabled: () => openTabs().length > 1 || "only one tab is open",
     run: async (ctx) => {
-      const name = ctx.args[0];
-      if (name !== undefined && !openTabs().includes(name)) return flash(`no tab "${name}"`, "warn");
+      const name = ctx.args[0] === undefined ? undefined : resolveContext(ctx.args[0]);
+      if (name === null || (name !== undefined && !openTabs().includes(name))) return flash(`no tab "${ctx.args[0]}"`, "warn");
       await closeOtherTabs(name);
+    },
+  },
+  // §8.2: `:ctx alias` (dialog), `:ctx alias prod`, `:ctx alias @staging stg`, `-` clears
+  "context.alias": {
+    enabled: () => getCluster().contexts.length > 0 || "no kube context",
+    run: (ctx) => {
+      const { context, rest } = contextArg(ctx.args);
+      if (!context) return flash(`no context "${ctx.args[0]?.slice(1) ?? ""}"`, "warn");
+      if (rest.length === 0) return showOverlay(CONTEXT_ALIAS_OVERLAY, { context });
+      const alias = rest[0] === "-" ? "" : rest.join(" ");
+      const problem = aliasProblem(context, alias, getCluster().contexts.map((c) => c.name));
+      if (problem) return flash(problem, "warn");
+      setContextAlias(context, alias);
+      flash(alias ? `${context} is shown as ${alias}` : `${context} is shown by its own name`);
     },
   },
   // §8.3: the focused pane only; `:pane ctx staging` restarts the pane there
@@ -103,9 +124,10 @@ registerActions({
       const name = ctx.args[0];
       if (name === undefined) return open("palette.picker", LAYERS.pickerContext, { kind: "ctx", pane: true });
       dismiss();
-      if (!getCluster().contexts.some((c) => c.name === name)) return flash(`no context "${name}"`, "warn");
-      if (ctx.newPane) openPaneInContext(name, ctx.newPane);
-      else setPaneContext(name);
+      const context = resolveContext(name);
+      if (!context) return flash(`no context "${name}"`, "warn");
+      if (ctx.newPane) openPaneInContext(context, ctx.newPane);
+      else setPaneContext(context);
     },
   },
   "context.protect": {

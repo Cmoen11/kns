@@ -149,6 +149,18 @@ export function tabToEvict(context: string): string | null {
   return T.tabToEvict(s.tabs, s.current, mru, (t) => tabLiveSessions(t).some((l) => l.onClose === "ends"));
 }
 
+/** Moves a tab to `index` in the strip (drag to reorder). */
+export function moveTab(context: string, index: number): void {
+  layoutStore.setState((s) => {
+    const from = s.tabs.indexOf(context);
+    const to = Math.max(0, Math.min(s.tabs.length - 1, index));
+    if (from < 0 || from === to) return s;
+    const tabs = T.withoutTab(s.tabs, context);
+    tabs.splice(to, 0, context);
+    return { ...s, tabs };
+  });
+}
+
 /** Takes a tab out of the strip; its workspace stays saved. Not the one on screen. */
 export function removeTab(context: string): void {
   layoutStore.setState((s) => (s.current === context || !s.tabs.includes(context) ? s : { ...s, tabs: T.withoutTab(s.tabs, context) }));

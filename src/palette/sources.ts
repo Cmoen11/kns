@@ -2,6 +2,7 @@
 // runnable where it was opened (with their keys), favourites, layouts, namespaces, contexts,
 // panes and live undos. Each item knows how to run itself.
 import { contextDetail } from "../store/context-label";
+import { contextFlags } from "../store/settings";
 import {
   crumbsOf, focusPane, getCluster, namespaceNames, openView, paneIndex, paneNamespace, paneOrder, paneView, registry, resourceFor, setNamespace,
   switchContext, tableView, toasts, type ActionId,
@@ -152,15 +153,21 @@ export function namespaceItems(pane: PaneId | null): Item[] {
 export function contextItems(): Item[] {
   const { contexts, context } = getCluster();
   // the palette switches the window (§8.2); a pane in another context is `:pods @ctx` or the picker's Ctrl/⌘+Enter (§8.3)
-  return contexts.map((c) => ({
-    key: `ctx:${c.name}`,
-    group: "Contexts",
-    label: c.name,
-    detail: contextDetail(c.cluster, c.user),
-    disabled: c.name === context,
-    reason: c.name === context ? "current" : undefined,
-    run: () => switchContext(c.name),
-  }));
+  return contexts.map((c) => {
+    // an alias is the row's name and the kubeconfig name a keyword (§8.2)
+    const alias = contextFlags(c.name).alias;
+    const detail = contextDetail(c.cluster, c.user);
+    return {
+      key: `ctx:${c.name}`,
+      group: "Contexts",
+      label: alias ?? c.name,
+      keywords: alias ? [c.name] : undefined,
+      detail: alias ? `${c.name} · ${detail}` : detail,
+      disabled: c.name === context,
+      reason: c.name === context ? "current" : undefined,
+      run: () => switchContext(c.name),
+    };
+  });
 }
 
 export function paneItems(): Item[] {

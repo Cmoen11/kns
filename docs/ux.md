@@ -972,6 +972,13 @@ All WebView2 rows depend on `AreBrowserAcceleratorKeysEnabled = false` (§18.24)
   - Closing a tab ends its connection, watches and shells (a dialog lists the shells first) and goes to the most recently used other tab. Its workspace stays saved: opening the context again lands where it was.
   - A protected context's tab shows the warn glyph and the protected line, so prod is never a quiet tab. A read-only one shows `RO`.
   - The open tabs are saved with the workspaces and restored on start; the warm tabs connect at once.
+  - Drag a tab to reorder the strip; it swaps places as it crosses a neighbour's middle. The context sidebar marks open tabs with `tab`.
+- **Aliases.** A context can have a short name (`arn:aws:eks:…:cluster/prod-main` → `prod`), stored in `Settings.contexts[name].alias`.
+  - Shown wherever the context is named for reading: tabs, the context picker and palette rows, the context sidebar, pane context crumbs, `pane · <context>`, tab dialogs. The kubeconfig name follows in the detail line and the tab's tooltip.
+  - Accepted wherever a context is typed: `:ctx prod`, `:pods @prod`, `:tab close prod`, `:pane ctx prod`, and the pickers' fuzzy search (the kubeconfig name still matches). Completion offers both.
+  - Set with a double click on the tab, `Rename…` in its right-click menu, `F2` in the context picker, the Contexts section of settings, or `:ctx alias [@context] [alias]` (no alias: the dialog; `-`: clear). Empty clears it.
+  - An alias never means two contexts: it may not be another context's name or alias (case-insensitive), has no spaces, does not start with `@`, and is at most 40 characters.
+  - Safety texts keep the kubeconfig name: a protected context's typed confirmation asks for the real name, and the action log and agent tools use it.
 - With the single `default` context the picker still works and shows connection state.
 - **Protected context.** Set with `:protect on`, `Ctrl/⌘+T` in the picker, or the Contexts section of settings. Stored in `Settings.contexts`.
   - Signal: the warn glyph and a 2px `--k-text` line on the context's tab, and the same line under the whole titlebar while the focused pane is in that context. The line uses a theme token, not the warn hue.

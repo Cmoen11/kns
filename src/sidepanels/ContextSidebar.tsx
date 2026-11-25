@@ -1,6 +1,6 @@
 // The context sidebar (left): every kube context, the namespaces of the window's context and the
 // saved favourites, one click or j/k + Enter away. It only calls what the pickers call:
-// switchContext (with its live-session confirm), setNamespace + noteNamespaceUsed, recallFavourite
+// switchContext (opens or goes to the context's tab), setNamespace + noteNamespaceUsed, recallFavourite
 // and recallLayout. Lazy chunk: mounted only while the panel is open.
 import { useEffect, useMemo, useRef } from "react";
 import { favouriteSummary, treeSummary } from "../palette/favourites/model";
@@ -8,7 +8,7 @@ import { nsSlotOf } from "../palette/favourites/slots";
 import { noteNamespaceUsed, recallFavourite, recallLayout, useFav } from "../palette/favourites/store";
 import { contextDetail } from "../store/context-label";
 import { awsSsoLogin, clusterStore, needsSsoLogin, refreshContexts, resourceFor, switchContext, useCluster, useNamespaces, watchSso } from "../store/cluster";
-import { focusedPane, paneView, setNamespace, useWorkspace } from "../store/layout";
+import { focusedPane, paneView, setNamespace, useTabs, useWorkspace } from "../store/layout";
 import { useSettings } from "../store/settings";
 import { flash } from "../store/status";
 import { viewOf } from "../store/workspace";
@@ -90,6 +90,8 @@ export default function ContextSidebar() {
   // which contexts offer a sign-in: a string, so the rows rebuild only when that set changes
   const loginNeeded = useCluster((s) => s.contexts.filter((c) => needsSsoLogin(c, s)).map((c) => c.name).join("\n"));
   const flags = useSettings((s) => s.contexts);
+  // open context tabs (§8.2): their rows say so, a click goes to the tab
+  const tabs = useTabs();
   const { names, synced, forbidden } = useNamespaces();
   // the focused pane's namespace, or null when it has none
   const namespace = useWorkspace((ws) => {
@@ -133,19 +135,21 @@ export default function ContextSidebar() {
       "contexts",
       "Contexts",
       contexts
-        .filter((c) => matches(filter, c.name, c.cluster, c.user))
+        .filter((c) => matches(filter, c.name, c.cluster, c.user, flags[c.name]?.alias))
         .map((c): PanelRow => {
           const f = flags[c.name];
           const labels = [f?.protected ? "PROTECTED" : "", f?.readOnly ? "READ ONLY" : ""].filter(Boolean);
           const current = c.name === active;
+          const detail = contextDetail(c.cluster, c.user);
           return {
             key: `ctx:${c.name}`,
             section: "contexts",
-            label: c.name,
-            detail: contextDetail(c.cluster, c.user),
+            // an alias is the row's name; the kubeconfig name leads the detail (§8.2)
+            label: f?.alias ?? c.name,
+            detail: f?.alias ? `${c.name} · ${detail}` : detail,
             current,
             labels: labels.length > 0 ? labels : undefined,
-            trailing: current ? STATUS_WORD[status] : undefined,
+            trailing: current ? STATUS_WORD[status] : tabs.includes(c.name) ? "tab" : undefined,
             // signed in: no button; it returns when the token expires or the cluster refuses it
             login:
               c.awsProfile && (signingIn === c.name || needLogin.has(c.name))
@@ -206,7 +210,7 @@ export default function ContextSidebar() {
     ];
     section("favourites", "Favourites", favItems);
     return out;
-  }, [contexts, active, status, flags, names, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn, loginNeeded]);
+  }, [contexts, active, status, flags, tabs, names, synced, forbidden, namespace, slots, favourites, layouts, collapsed, filter, healthOn, byNs, healthState, healthMessage, sortByHealth, signingIn, loginNeeded]);
 
   return (
     <>

@@ -65,6 +65,7 @@ Every view lives in a pane. Split, zoom, move, close, and open anything beside t
 - **Example:** `:deploy`, then `Mod+Shift+K`, type `staging`, `Ctrl+Enter`: the same Deployments list of staging opens to the right.
 - **Context tabs:** switching context (`Mod+Shift+K`, `:ctx staging`) opens it as a tab in the titlebar, or goes to its tab. A tab that is not on screen stays warm: connected, its tables watched, its shells running, its cursor and marks kept. `Ctrl+Tab` / `Ctrl+Shift+Tab` step through the tabs (`leader Tab` also from inside a shell), `Ctrl+F4` (`⌃⌘W` on macOS, `leader X`, `:tab close`) closes one; closing keeps its workspace, so opening the context again lands where you were. Right-click a tab to close it or the other tabs; hover it for cluster, user and server version. At most six tabs; a protected context's tab has the warn glyph and is underlined.
 - **Example:** a shell in `default`, then `:ctx staging`, look around, `Ctrl+Tab`: back in `default` with the shell still running.
+- **Context aliases:** double-click a tab (or `F2` in the context picker, `:ctx alias prod`) to give a long kubeconfig context a short name. Tabs, pickers and pane crumbs show it; `:ctx prod` and `:pods @prod` accept it. Drag tabs to reorder them.
 
 <a id="logs"></a>
 ### Logs

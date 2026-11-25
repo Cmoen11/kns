@@ -1,7 +1,7 @@
 // Runs a parsed `:` command against the live app (docs/ux.md §6.2). The grammar itself is in
 // parse.ts; this file only wires it to the registry, discovery and the pane API.
 import {
-  connOf, engine, ensureConnected, focusedPane, getCluster, paneContext, namespaceNames, openView, paneNamespace, registry, resolveResource, tableView,
+  connOf, contextName, engine, ensureConnected, focusedPane, getCluster, paneContext, namespaceNames, openView, paneNamespace, registry, resolveContext, resolveResource, tableView,
   type ActionId,
 } from "../../foundation";
 import type { PaneId } from "../../types";
@@ -60,7 +60,8 @@ export function commandEnv(): CompleteEnv {
     isResource: (alias) => resolveResource(alias) !== undefined,
     resources: resourceNames(commands),
     namespaces: namespaceNames(),
-    contexts: cluster.contexts.map((c) => c.name),
+    // aliases complete too: `:ctx pr` → `prod`
+    contexts: [...cluster.contexts.map((c) => contextName(c.name)), ...cluster.contexts.map((c) => c.name)],
     favourites: fav.favorites.map((f) => f.name),
     layouts: fav.layouts.map((l) => l.name),
   };
@@ -85,12 +86,14 @@ async function openResource(cmd: Extract<Command, { type: "resource" }>, pane: P
   const target = pane ?? focusedPane() ?? undefined;
   const here = paneContext(target);
   let context = here;
-  if (cmd.context && cmd.context !== here) {
-    if (!getCluster().contexts.some((c) => c.name === cmd.context)) return `no context "${cmd.context}"`;
+  // `@x` is a kubeconfig name or an alias (§8.2)
+  const asked = cmd.context ? resolveContext(cmd.context) : null;
+  if (cmd.context && !asked) return `no context "${cmd.context}"`;
+  if (asked && asked !== here) {
     // §8.3: `@ctx` scopes to the pane: in place the pane restarts in that context, with `+` /
     // Ctrl/⌘+Enter a new pane opens there. `:ctx` switches the whole window.
-    if (!(await waitForDiscovery(cmd.context))) return `${cmd.context}: discovery did not finish`;
-    context = cmd.context;
+    if (!(await waitForDiscovery(asked))) return `${contextName(asked)}: discovery did not finish`;
+    context = asked;
   }
   const res = resolveResource(cmd.alias, context);
   if (!res) return `unknown resource "${cmd.alias}"${context !== here ? ` in ${context}` : ""}`;
