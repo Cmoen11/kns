@@ -107,13 +107,30 @@ jobs:
         working-directory: src-tauri
       # Updater bundles (.sig, macOS .app.tar.gz) need the signing key; without it (forks) the
       # build still runs but cannot be released.
+      # macOS code signing and notarization (Developer ID). tauri build imports APPLE_CERTIFICATE
+      # (base64 .p12) into a temporary keychain, signs the .app with the hardened runtime,
+      # notarizes and staples it, then builds the .dmg and the updater .app.tar.gz from the signed
+      # app. Notarization takes an Apple ID (APPLE_ID, APPLE_PASSWORD = app-specific password,
+      # APPLE_TEAM_ID) or an App Store Connect API key (APPLE_API_ISSUER, APPLE_API_KEY and the
+      # .p8 contents in APPLE_API_PRIVATE_KEY). Only the macOS job gets these secrets.
       - name: tauri build
         shell: bash
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           RELEASE: ${{ needs.version.outputs.release }}
+          IS_MAC: ${{ matrix.os == 'macos-latest' }}
+          APPLE_CERTIFICATE: ${{ matrix.os == 'macos-latest' && secrets.APPLE_CERTIFICATE || '' }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
+          APPLE_SIGNING_IDENTITY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+          APPLE_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_ID || '' }}
+          APPLE_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
+          APPLE_API_ISSUER: ${{ matrix.os == 'macos-latest' && secrets.APPLE_API_ISSUER || '' }}
+          APPLE_API_KEY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_API_KEY || '' }}
+          APPLE_API_PRIVATE_KEY: ${{ matrix.os == 'macos-latest' && secrets.APPLE_API_PRIVATE_KEY || '' }}
         run: |
+          set -euo pipefail
           extra=()
           if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
             extra=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
@@ -121,7 +138,47 @@ jobs:
             echo "::error::TAURI_SIGNING_PRIVATE_KEY is not set: a release must carry updater signatures"
             exit 1
           fi
-          pnpm tauri build ${{ matrix.args }} "${extra[@]}"
+          if [ "$IS_MAC" = true ]; then
+            # empty variables would make tauri try to sign or notarize with nothing: drop them
+            # (the certificate password may be empty)
+            for v in APPLE_CERTIFICATE APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID APPLE_API_ISSUER APPLE_API_KEY; do
+              [ -n "${!v}" ] || unset "$v"
+            done
+            if [ -n "$APPLE_API_PRIVATE_KEY" ]; then
+              key="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY:-kns}.p8"
+              printf '%s\n' "$APPLE_API_PRIVATE_KEY" > "$key"
+              export APPLE_API_KEY_PATH="$key"
+            fi
+            unset APPLE_API_PRIVATE_KEY
+            if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+              if [ "$RELEASE" = true ]; then
+                echo "::error::APPLE_CERTIFICATE is not set: a release must be signed with the Developer ID certificate"
+                exit 1
+              fi
+              echo "::warning::APPLE_CERTIFICATE is not set: the macOS build is not signed"
+            elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
+              echo "signing and notarizing with Apple ID"; echo "MAC_NOTARIZED=true" >> "$GITHUB_ENV"
+            elif [ -n "${APPLE_API_ISSUER:-}" ] && [ -n "${APPLE_API_KEY:-}" ] && [ -n "${APPLE_API_KEY_PATH:-}" ]; then
+              echo "signing and notarizing with App Store Connect API key"; echo "MAC_NOTARIZED=true" >> "$GITHUB_ENV"
+            elif [ "$RELEASE" = true ]; then
+              echo "::error::notarization secrets are missing: set APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID (or APPLE_API_ISSUER, APPLE_API_KEY and APPLE_API_PRIVATE_KEY)"
+              exit 1
+            else
+              echo "::warning::notarization secrets are missing: the macOS build is signed but not notarized"
+            fi
+          fi
+          pnpm tauri build ${{ matrix.args }} ${extra[@]+"${extra[@]}"}
+      # a notarized build must pass Gatekeeper; this catches a missing signature or ticket
+      - name: check macOS signature
+        if: env.MAC_NOTARIZED == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          app=$(ls -d src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app)
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv --verbose=2 "$app" 2>&1 | grep -E '^(Authority|TeamIdentifier|Runtime)'
+          xcrun stapler validate "$app"
+          spctl --assess --type execute --verbose=2 "$app"
       - uses: actions/upload-artifact@v4
         with:
           name: kns-${{ matrix.os }}

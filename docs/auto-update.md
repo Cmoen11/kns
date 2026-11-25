@@ -19,6 +19,19 @@ What is in place:
   - The release job uploads `kns_<v>_aarch64.app.tar.gz` and `latest.json` next to the installers.
   - Manual builds sign when the secret is there and still pass when it is not.
 
+## macOS code signing
+
+Release builds of the macOS app are signed with a Developer ID certificate and notarized (`tauri build` does both; the updater `.app.tar.gz` is made from the signed app). Repo secrets, passed to the macOS job only:
+
+- `APPLE_CERTIFICATE`: the Developer ID Application certificate with its private key, exported as `.p12` and base64-encoded (`base64 -i cert.p12 | pbcopy`).
+- `APPLE_CERTIFICATE_PASSWORD`: the `.p12` export password.
+- `APPLE_SIGNING_IDENTITY` (optional): e.g. `Developer ID Application: Name (TEAMID)`. Without it, tauri takes the identity from the certificate.
+- Notarization, one of:
+  - `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password from account.apple.com, not the account password) and `APPLE_TEAM_ID`;
+  - `APPLE_API_ISSUER`, `APPLE_API_KEY` (the key ID) and `APPLE_API_PRIVATE_KEY` (the contents of the `.p8` file) for an App Store Connect API key.
+
+A release fails if the certificate or the notarization secrets are missing, and a step after every notarized build checks the app with `codesign`, `stapler validate` and `spctl`. Manual builds without the secrets still pass, unsigned, with a warning.
+
 The rest of this file is the exploration that led here.
 
 ## Summary
@@ -77,7 +90,7 @@ Note: with A or B, anyone who finds the URL can download the binaries. The insta
 - Tauri's NSIS default is a per-user install (`currentUser`), so updating needs no UAC prompt. Check this on a real machine if `bundle.windows.nsis.installMode` is ever changed.
 - SmartScreen: the app downloads the file itself, so it gets no Mark-of-the-Web. The installer should therefore not trigger the SmartScreen warning the way a browser download does. *Not verified. Test this on the first real update.*
 
-**macOS** (built in CI, never run by hand)
+**macOS** (built, signed and notarized in CI, never run by hand)
 - The app replaces the `.app` in place, so it needs write access to where it is installed. Under `/Applications` that is the normal case for an admin user.
 - The app downloads the bundle itself, so it gets no quarantine attribute, and Gatekeeper does not ask again after an update. *Not verified.*
 - Architecture mismatch: the v0.1.0 release has `kns_0.1.0_universal.dmg`, but CI now builds `--target aarch64-apple-darwin`. `latest.json` needs a `darwin-aarch64` entry, plus `darwin-x86_64` only if universal builds come back.
