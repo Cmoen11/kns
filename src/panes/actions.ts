@@ -50,7 +50,7 @@ function crumbUp(): void {
 }
 
 async function closeWindow(): Promise<void> {
-  const ending = L.liveSessions().filter((s) => s.onClose === "ends").map((s) => s.label);
+  const ending = L.allLiveSessions().filter((s) => s.onClose === "ends").map((s) => s.label);
   if (ending.length > 0) {
     const ok = await confirm({ tier: 1, title: "Close kns", body: "These sessions end.", items: ending, confirmLabel: "Close", cancelLabel: "Stay" });
     if (!ok) return;

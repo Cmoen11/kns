@@ -63,6 +63,8 @@ Every view lives in a pane. Split, zoom, move, close, and open anything beside t
 - **Mouse:** split, zoom and close buttons in each pane header; `Ctrl+click` on a row or a button opens beside; drag a divider to resize; drag a pane header onto another pane to swap (centre) or insert beside it (edge).
 - **Panes in other contexts:** in the context picker (`Mod+Shift+K`) `Ctrl+Enter` opens the focused pane's view beside it in the picked context (`Alt+Enter`: below); `leader C` (`:pane ctx`) changes only the focused pane's context; `:pods @staging` opens staging's pods in the pane. While more than one context is on screen each pane header starts with its context, a protected context's pane is underlined, and the titlebar shows the focused pane's context. Reads, permissions, confirms (protected = type the name) and the action log follow each pane's context.
 - **Example:** `:deploy`, then `Mod+Shift+K`, type `staging`, `Ctrl+Enter`: the same Deployments list of staging opens to the right.
+- **Context tabs:** switching context (`Mod+Shift+K`, `:ctx staging`) opens it as a tab in the titlebar, or goes to its tab. A tab that is not on screen stays warm: connected, its tables watched, its shells running, its cursor and marks kept. `Ctrl+Tab` / `Ctrl+Shift+Tab` step through the tabs (`leader Tab` also from inside a shell), `Ctrl+F4` (`⌃⌘W` on macOS, `leader X`, `:tab close`) closes one; closing keeps its workspace, so opening the context again lands where you were. At most six tabs; a protected context's tab is underlined.
+- **Example:** a shell in `default`, then `:ctx staging`, look around, `Ctrl+Tab`: back in `default` with the shell still running.
 
 <a id="logs"></a>
 ### Logs

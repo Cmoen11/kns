@@ -10,6 +10,7 @@ import { useWorkspace } from "../store/layout";
 import { useSettings } from "../store/settings";
 import { viewOf } from "../store/workspace";
 import { ActionButton, actionTip, Glyph, Icon, keepFocus, Keys, menuAnchor, openMenu, runAction, tip, useActionState } from "../ui";
+import { ContextTabs } from "./ContextTabs";
 import { useShell } from "./slots";
 import { WINDOW_MENU } from "./window-menu";
 
@@ -89,14 +90,22 @@ export function Titlebar() {
               <i.component />
             </span>
           ))}
-        <Trigger action="context.pick" className="titlebar-context t-crumb" title="Switch context">
-          {context ?? "no context"}
-        </Trigger>
-        {focusedCtx && focusedCtx !== windowCtx && (
-          <span className="titlebar-window t-ui" data-tauri-drag-region title="The focused pane is in another context than the window">
-            pane · window {windowCtx}
-          </span>
-        )}
+        {/* §8.2: one tab per open context; with a single tab, the plain switcher */}
+        <ContextTabs
+          focused={focusedCtx}
+          single={
+            <>
+              <Trigger action="context.pick" className="titlebar-context t-crumb" title="Switch context">
+                {context ?? "no context"}
+              </Trigger>
+              {focusedCtx && focusedCtx !== windowCtx && (
+                <span className="titlebar-window t-ui" data-tauri-drag-region title="The focused pane is in another context than the window">
+                  pane · window {windowCtx}
+                </span>
+              )}
+            </>
+          }
+        />
         {cluster && (
           <span className="titlebar-cluster t-ui" data-tauri-drag-region title={`${cluster} / ${user}`}>
             {contextDetail(cluster, user ?? "")}

@@ -15,17 +15,20 @@ import { settingsStore } from "./settings";
 import { PERSIST_KEYS, persistedStore, type PersistedSlice } from "./persist";
 import { getSelection, setSelection } from "./selection";
 import { flash } from "./status";
+import * as T from "./tabs";
 import * as W from "./workspace";
 
 export interface LayoutState extends PersistedSlice<"workspaces" | "parked"> {
   /** the window's context; its workspace is the one on screen */
   current: string | null;
+  /** open context tabs in strip order (§8.2); always holds `current` */
+  tabs: string[];
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 export function sanitizeLayout(data: unknown): LayoutState {
-  const out: LayoutState = { workspaces: {}, parked: {}, current: null };
+  const out: LayoutState = { workspaces: {}, parked: {}, current: null, tabs: [] };
   if (!isObj(data)) return out;
   if (isObj(data.workspaces)) {
     for (const [ctx, raw] of Object.entries(data.workspaces)) {
@@ -34,13 +37,14 @@ export function sanitizeLayout(data: unknown): LayoutState {
     }
   }
   if (typeof data.current === "string" && out.workspaces[data.current]) out.current = data.current;
+  out.tabs = T.sanitizeTabs(data.tabs, out.current, (c) => !!out.workspaces[c]);
   return out;
 }
 
 export const layoutStore = persistedStore<LayoutState>({
   key: PERSIST_KEYS.workspaces,
   version: 1,
-  defaults: () => ({ workspaces: {}, parked: {}, current: null }),
+  defaults: () => ({ workspaces: {}, parked: {}, current: null, tabs: [] }),
   sanitize: sanitizeLayout,
 });
 
@@ -89,6 +93,68 @@ export function workspaceContexts(): string[] {
   for (const id of leafIds(ws.root)) out.add(W.contextOfPane(ws, id));
   return [...out];
 }
+
+// ── context tabs (§8.2) ────────────────────────────────────────────────────
+
+/** Open tabs, strip order. */
+export const openTabs = (): string[] => layoutStore.getState().tabs;
+export const useTabs = (): string[] => useStore(layoutStore, (s) => s.tabs);
+
+/** Tabs by last use, the one on screen first; in memory only. */
+let mru: string[] = [];
+export const tabMru = (): string[] => mru;
+
+/** The workspaces of the open tabs: the one on screen and the warm ones. */
+export function openWorkspaces(s: LayoutState = layoutStore.getState()): Workspace[] {
+  const out: Workspace[] = [];
+  for (const t of s.tabs) {
+    const ws = s.workspaces[t];
+    if (ws) out.push(ws);
+  }
+  const cur = active(s);
+  if (cur && !out.includes(cur)) out.push(cur);
+  return out;
+}
+
+/** Every context a pane of an open tab shows: these stay connected. */
+export function tabContexts(): string[] {
+  const out = new Set<string>();
+  for (const ws of openWorkspaces()) {
+    out.add(ws.context);
+    for (const id of leafIds(ws.root)) out.add(W.contextOfPane(ws, id));
+  }
+  return [...out];
+}
+
+function sessionsIn(ws: Workspace | undefined): LiveSession[] {
+  const out: LiveSession[] = [];
+  if (!ws) return out;
+  for (const id of leafIds(ws.root)) {
+    const s = liveSession(id, W.viewOf(ws, id));
+    if (s) out.push(s);
+  }
+  return out;
+}
+
+/** The live sessions a tab holds: what closing it ends or keeps. */
+export const tabLiveSessions = (context: string): LiveSession[] => sessionsIn(layoutStore.getState().workspaces[context]);
+
+/** Every live session in every open tab (quit). */
+export const allLiveSessions = (): LiveSession[] => openWorkspaces().flatMap(sessionsIn);
+
+/** The tab that must close before `context` can open, if the strip is full. */
+export function tabToEvict(context: string): string | null {
+  const s = layoutStore.getState();
+  if (s.tabs.includes(context)) return null;
+  return T.tabToEvict(s.tabs, s.current, mru, (t) => tabLiveSessions(t).some((l) => l.onClose === "ends"));
+}
+
+/** Takes a tab out of the strip; its workspace stays saved. Not the one on screen. */
+export function removeTab(context: string): void {
+  layoutStore.setState((s) => (s.current === context || !s.tabs.includes(context) ? s : { ...s, tabs: T.withoutTab(s.tabs, context) }));
+  mru = mru.filter((m) => m !== context);
+}
+
 /** True while panes of more than one context are on screen: the pane headers then name their context. */
 export const useMixedContexts = (): boolean => useWorkspace((ws) => !!ws && W.isMixed(ws));
 
@@ -217,17 +283,22 @@ export function useGeometry(): Geometry {
 
 /** Makes `context` the window's workspace, creating the first-run layout when it has none (§3.6, §8.2). */
 /** `namespace`: the kubeconfig context's own, for a workspace that does not exist yet. */
+/** The context's tab opens (after the one on screen) when it is not open yet. */
 export function setLayoutContext(context: string, width = typeof window === "undefined" ? 1440 : window.innerWidth, namespace?: string): void {
+  // the cursor of every pane is written into its entry, so coming back lands on the same row
+  if (layoutStore.getState().current !== context) stampCursors();
   layoutStore.setState((s) => {
-    if (s.current === context && s.workspaces[context]) return s;
+    const tabs = T.withTab(s.tabs, context, s.current);
+    if (s.current === context && s.workspaces[context] && tabs.length === s.tabs.length) return s;
     const ws = s.workspaces[context] ?? W.defaultWorkspace(context, width, newId, namespace);
-    return { ...s, current: context, workspaces: { ...s.workspaces, [context]: ws } };
+    return { ...s, current: context, tabs, workspaces: { ...s.workspaces, [context]: ws } };
   });
+  mru = T.touch(mru, context);
 }
 
 /** Replaces the active workspace (saved-layout recall). */
 export function setWorkspace(ws: Workspace): void {
-  layoutStore.setState((s) => ({ ...s, current: ws.context, workspaces: { ...s.workspaces, [ws.context]: ws } }));
+  layoutStore.setState((s) => ({ ...s, current: ws.context, tabs: T.withTab(s.tabs, ws.context, s.current), workspaces: { ...s.workspaces, [ws.context]: ws } }));
 }
 
 // ── navigation epoch: a view component is remounted per history move, not per edit ──
@@ -524,12 +595,13 @@ export function toggleFollow(pane?: PaneId): boolean {
   return !!id && applyResult((ws) => W.toggleFollow(ws, id)) !== null;
 }
 
-// ── housekeeping: forget live state of panes that left the workspace ────────
+// ── housekeeping: forget live state of panes that left every open tab ──────
+// (a pane of a warm tab keeps its marks and status, so switching back finds them)
 
 let known = new Set<PaneId>();
 layoutStore.subscribe((s) => {
-  const ws = active(s);
-  const now = new Set(ws ? Object.keys(ws.panes) : []);
+  const now = new Set<PaneId>();
+  for (const ws of openWorkspaces(s)) for (const id of Object.keys(ws.panes)) now.add(id);
   for (const id of known) if (!now.has(id)) forget(id);
   known = now;
 });

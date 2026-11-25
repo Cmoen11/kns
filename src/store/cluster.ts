@@ -6,11 +6,13 @@ import { createStore } from "zustand/vanilla";
 import { backend } from "../ipc";
 import type { ApiResource, BackendError, ClusterInfo, ContextInfo, Gvr, SsoStatus, TableQuery } from "../ipc/types";
 import { buildAliases, gvrKey, resolveAlias, type AliasMap } from "./aliases";
-import { focusedContext, layoutStore, liveSessions, setLayoutContext, workspaceContexts } from "./layout";
+import { focusedContext, layoutStore, openTabs, removeTab, setLayoutContext, tabContexts, tabLiveSessions, tabMru, tabToEvict } from "./layout";
+import { afterClose, stepTab as stepIn } from "./tabs";
 import { setActiveContext } from "./settings";
 import { initTables, tables, useTable, type Lease } from "./tables";
 import { CORE_NAMESPACES } from "./workspace";
 import { confirm } from "../ui/confirm";
+import { flash } from "./status";
 import { toasts } from "../ui/toast";
 
 export type ConnectionStatus = "idle" | "connecting" | "connected" | "offline";
@@ -167,9 +169,9 @@ export function ensureConnected(context: string): void {
   if (c.status === "idle") void connect(context);
 }
 
-/** Releases every context no pane on screen and not the window shows. */
+/** Releases every context no pane of an open tab and not the window shows. */
 function releaseUnused(): void {
-  const used = new Set(workspaceContexts());
+  const used = new Set(tabContexts());
   const win = clusterStore.getState().context;
   if (win) used.add(win);
   for (const name of runtimes.keys()) if (!used.has(name)) release(name);
@@ -211,7 +213,7 @@ export async function initCluster(): Promise<void> {
     const pick = persisted && names.includes(persisted) ? persisted : list.current && names.includes(list.current) ? list.current : names[0];
     if (pick) {
       activate(pick);
-      for (const c of workspaceContexts()) ensureConnected(c);
+      for (const c of tabContexts()) ensureConnected(c);
     }
     else clusterStore.setState({ status: "offline", error: { code: 0, reason: "Config", message: "No kube context found" } });
   } catch (e) {
@@ -220,28 +222,63 @@ export async function initCluster(): Promise<void> {
 }
 
 /**
- * Switches the window's context (§8.2): the whole workspace swaps to that context's saved one.
- * Live sessions of the workspace left behind end (parking is not built), so they are confirmed.
+ * Switches the window's context (§8.2): goes to its tab, opening one when it is not open. The tab
+ * left behind stays warm, its shells keep running. A full strip first closes the least recently
+ * used tab; when that ends live sessions, they are confirmed.
  */
 export async function switchContext(name: string): Promise<boolean> {
   const s = clusterStore.getState();
   if (!s.contexts.some((c) => c.name === name)) return false;
   if (s.context === name) return true;
-  const ending = liveSessions().filter((l) => l.onClose === "ends").map((l) => l.label);
-  if (ending.length > 0) {
-    const ok = await confirm({ tier: 1, title: `Switch to ${name}`, body: "These sessions end.", items: ending, confirmLabel: "Switch", cancelLabel: "Stay" });
-    if (!ok) return false;
+  const evict = tabToEvict(name);
+  if (evict) {
+    if (!(await confirmTabEnd(evict, `Open ${name}`, `The ${evict} tab closes to make room. These sessions end.`))) return false;
+    removeTab(evict);
   }
   activate(name);
   return true;
 }
 
-/** F5 / :reconnect: retries now (every context on screen), resets the backoff and re-opens every watch. */
+async function confirmTabEnd(context: string, title: string, body: string): Promise<boolean> {
+  const ending = tabLiveSessions(context).filter((l) => l.onClose === "ends").map((l) => l.label);
+  if (ending.length === 0) return true;
+  return !!(await confirm({ tier: 1, title, body, items: ending, confirmLabel: "End", cancelLabel: "Keep" }));
+}
+
+/**
+ * Closes a context tab (default: the one on screen). Its workspace stays saved, so opening the
+ * context again lands where it was; its connection, watches and live sessions end (confirmed).
+ */
+export async function closeTab(context: string | null = clusterStore.getState().context): Promise<boolean> {
+  const tabs = openTabs();
+  if (!context || !tabs.includes(context)) return false;
+  const next = afterClose(tabs, context, tabMru());
+  if (!next) {
+    flash("the last tab stays open");
+    return false;
+  }
+  if (!(await confirmTabEnd(context, `Close ${context}`, "These sessions end."))) return false;
+  if (clusterStore.getState().context === context) activate(next);
+  removeTab(context);
+  releaseUnused();
+  return true;
+}
+
+/** Ctrl+Tab / Ctrl+Shift+Tab: the next or previous tab in strip order. */
+export function stepTab(delta: 1 | -1): boolean {
+  const cur = clusterStore.getState().context;
+  const next = stepIn(openTabs(), cur, delta);
+  if (!next || next === cur) return false;
+  activate(next);
+  return true;
+}
+
+/** F5 / :reconnect: retries now (every context of an open tab), resets the backoff and re-opens every watch. */
 export function reconnect(): void {
   const context = clusterStore.getState().context;
   if (!context) return;
   tables().resyncAll();
-  const all = new Set([context, ...workspaceContexts()]);
+  const all = new Set([context, ...tabContexts()]);
   for (const c of all) {
     runtime(c).attempt = 0;
     void connect(c);
@@ -450,10 +487,10 @@ function watchPaneContexts(): void {
       setActiveContext(focused);
     }
     if (clusterStore.getState().contexts.length === 0) return;
-    const now = workspaceContexts().join("\u0001");
+    const now = tabContexts().join("\u0001");
     if (now === last) return;
     last = now;
-    for (const c of workspaceContexts()) ensureConnected(c);
+    for (const c of tabContexts()) ensureConnected(c);
     releaseUnused();
   });
 }

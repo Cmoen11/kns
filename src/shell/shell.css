@@ -53,6 +53,25 @@
 .titlebar-switch:active { background: var(--k-row-focus); }
 .titlebar-switch:hover .k-icon { color: var(--k-text); }
 .titlebar-switch[aria-disabled] { opacity: 0.5; }
+/* context tabs (§8.2): one per open context, the window's is active; warm tabs are muted */
+/* the strip does not shrink before the cluster, version and namespace texts next to it do */
+.ctx-tabs { display: flex; align-items: center; gap: var(--k-luft-05); min-width: 0; max-width: 75%; overflow: hidden; flex: 0 0 auto; }
+.ctx-tab {
+  display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 5em; max-width: 16em; height: var(--k-h-row);
+  border-radius: var(--k-radius); color: var(--k-text-3);
+}
+.ctx-tab:hover { background: var(--k-row-marked); color: var(--k-text-2); }
+.ctx-tab[data-active] { background: var(--k-row-focus); color: var(--k-text); flex: none; }
+/* a protected context's tab carries the protected line too, so prod is never a quiet tab */
+.ctx-tab[data-protected] { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-text); }
+.ctx-tab-main { display: inline-flex; align-items: center; gap: var(--k-luft-05); min-width: 0; height: 100%; padding-inline: var(--k-luft-1) var(--k-luft-05); color: inherit; }
+.ctx-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ctx-tab-main .k-icon { color: var(--k-text-muted); }
+.ctx-tab-flag { color: var(--k-text-muted); }
+.ctx-tab-close { display: inline-flex; align-items: center; height: 100%; padding-inline: var(--k-luft-05); color: var(--k-text-muted); visibility: hidden; border-radius: var(--k-radius); }
+.ctx-tab:hover .ctx-tab-close, .ctx-tab[data-active] .ctx-tab-close { visibility: visible; }
+.ctx-tab-close:hover { color: var(--k-text); background: var(--k-row-marked); }
+.ctx-tab-add { flex: none; }
 /* the palette field: looks like a search box, opens the palette */
 .titlebar-palette {
   display: inline-flex; align-items: center; gap: var(--k-luft-1); color: var(--k-text-3); height: var(--k-h-row);
