@@ -2,7 +2,7 @@
 
 kns is a graphical k9s: a keyboard-first Kubernetes desktop app for Windows and macOS. It keeps the k9s idea of driving everything from the keyboard, and adds what a terminal makes hard: split panes, virtualized tables, a real YAML editor with server dry run, a diagnosis view that explains why something is broken, tools for running a service locally against the cluster (port-forwards plus a rewritten `.env`), and a local MCP server so a coding agent can look at the cluster and ask for changes that you approve in the kns window. It is built with Tauri 2 (Rust, kube-rs) and React 19 / TypeScript, starts fast, stays small and updates itself from GitHub Releases.
 
-![Split panes: pods, deployments and services side by side](docs/img/panes.png)
+![Split panes: pods, deployments and services side by side, with staging open as a second context tab](docs/img/panes.png)
 
 ## Features
 
