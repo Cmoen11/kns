@@ -254,6 +254,19 @@ Can this pod talk to that Service? From a pod, kns checks the chain step by step
 - **Safety:** the checks only read. The probe runs one fixed command (`nc -z`, `wget --spider` or bash `/dev/tcp`, whichever the image has) as an exec after you confirm, and needs `create pods/exec`; without exec rights or tools it offers a debug container instead.
 - **Example:** `:reach web:80` on an `envdemo` pod in `kns-spike`: every step green, then the probe connects. To `db`: the Service has no ready endpoints.
 
+<a id="traffic"></a>
+### Pod traffic
+
+Who a pod talks to, in and out: Services, other pods (by workload), nodes and addresses outside the cluster, and what the pod listens on.
+
+- **Keys:** `:traffic` on a pod or deployment row (a deployment uses one of its running pods), or in a pod's containers view; also in the palette. In the view `Enter` describes the peer, `p` pauses and resumes, `x` starts over, `/` filters.
+- **Mouse:** the palette ("traffic in and out"), or Try in the hub.
+- **How:** the Kubernetes API has no traffic, so kns reads the pod's socket table: `cat /proc/net/tcp /proc/net/tcp6 /proc/net/udp /proc/net/udp6` in one container of the pod (they all share its network) every 3 s while the view is visible, and adds the readings up. Outbound rows are by peer and the peer's port (`svc payments/postgres 5432/tcp`), inbound rows by the pod's port and the peer (`deployment web` on `8080/tcp`). A row says how many connections are open now and in which state, or when it was last seen. Peers are named from the context's pods, Services and nodes; on a shared cluster where you may not list across namespaces, from your team's namespaces (the [catalog](catalog.md)) and the pod's own.
+- **Signs:** a green glyph is open now; a warning glyph is a connection stuck in `SYN_SENT`, which the peer (or a NetworkPolicy, a security group) does not answer. `localhost` is another container of the pod (a sidecar, a mesh proxy).
+- **Safety:** asks first; then one fixed `cat` per reading in the pod (an exec, `create pods/exec`), nothing changed. An image without `cat` (distroless) is read through a kns debug container when the pod has one: add it with `B`.
+- **Not for:** short connections that open and close between two readings, byte counts, or traffic of the node itself; use flow logs (VPC Flow Logs, Hubble) or your APM for those.
+- **Example:** `:traffic` on `deploy/orders` in the mock: outbound to `svc payments/postgres` and `svc kafka/kafka`, now and then `svc kube-system/kube-dns` (udp 53) and an external address on 443 (sometimes stuck connecting); inbound from `deployment web` on 8080 and `statefulset monitoring/prometheus` on 9090. In `games` the image has no `cat`.
+
 <a id="relations"></a>
 ### Relations
 

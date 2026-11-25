@@ -12,4 +12,5 @@ export * from "./github";
 export * from "./health";
 export * from "./logs";
 export * from "./pack";
+export * from "./traffic";
 export * from "./update";

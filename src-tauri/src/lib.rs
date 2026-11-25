@@ -17,6 +17,7 @@ pub mod table;
 pub mod multins;
 pub mod catalog;
 pub mod github;
+pub mod traffic;
 
 // feature foundation (A1, docs/plan-features.md §2.1)
 pub mod clip;
@@ -253,6 +254,7 @@ pub fn run() {
             github::cmd::github_status,
             github::cmd::github_env_images,
             github::cmd::github_compare,
+            traffic::cmd::traffic_sample,
             // auto-update
             update::cmd::update_status,
             update::cmd::update_check,

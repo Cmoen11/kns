@@ -115,7 +115,9 @@ export type ToolId =
   | "diff" | "owners" | "logs-merged" | "logs-structured" | "logs-patterns" | "debug" | "snippets" | "kubectl"
   | "devsets" | "env" | "names" | "conn-string" | "mirrord" | "pack" | "mcp" | "proposals"
   // status colours package
-  | "ns-health" | "action-log" | "status-colors";
+  | "ns-health" | "action-log" | "status-colors"
+  // pod traffic (src/traffic)
+  | "traffic";
 
 export interface WhyView {
   kind: "why";
@@ -171,6 +173,13 @@ export interface ReachView {
   to: ObjectRef;
   port?: number | string;
 }
+/** Who a pod talks to, in and out: readings of its socket table added up (src/traffic). */
+export interface TrafficView {
+  kind: "traffic";
+  pod: ObjectRef;
+  /** the container to read through; default: Rust picks one */
+  container?: string;
+}
 /** What each environment of a catalog system runs, from its ops repository (docs/catalog.md). */
 export interface DeploysView {
   kind: "deploys";
@@ -185,7 +194,7 @@ export interface HubView {
 }
 
 export type FeatureViewState =
-  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView;
+  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView | TrafficView;
 
 export type ViewState = TableView | ContainersView | DocView | LogsView | ShellView | ToolView | FeatureViewState;
 export type ViewKind = ViewState["kind"];

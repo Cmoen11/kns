@@ -12,6 +12,7 @@ pub mod github;
 pub mod health;
 pub mod logs;
 pub mod pack;
+pub mod traffic;
 pub mod update;
 
 pub use agents::*;
@@ -25,6 +26,7 @@ pub use github::*;
 pub use health::*;
 pub use logs::*;
 pub use pack::*;
+pub use traffic::*;
 pub use update::*;
 
 #[cfg(test)]

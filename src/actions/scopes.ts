@@ -17,7 +17,7 @@ export const SCOPES = [
   "can.logs", "can.shell", "can.scale", "can.restart", "can.setImage", "can.forward", "can.usedBy", "can.env",
   "flux", "flux.managed", "argo", "argo.app",
   // feature view kinds (docs/plan-features.md §2.7, §2.8)
-  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "deploys",
+  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "deploys", "traffic",
   // modes that replace NORMAL in a pane
   "edit", "review", "review.conflict", "review.secret", "review.flux",
   "term", "term.placeholder",
@@ -222,6 +222,7 @@ export function viewScopes(v: ViewScopeInfo): ScopeId[] {
     case "agents":
     case "text":
     case "deploys":
+    case "traffic":
       return [v.kind, "list", "pane"];
     case "reach":
       return ["list", "pane"];
@@ -232,7 +233,7 @@ export function viewScopes(v: ViewScopeInfo): ScopeId[] {
 
 /** Feature view kinds with a list-like chain (knownSegments, tests). */
 export const FEATURE_LIST_KINDS = [
-  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "reach", "deploys",
+  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "reach", "deploys", "traffic",
 ] as const satisfies readonly ViewKind[];
 
 /** The mode badge that goes with viewScopes(info). */

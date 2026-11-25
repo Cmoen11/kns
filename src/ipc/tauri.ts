@@ -15,6 +15,7 @@ import { githubTauri } from "./tauri/github";
 import { healthTauri } from "./tauri/health";
 import { logsTauri } from "./tauri/logs";
 import { packTauri } from "./tauri/pack";
+import { trafficTauri } from "./tauri/traffic";
 import { updateTauri } from "./tauri/update";
 import type { Backend, ExecEvent, ExecSession, TableEvent, Unsubscribe } from "./types";
 
@@ -98,5 +99,6 @@ export const tauriBackend: Backend = {
   ...healthTauri,
   ...catalogTauri,
   ...githubTauri,
+  ...trafficTauri,
   ...updateTauri,
 };

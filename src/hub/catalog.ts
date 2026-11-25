@@ -297,6 +297,18 @@ const entries: ToolEntry[] = [
     kinds: ["reach"],
   }),
   tool({
+    id: "traffic", title: "Pod traffic", group: "Debug",
+    summary: "Who a pod talks to, in and out: Services, pods, nodes, external addresses",
+    help: {
+      answers: "Reads the pod's socket table every 3 s and adds the readings up: each peer by port, inbound and outbound, open now or when last seen, and what the pod listens on. Enter opens the peer.",
+      safety: "One fixed `cat /proc/net/...` in the pod per reading (an exec), after you confirm; nothing is changed. Short connections between two readings are missed.",
+    },
+    actions: ["res.traffic"],
+    commands: [":traffic"],
+    try: { action: "res.traffic", needs: "pod" },
+    kinds: ["traffic"],
+  }),
+  tool({
     id: "relations", title: "Relations", group: "Debug",
     summary: "What owns this object, what it owns, what selects and mounts it",
     help: {
@@ -580,7 +592,7 @@ export const toolStatusHook = (id: ToolId): ToolStatusHook | undefined => status
 /** Tools with nothing to report: they act once on what you point at. */
 export const STATUSLESS: ReadonlySet<ToolId> = new Set<ToolId>([
   "palette", "panes", "describe-edit", "favourites", "filter", "status-colors",
-  "why", "crash", "timeline", "sparklines", "reach", "relations",
+  "why", "crash", "timeline", "sparklines", "reach", "relations", "traffic",
   "logs-merged", "logs-structured", "logs-patterns", "snippets", "kubectl",
   "env", "conn-string", "mirrord", "pack",
 ]);

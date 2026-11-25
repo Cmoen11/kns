@@ -56,6 +56,10 @@
 .tl[data-view="deploys"] .tl-row.row > .tl-cell:first-child { margin-left: calc(var(--k-glyph) + var(--k-luft-2)); }
 .tl[data-view="deploys"] .tl-cell:first-of-type { flex: 0 0 8em; }
 .tl[data-view="deploys"] .tl-cell:nth-of-type(2) { flex: 0 1 14em; color: inherit; font-variant-numeric: tabular-nums; }
+/* traffic: peer, port, then what is open; rows without a glyph keep its room */
+.tl[data-view="traffic"] .tl-row.row > .tl-cell:first-child { margin-left: calc(var(--k-glyph) + var(--k-luft-2)); }
+.tl[data-view="traffic"] .tl-cell:first-of-type { flex: 0 1 22em; }
+.tl[data-view="traffic"] .tl-cell:nth-of-type(2) { flex: 0 0 8em; color: inherit; font-variant-numeric: tabular-nums; }
 /* messages: fixed time column, then the text */
 .tl[data-view="messages"] .tl-cell:first-of-type { flex: none; color: var(--k-text-muted); font-variant-numeric: tabular-nums; }
 .tl[data-view="messages"] .tl-cell + .tl-cell { color: inherit; }

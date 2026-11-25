@@ -32,6 +32,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `‚å
 - `D` diffs two marked rows; `:diff prev` and `:diff applied`; `O` field owners and `:drift` in YAML (fields a Flux reconcile will fight over).
 - `B` debug container, `:x` exec snippets, `:kubectl` copies the equivalent kubectl command.
 - Flux: `R` reconcile, `T` suspend/resume, `Mod+Shift+R` reconcile with source.
+- Pod traffic: `:traffic` on a pod or deployment shows who it talks to, in and out (Services, pods by workload, nodes, external addresses) and what it listens on, from its socket table read every few seconds.
 - Argo CD: objects an Application applied say so (describe, `:relations`, field owners, `:drift`, a warning before an edit Argo will revert), read from the tracking annotation, so it works without access to the Applications. Where they are served: `:argo` with sync and health status, `W`, `R` refresh, `Y` sync.
 
 ### Local development

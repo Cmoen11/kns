@@ -18,6 +18,7 @@ import type {
   HealthBackend,
   LogsBackend,
   PackBackend,
+  TrafficBackend,
   UpdateBackend,
 } from "./contract";
 
@@ -343,4 +344,5 @@ export type Backend = BaseBackend &
   HealthBackend &
   UpdateBackend &
   CatalogBackend &
-  GithubBackend;
+  GithubBackend &
+  TrafficBackend;
