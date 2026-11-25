@@ -4,7 +4,7 @@ import { Component, Fragment, memo, Suspense, useEffect, useMemo, useRef, useSta
 import { useEngineValue } from "../keys";
 import { useConn } from "../store/cluster";
 import { focusPane, navEpoch, useMixedContexts, usePaneContext, usePaneView, useWorkspace } from "../store/layout";
-import { useSettings } from "../store/settings";
+import { useContextName, useSettings } from "../store/settings";
 import { leafIds } from "../store/layout-tree";
 import { faultsText, usePaneFaults, usePaneStatus, type PaneWatch } from "../store/pane-status";
 import type { PaneId, ViewState } from "../types";
@@ -80,11 +80,12 @@ class ViewBoundary extends Component<{ children: ReactNode }, { error: Error | n
  */
 function ContextCrumb({ pane, context, protectedCtx }: { pane: PaneId; context: string; protectedCtx: boolean }) {
   const status = useConn(context, (c) => c.status);
+  const name = useContextName(context);
   const state = useActionState("context.pickPane", { pane });
   const label = (
     <>
       {protectedCtx && <Glyph state="warn" />}
-      <span className="pane-crumb-text">{context}</span>
+      <span className="pane-crumb-text">{name}</span>
     </>
   );
   const why = status === "offline" ? "offline" : protectedCtx ? "protected context" : undefined;

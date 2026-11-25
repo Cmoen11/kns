@@ -128,6 +128,12 @@ export function buildSettingsRows(s: Settings, contexts: readonly string[], name
     rows.push(
       toggle(`ctx:${c}:protected`, `${c}: protected`, "every write asks for the name", f.protected, (on) => void setProtected(c, on)),
       toggle(`ctx:${c}:readOnly`, `${c}: read-only`, "writes are disabled", f.readOnly, (readOnly) => setContextFlags(c, { readOnly })),
+      // §8.2: the name tabs and pickers show; Enter opens the alias dialog
+      {
+        type: "item", key: `ctx:${c}:alias`, cells: [`${c}: alias`, "the name on tabs and pickers; :ctx and @ take it too"],
+        value: f.alias ?? "none",
+        change: () => void engine.run("context.alias", { source: "api", args: [`@${c}`] }),
+      },
     );
   }
 

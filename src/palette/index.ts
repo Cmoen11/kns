@@ -3,6 +3,7 @@
 // Owner: the palette team; edit only inside src/palette. No view kinds.
 import { registerOverlay, registerShellItem } from "../foundation";
 import "./actions";
+import { CONTEXT_ALIAS_OVERLAY } from "./overlays";
 import { LayoutName } from "./LayoutName";
 
 export function register(): void {
@@ -13,6 +14,7 @@ export function register(): void {
 
   registerOverlay("palette.menu", () => import("./Menu"));
   registerOverlay("palette.save", () => import("./SaveDialog"));
+  registerOverlay(CONTEXT_ALIAS_OVERLAY, () => import("./ContextAliasDialog"));
   registerShellItem({ id: "layout", area: "titlebar", component: LayoutName });
 
   // warm the chunks once the first frame is out, so the first Ctrl/Cmd+K is instant

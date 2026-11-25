@@ -12,7 +12,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `�
 
 - `Mod+K` palette for resources, actions and objects; `:` command bar with completion (`:pods shop`, `:deploy`, `:svc payments`).
 - Context and namespace pickers (`Mod+Shift+K`, `Mod+N`), namespace slots `0`–`9` in a table.
-- Context tabs: every context you switch to is a tab in the titlebar (`Ctrl+Tab` to step, `Ctrl+F4` / `⌃⌘W` to close). Tabs not on screen stay warm (connection, table watches, running shells), and each tab lands where you left it.
+- Context tabs: every context you switch to is a tab in the titlebar (`Ctrl+Tab` to step, `Ctrl+F4` / `⌃⌘W` to close). Tabs not on screen stay warm (connection, table watches, running shells), and each tab lands where you left it. Give a context a short alias (double-click its tab, `:ctx alias prod`) and use it in `:ctx prod` and `:pods @prod`; drag tabs to reorder.
 - Tables with server columns, sort, `/` filter (regex, inverse, label, fuzzy), `!` faults only, `Space` to mark rows, live CPU/memory for pods.
 - `d` describe, `y` YAML, `e` edit with a diff gutter, then review against a server dry run, three-way rebase on conflict, apply.
 - Panes: `+` opens the next view beside the current one, `leader r` / `leader d` split, `Alt+h/j/k/l` or `Alt+arrows` move focus (`Alt+⌘+arrows` on macOS), `leader z` zoom, `leader x` close. Workspace per context is restored on start.

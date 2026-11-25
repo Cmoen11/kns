@@ -277,6 +277,8 @@ export type Zoom = 85 | 100 | 110 | 125 | 150;
 export interface ContextFlags {
   protected: boolean;
   readOnly: boolean;
+  /** the name kns shows for the context (tabs, pickers, crumbs); the kubeconfig name stays the key */
+  alias?: string;
 }
 
 export interface Settings {

@@ -50,6 +50,9 @@ function images(v: unknown, fallback: readonly string[]): string[] {
   return out.length > 0 ? out : [...fallback];
 }
 
+/** A context alias is at most this long. */
+export const ALIAS_MAX = 40;
+
 /** Field-by-field validation of stored settings; anything invalid becomes its default. */
 export function sanitizeSettings(raw: unknown, d: Settings = DEFAULT_SETTINGS): Settings {
   const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
@@ -58,6 +61,8 @@ export function sanitizeSettings(raw: unknown, d: Settings = DEFAULT_SETTINGS): 
     for (const [name, v] of Object.entries(r.contexts as Record<string, unknown>)) {
       const f = (typeof v === "object" && v !== null ? v : {}) as Record<string, unknown>;
       contexts[name] = { protected: bool(f.protected, false), readOnly: bool(f.readOnly, false) };
+      const alias = typeof f.alias === "string" ? f.alias.trim().slice(0, ALIAS_MAX) : "";
+      if (alias !== "" && alias !== name) contexts[name].alias = alias;
     }
   }
   return {
@@ -113,6 +118,45 @@ export function setContextFlags(context: string, patch: Partial<ContextFlags>): 
 }
 export const contextFlags = (context: string): ContextFlags =>
   settingsStore.getState().contexts[context] ?? { protected: false, readOnly: false };
+
+// ── context aliases (docs/ux.md §8.2) ──────────────────────────────────────
+
+/** The name kns shows for a context: its alias, else the kubeconfig name. */
+export const contextName = (context: string): string => settingsStore.getState().contexts[context]?.alias ?? context;
+export const useContextName = (context: string): string => useSettings((s) => s.contexts[context]?.alias ?? context);
+
+/**
+ * Why `alias` cannot name `context`, or null. An alias must not be another context's name or
+ * alias: `:ctx prod` has to mean one context.
+ */
+export function aliasProblem(context: string, alias: string, contexts: readonly string[]): string | null {
+  const a = alias.trim();
+  if (a === "" || a === context) return null;
+  if (a.length > ALIAS_MAX) return `at most ${ALIAS_MAX} characters`;
+  if (/\s/.test(a)) return "no spaces (it is typed after :ctx and @)";
+  if (a.startsWith("@") || a === "-") return `"${a}" is not allowed`;
+  const lower = a.toLowerCase();
+  const flags = settingsStore.getState().contexts;
+  for (const c of contexts) {
+    if (c === context) continue;
+    if (c.toLowerCase() === lower) return `${c} is the name of another context`;
+    if (flags[c]?.alias?.toLowerCase() === lower) return `${c} already has this alias`;
+  }
+  return null;
+}
+
+/** Sets or clears (empty) a context's alias. Check aliasProblem first. */
+export function setContextAlias(context: string, alias: string): void {
+  setContextFlags(context, { alias: alias.trim() || undefined });
+}
+
+/** The context a typed name means: the kubeconfig name, else an alias (case-insensitive). */
+export function contextByName(text: string, contexts: readonly string[]): string | null {
+  if (contexts.includes(text)) return text;
+  const lower = text.toLowerCase();
+  const flags = settingsStore.getState().contexts;
+  return contexts.find((c) => flags[c]?.alias?.toLowerCase() === lower) ?? contexts.find((c) => c.toLowerCase() === lower) ?? null;
+}
 
 /** Steps the zoom through 85/100/110/125/150 (+1, -1) or resets it (0). */
 export function stepZoom(dir: 1 | -1 | 0): void {

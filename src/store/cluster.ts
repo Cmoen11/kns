@@ -8,7 +8,7 @@ import type { ApiResource, BackendError, ClusterInfo, ContextInfo, Gvr, SsoStatu
 import { buildAliases, gvrKey, resolveAlias, type AliasMap } from "./aliases";
 import { focusedContext, layoutStore, openTabs, removeTab, setLayoutContext, tabContexts, tabLiveSessions, tabMru, tabToEvict } from "./layout";
 import { afterClose, stepTab as stepIn } from "./tabs";
-import { setActiveContext } from "./settings";
+import { contextByName, contextName, setActiveContext } from "./settings";
 import { initTables, tables, useTable, type Lease } from "./tables";
 import { CORE_NAMESPACES } from "./workspace";
 import { confirm } from "../ui/confirm";
@@ -226,18 +226,22 @@ export async function initCluster(): Promise<void> {
  * left behind stays warm, its shells keep running. A full strip first closes the least recently
  * used tab; when that ends live sessions, they are confirmed.
  */
-export async function switchContext(name: string): Promise<boolean> {
+export async function switchContext(typed: string): Promise<boolean> {
   const s = clusterStore.getState();
-  if (!s.contexts.some((c) => c.name === name)) return false;
+  const name = resolveContext(typed);
+  if (!name) return false;
   if (s.context === name) return true;
   const evict = tabToEvict(name);
   if (evict) {
-    if (!(await confirmTabEnd(evict, `Open ${name}`, `The ${evict} tab closes to make room. These sessions end.`))) return false;
+    if (!(await confirmTabEnd(evict, `Open ${contextName(name)}`, `The ${contextName(evict)} tab closes to make room. These sessions end.`))) return false;
     removeTab(evict);
   }
   activate(name);
   return true;
 }
+
+/** The context a typed name (`:ctx x`, `@x`) means: its kubeconfig name or its alias. */
+export const resolveContext = (text: string): string | null => contextByName(text, clusterStore.getState().contexts.map((c) => c.name));
 
 async function confirmTabEnd(context: string, title: string, body: string): Promise<boolean> {
   const ending = tabLiveSessions(context).filter((l) => l.onClose === "ends").map((l) => l.label);
@@ -257,7 +261,7 @@ export async function closeTab(context: string | null = clusterStore.getState().
     flash("the last tab stays open");
     return false;
   }
-  if (!(await confirmTabEnd(context, `Close ${context}`, "These sessions end."))) return false;
+  if (!(await confirmTabEnd(context, `Close ${contextName(context)}`, "These sessions end."))) return false;
   if (clusterStore.getState().context === context) activate(next);
   removeTab(context);
   releaseUnused();
@@ -268,7 +272,7 @@ export async function closeTab(context: string | null = clusterStore.getState().
 export async function closeOtherTabs(keep: string | null = clusterStore.getState().context): Promise<boolean> {
   const others = openTabs().filter((t) => t !== keep);
   if (!keep || others.length === 0) return false;
-  const ending = others.flatMap((t) => tabLiveSessions(t).filter((l) => l.onClose === "ends").map((l) => `${l.label} (${t})`));
+  const ending = others.flatMap((t) => tabLiveSessions(t).filter((l) => l.onClose === "ends").map((l) => `${l.label} (${contextName(t)})`));
   if (ending.length > 0) {
     const ok = await confirm({ tier: 1, title: "Close other tabs", body: "These sessions end.", items: ending, confirmLabel: "End", cancelLabel: "Keep" });
     if (!ok) return false;

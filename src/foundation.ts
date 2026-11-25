@@ -31,7 +31,7 @@ export {
 
 // cluster
 export {
-  useCluster, getCluster, windowContext, switchContext, closeTab, closeOtherTabs, stepTab, reconnect, refreshContexts, connOf, useConn, ensureConnected,
+  useCluster, getCluster, windowContext, switchContext, resolveContext, closeTab, closeOtherTabs, stepTab, reconnect, refreshContexts, connOf, useConn, ensureConnected,
   resolveResource, resourceFor, kindOf, useResource, useDiscovery, useNamespaces, namespaceNames,
   type ClusterState, type ContextConn,
 } from "./store/cluster";
@@ -66,7 +66,7 @@ export {
   usePaneId, PaneContext, tip, actionTip,
   type ActionButtonProps, type ToolbarItem, type ToolbarAction, type MenuEntry, type MenuRequest, type IconName, type ActionState,
 } from "./ui";
-export { getSettings, setSettings, useSettings, settingsStore, contextFlags, setContextFlags } from "./store/settings";
+export { getSettings, setSettings, useSettings, settingsStore, contextFlags, setContextFlags, contextName, useContextName } from "./store/settings";
 export { isTauri } from "./ipc";
 export { layoutStore } from "./store/layout";
 // the action log (Recent in the activity panel): one call per thing the human did or that happened

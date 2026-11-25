@@ -65,6 +65,9 @@
 .ctx-tab:hover .ctx-tab-close, .ctx-tab[data-active] .ctx-tab-close { visibility: visible; }
 .ctx-tab-close:hover { color: var(--k-text); background: var(--k-row-marked); }
 .ctx-tab-add { flex: none; }
+/* dragging a tab to reorder: the dragged one lifts, the strip shows the grabbing hand */
+.ctx-tabs[data-dragging], .ctx-tabs[data-dragging] * { cursor: grabbing; }
+.ctx-tab[data-drag] { opacity: 0.7; }
 .ctx-tab-empty { color: var(--k-text-muted); padding-inline: var(--k-luft-1); }
 .titlebar-window .glyph { margin-right: var(--k-luft-05); }
 /* the palette field: looks like a search box, opens the palette */

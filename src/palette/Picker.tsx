@@ -5,8 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { LAYERS } from "../actions";
 import {
   openPaneInContext, paneView, refreshContexts, setNamespace, setNamespaceAllPanes, setPaneContext, switchContext, toasts, useCluster, useNamespaces,
-  usePaneContext, type OverlayProps,
+  showOverlay, usePaneContext, type OverlayProps,
 } from "../foundation";
+import { CONTEXT_ALIAS_OVERLAY } from "./overlays";
 import { useSettings } from "../store/settings";
 import { toggleProtected } from "./context";
 import { nsSlotOf } from "./favourites/slots";
@@ -150,11 +151,13 @@ function ContextPicker({ paneOnly }: { paneOnly: boolean }) {
       const c = contexts.find((x) => x.name === name);
       const f = flags[name];
       const labels = [f?.protected ? "PROTECTED" : "", f?.readOnly ? "READ ONLY" : ""].filter(Boolean);
+      // an alias is the row's name; the kubeconfig name leads the detail (§8.2)
+      const detail = c ? contextDetail(c.cluster, c.user) : undefined;
       return {
         value: name,
         row: {
-          key: name, label: name, positions, current: name === active, slot: "",
-          detail: c ? contextDetail(c.cluster, c.user) : undefined,
+          key: name, label: f?.alias ?? name, positions, current: name === active, slot: "",
+          detail: f?.alias ? [name, detail].filter(Boolean).join(" · ") : detail,
           labels: labels.length > 0 ? labels : undefined,
           tag: name === active ? STATUS_WORD[status] : undefined,
         },
@@ -163,7 +166,7 @@ function ContextPicker({ paneOnly }: { paneOnly: boolean }) {
     const names = contexts.map((c) => c.name);
     const q = text.trim();
     if (q === "") return names.map((n) => entry(n));
-    return rank(names, q, { text: (n) => n }).map((r) => entry(r.item, r.positions));
+    return rank(names, q, { text: (n) => flags[n]?.alias ?? n, keywords: (n) => (flags[n]?.alias ? [n] : []) }).map((r) => entry(r.item, r.positions));
   }, [contexts, active, status, flags, text]);
 
   const list = usePickerList(entries, text);
@@ -190,6 +193,10 @@ function ContextPicker({ paneOnly }: { paneOnly: boolean }) {
       protect: () => {
         const e = entries[list.selected];
         if (e) void toggleProtected(e.value);
+      },
+      rename: () => {
+        const e = entries[list.selected];
+        if (e) showOverlay(CONTEXT_ALIAS_OVERLAY, { context: e.value });
       },
     },
   };

@@ -110,7 +110,8 @@
 
 .side-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .side-line { display: flex; align-items: center; gap: var(--k-luft-1); min-width: 0; height: var(--k-h-line); }
-.side-label { flex: 0 1 auto; min-width: 0; color: var(--k-text-2); }
+/* the name never shrinks away behind labels, a sign-in button and the status word */
+.side-label { flex: 0 1 auto; min-width: min(100%, 5em); overflow: hidden; text-overflow: ellipsis; color: var(--k-text-2); }
 .side-row[data-focus] .side-label { color: var(--k-text); }
 .side-detail { color: var(--k-text-muted); height: var(--k-h-line); }
 .side-row[data-focus] .side-detail, .side-row[data-focus] .side-trailing { color: var(--k-text-3); }
