@@ -186,6 +186,7 @@ function rows() {
     a("filter.faults", "table", "!", "faults"),
     a("view.refresh", "pane", "Mod+R", "refresh"),
     a("view.wide", "table", "*", "wide"),
+    a("view.stripNs", "table", "", "hide namespace prefix", { command: "prefix" }),
     a("view.columns", "table", "Mod+Shift+M", "columns", { opens: "dialog" }),
     a("columns.moveDown", "columns", "j", "down", { repeat: true }),
     a("columns.moveUp", "columns", "k", "up", { repeat: true }),

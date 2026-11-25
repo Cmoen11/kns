@@ -292,7 +292,7 @@ export function Grid({ model, source, focused, visible }: GridProps) {
     bar.current?.hide();
   };
 
-  const toolbar = useMemo(() => paneToolbar(source.faultsOnly, source.wide), [source.faultsOnly, source.wide]);
+  const toolbar = useMemo(() => paneToolbar(source.faultsOnly, source.wide, source.stripNsPrefix), [source.faultsOnly, source.wide, source.stripNsPrefix]);
 
   const compact = size.w < EMPTY_MIN_W || size.h < EMPTY_MIN_H;
   const filtered = chips > 0 || model.filter.open;

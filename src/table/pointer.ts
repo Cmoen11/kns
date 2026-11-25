@@ -86,7 +86,7 @@ export const BULK_ACTIONS: readonly ToolbarItem[] = [
 ];
 
 /** The pane header's toolbar. The filter comes first, so the overflow never hides it. */
-export function paneToolbar(faultsOnly: boolean, wide: boolean): ToolbarItem[] {
+export function paneToolbar(faultsOnly: boolean, wide: boolean, stripNs = false): ToolbarItem[] {
   return [
     "filter.open",
     { action: "filter.faults", icon: "fault", active: faultsOnly },
@@ -94,6 +94,7 @@ export function paneToolbar(faultsOnly: boolean, wide: boolean): ToolbarItem[] {
     ...ROW_ACTIONS,
     "|",
     { action: "view.wide", icon: "wide", active: wide },
+    { action: "view.stripNs", icon: "prefix", active: stripNs },
     "view.columns",
     "view.refresh",
     // shown only where it applies (the containers view: crash card)

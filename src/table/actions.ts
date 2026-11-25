@@ -1,7 +1,7 @@
 // Table actions (docs/ux.md §5.4 Navigation, Table, and the view-opening part of Resource).
 // Small and eager: every handler delegates to the focused pane's TableModel (./registry), which
 // the lazy view registers when it mounts. No model = no table on screen = "no row selected".
-import { flash, focusedPane, getSelection, paneView, patchView, registerActions, registerViewActions, setNamespace, type ActionContext } from "../foundation";
+import { flash, focusedPane, getSelection, getSettings, paneView, patchView, registerActions, registerViewActions, setNamespace, setSettings, type ActionContext } from "../foundation";
 import type { ObjectRef } from "../types";
 import { modelOf } from "./registry";
 import type { OpenWhat, SortTarget } from "./model";
@@ -77,6 +77,8 @@ registerActions({
     const t = m();
     t?.src.setWide(!t.src.wide);
   },
+  // a setting, not per view: every table follows it (Settings: Hide namespace prefix)
+  "view.stripNs": () => setSettings({ stripNsPrefix: !getSettings().stripNsPrefix }),
 
   "sort.name": sort("name"),
   "sort.age": sort("age"),

@@ -51,6 +51,8 @@ const ICONS = {
   // tables: faults only, wide columns, sort direction, the namespace of a row
   fault: { d: "M6 1.8 10.6 10H1.4zM6 5v2.4", dots: [[6, 8.6]] },
   wide: { d: "M1.5 6h9M3.5 4 1.5 6l2 2M8.5 4l2 2-2 2" },
+  // names without their namespace prefix: the start is cut off
+  prefix: { d: "M1.5 2.5v7M4 6h6.5M6 4 4 6l2 2" },
   "sort-asc": { d: "M6 10V2M3 5l3-3 3 3" },
   "sort-desc": { d: "M6 2v8M3 7l3 3 3-3" },
   open: { d: "M2.5 6h7M6.5 3 9.5 6l-3 3" },
