@@ -146,6 +146,7 @@ pub fn run() {
             session::cmd::list_contexts,
             session::cmd::connect,
             awslogin::cmd::aws_sso_login,
+            awslogin::cmd::aws_sso_status,
             discovery::cmd::discover,
             table::cmd::subscribe_table,
             state::cmd::stop_stream,

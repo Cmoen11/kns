@@ -318,11 +318,23 @@ const SEEDED: Record<string, Json> = { settings: { schema: 1, data: { contexts: 
 
 installKnsMock();
 
+/** when the mock's SSO token expires (0: never signed in) */
+let mockSsoUntil = 0;
+
 export const mockBackend: Backend = {
   listContexts: () => delay({ contexts: CONTEXTS, current: "default", files: ["~/.kube/config"] }),
   connect: (context) =>
     delay({ context, cluster: CONTEXTS.find((c) => c.name === context)?.cluster ?? context, user: "admin", server: "https://127.0.0.1:6443", serverVersion: "v1.35.10+k3s1", hasMetrics: true }),
-  awsSsoLogin: () => delay(undefined, 1500),
+  awsSsoLogin: () => delay(undefined, 1500).then(() => void (mockSsoUntil = Date.now() + 60 * 60_000)),
+  awsSsoStatus: (contexts) =>
+    delay(
+      Object.fromEntries(
+        CONTEXTS.filter((c) => c.awsProfile && contexts.includes(c.name)).map((c) => [
+          c.name,
+          mockSsoUntil === 0 ? { state: "unknown" as const } : { state: mockSsoUntil > Date.now() ? ("valid" as const) : ("expired" as const), expiresAt: new Date(mockSsoUntil).toISOString() },
+        ]),
+      ),
+    ),
   discover: () => delay(RESOURCES),
 
   subscribeTable: (query, onEvent) => {
