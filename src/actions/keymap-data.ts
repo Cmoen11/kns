@@ -67,6 +67,7 @@ function rows() {
     a("tab.next", "global", "Ctrl+Tab | leader Tab", "next context tab", { command: "tab next" }),
     a("tab.previous", "global", "Ctrl+Shift+Tab | leader Shift+Tab", "previous context tab", { command: "tab prev" }),
     a("tab.close", "global", "Ctrl+F4 | leader X", "close context tab", { mac: "Ctrl+Cmd+W | leader X", command: "tab close" }),
+    a("tab.closeOthers", "global", "", "close other context tabs", { command: "tab only" }),
     a("context.pickPane", "global", "leader C", "context, this pane", { opens: "dialog", command: "pane ctx" }),
     a("context.protect", "global", "", "protect context", { command: "protect", opens: "dialog" }),
     a("namespace.pick", "global", "Mod+N | leader n", "namespace", { opens: "dialog", command: "ns" }),

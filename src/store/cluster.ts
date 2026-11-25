@@ -264,6 +264,21 @@ export async function closeTab(context: string | null = clusterStore.getState().
   return true;
 }
 
+/** Closes every tab but `keep` (default: the one on screen); one confirm lists the sessions that end. */
+export async function closeOtherTabs(keep: string | null = clusterStore.getState().context): Promise<boolean> {
+  const others = openTabs().filter((t) => t !== keep);
+  if (!keep || others.length === 0) return false;
+  const ending = others.flatMap((t) => tabLiveSessions(t).filter((l) => l.onClose === "ends").map((l) => `${l.label} (${t})`));
+  if (ending.length > 0) {
+    const ok = await confirm({ tier: 1, title: "Close other tabs", body: "These sessions end.", items: ending, confirmLabel: "End", cancelLabel: "Keep" });
+    if (!ok) return false;
+  }
+  if (clusterStore.getState().context !== keep) activate(keep);
+  for (const t of others) removeTab(t);
+  releaseUnused();
+  return true;
+}
+
 /** Ctrl+Tab / Ctrl+Shift+Tab: the next or previous tab in strip order. */
 export function stepTab(delta: 1 | -1): boolean {
   const cur = clusterStore.getState().context;

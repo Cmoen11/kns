@@ -112,8 +112,10 @@ function driver(page) {
 
 // ---- scenes: file name → steps; captions live in README.md ----
 const scenes = {
-  // Split panes: pods, deployments and services side by side
+  // Split panes: pods, deployments and services side by side; staging open as a second context tab
   panes: async (d) => {
+    await d.cmd("ctx staging");
+    await d.key("Control+Tab", 800); // back to default: staging stays open, warm
     await d.cmd("pods shop");
     await d.leader("r");
     await d.cmd("deploy shop");

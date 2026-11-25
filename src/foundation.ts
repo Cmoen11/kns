@@ -31,7 +31,7 @@ export {
 
 // cluster
 export {
-  useCluster, getCluster, windowContext, switchContext, closeTab, stepTab, reconnect, refreshContexts, connOf, useConn, ensureConnected,
+  useCluster, getCluster, windowContext, switchContext, closeTab, closeOtherTabs, stepTab, reconnect, refreshContexts, connOf, useConn, ensureConnected,
   resolveResource, resourceFor, kindOf, useResource, useDiscovery, useNamespaces, namespaceNames,
   type ClusterState, type ContextConn,
 } from "./store/cluster";

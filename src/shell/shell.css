@@ -40,38 +40,33 @@
 .titlebar-group { display: flex; align-items: center; gap: var(--k-luft-1); min-width: 0; flex: 1 1 0; }
 .titlebar-right { justify-content: flex-end; gap: var(--k-luft-2); }
 .titlebar-centre { display: flex; justify-content: center; flex: 0 1 auto; min-width: 0; }
-.titlebar-context { color: var(--k-text); overflow: hidden; text-overflow: ellipsis; }
 /* §8.3: the focused pane is in another context than the window; never hidden by width */
 .titlebar-window { color: var(--k-text-3); white-space: nowrap; flex: none; }
-.titlebar-cluster, .titlebar-version, .titlebar-namespace { color: var(--k-text-muted); overflow: hidden; text-overflow: ellipsis; }
-.titlebar-namespace { color: var(--k-text-3); }
-/* switchers (context, namespace): value + caret */
-.titlebar-switch { display: inline-flex; align-items: center; min-width: 0; height: var(--k-h-row); padding-inline: var(--k-luft-05); border-radius: var(--k-radius); }
-.titlebar-switch-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.titlebar-switch .k-icon { color: var(--k-text-muted); }
-.titlebar-switch:hover { background: var(--k-row-marked); }
-.titlebar-switch:active { background: var(--k-row-focus); }
-.titlebar-switch:hover .k-icon { color: var(--k-text); }
-.titlebar-switch[aria-disabled] { opacity: 0.5; }
-/* context tabs (§8.2): one per open context, the window's is active; warm tabs are muted */
-/* the strip does not shrink before the cluster, version and namespace texts next to it do */
-.ctx-tabs { display: flex; align-items: center; gap: var(--k-luft-05); min-width: 0; max-width: 75%; overflow: hidden; flex: 0 0 auto; }
+/* context tabs (§2.4, §8.2): the titlebar is the tab strip. The active tab is a piece of pane
+   surface (--k-bg-pane, hairline frame) on the app background; the others are text only, so the
+   strip reads like a browser's without competing with the panes below. */
+.titlebar-tabs { gap: var(--k-luft-05); }
+.ctx-tabs { display: flex; align-items: center; gap: 2px; min-width: 0; overflow: hidden; flex: 0 1 auto; }
 .ctx-tab {
-  display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 5em; max-width: 16em; height: var(--k-h-row);
-  border-radius: var(--k-radius); color: var(--k-text-3);
+  position: relative; display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 6em; max-width: 16em;
+  height: calc(var(--k-h-titlebar) - 2 * var(--k-luft-1)); border-radius: var(--k-radius); color: var(--k-text-3);
 }
 .ctx-tab:hover { background: var(--k-row-marked); color: var(--k-text-2); }
-.ctx-tab[data-active] { background: var(--k-row-focus); color: var(--k-text); flex: none; }
-/* a protected context's tab carries the protected line too, so prod is never a quiet tab */
-.ctx-tab[data-protected] { box-shadow: inset 0 calc(-1 * var(--k-ring)) 0 var(--k-text); }
-.ctx-tab-main { display: inline-flex; align-items: center; gap: var(--k-luft-05); min-width: 0; height: 100%; padding-inline: var(--k-luft-1) var(--k-luft-05); color: inherit; }
+.ctx-tab[data-active] { background: var(--k-bg-pane); color: var(--k-text); box-shadow: 0 0 0 var(--k-hair) var(--k-divider); }
+/* a protected context's tab carries the protected line, active or not, so prod is never a quiet tab */
+.ctx-tab[data-protected]::after {
+  content: ""; position: absolute; inset-inline: var(--k-luft-1); bottom: 0; height: var(--k-ring); background: var(--k-text); border-radius: 1px;
+}
+.ctx-tab-main { display: inline-flex; align-items: center; gap: var(--k-luft-1); flex: 1 1 auto; min-width: 0; height: 100%; padding-inline: var(--k-luft-15) var(--k-luft-05); color: inherit; }
+.ctx-tab[data-active] .ctx-tab-main { font-weight: 500; }
 .ctx-tab-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.ctx-tab-main .k-icon { color: var(--k-text-muted); }
-.ctx-tab-flag { color: var(--k-text-muted); }
-.ctx-tab-close { display: inline-flex; align-items: center; height: 100%; padding-inline: var(--k-luft-05); color: var(--k-text-muted); visibility: hidden; border-radius: var(--k-radius); }
+.ctx-tab-flag { color: var(--k-text-muted); flex: none; }
+.ctx-tab-close { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 20px; margin-right: var(--k-luft-05); color: var(--k-text-muted); visibility: hidden; border-radius: var(--k-radius); }
 .ctx-tab:hover .ctx-tab-close, .ctx-tab[data-active] .ctx-tab-close { visibility: visible; }
 .ctx-tab-close:hover { color: var(--k-text); background: var(--k-row-marked); }
 .ctx-tab-add { flex: none; }
+.ctx-tab-empty { color: var(--k-text-muted); padding-inline: var(--k-luft-1); }
+.titlebar-window .glyph { margin-right: var(--k-luft-05); }
 /* the palette field: looks like a search box, opens the palette */
 .titlebar-palette {
   display: inline-flex; align-items: center; gap: var(--k-luft-1); color: var(--k-text-3); height: var(--k-h-row);
@@ -84,7 +79,6 @@
 .titlebar-palette[aria-disabled] { opacity: 0.5; }
 .titlebar-buttons { display: inline-flex; align-items: center; gap: var(--k-luft-05); flex: none; }
 .titlebar-buttons .k-abtn { height: var(--k-h-row); min-width: var(--k-h-row); }
-.titlebar-flag { display: inline-flex; align-items: center; gap: var(--k-luft-1); color: var(--k-text); }
 .titlebar-item { display: inline-flex; align-items: center; gap: var(--k-luft-1); min-width: 0; }
 
 /* ── bottom row (20px): padding-inline 8, hint gap 12, key-to-label gap 6 ── */
@@ -133,7 +127,6 @@
 
 /* ── responsiveness (§15) ── */
 @container app (max-width: 1280px) {
-  .titlebar-cluster { display: none; }
 }
 @container app (max-width: 1100px) {
   .titlebar-item[data-item="layout"] { display: none; }
