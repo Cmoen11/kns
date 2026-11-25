@@ -62,7 +62,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `‚å
 
 ## Install and build
 
-There is no signed release. CI (`.github/workflows/build.yml`) builds an unsigned Windows installer (NSIS `.exe`) and a universal macOS `.dmg` on every push to `main`, and releases each push as the next patch version (a GitHub Release with a new `v*` tag; see `docs/auto-update.md`). Unsigned means Windows SmartScreen and macOS Gatekeeper will warn before the first start.
+CI (`.github/workflows/build.yml`) builds a Windows installer (NSIS `.exe`) and an Apple Silicon macOS `.dmg` on every push to `main`, and releases each push as the next patch version (a GitHub Release with a new `v*` tag; see `docs/auto-update.md`). The macOS app is signed with a Developer ID certificate and notarized, so Gatekeeper opens it without a warning. The Windows installer is not signed, so SmartScreen warns before the first start.
 
 Installed apps update themselves from the latest GitHub Release. They download the new version in the background and install it when you click `update <version>` in the bottom row, or run `:update`. See `docs/auto-update.md`.
 
