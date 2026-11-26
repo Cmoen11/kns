@@ -53,6 +53,12 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `‚å
 - An agent never changes anything itself: forwards, env exports, scale, restart, delete, reconcile and apply arrive as requests you review with `leader y`.
 - `leader c` (`:pack`) copies a redacted markdown bundle of the marked objects for pasting into any agent.
 
+### Background, terminal and herdr
+
+- `kns --background` keeps the backend running from the tray without a window; `kns-tui login-item on` starts it at login (macOS).
+- `kns-tui` is a terminal frontend over a local socket: live tables with CPU/memory, edit in `$EDITOR` with a diff and a server dry run before apply (rebase when the object changed meanwhile), `:apply` files, set image, rollout history and roll back, why, events, env, logs, shell, port-forward, scale/restart/delete, with the same protected and read-only rules. It starts kns when none is running.
+- The [herdr plugin](herdr/README.md) puts it in herdr panes: logs and shells open as new panes, and the workspace row shows pod health. A `.kns.toml` in a repo picks the context, namespace and first view.
+
 ### Keyboard and mouse
 
 ![Tools hub: every tool with its keys, live status and "Try it"](docs/img/tools-hub.png)
@@ -127,6 +133,7 @@ The per-wave log is in [docs/status.md](docs/status.md).
 - [docs/frontend.md](docs/frontend.md): frontend extension contract, mouse parity, integration status
 - [docs/tools.md](docs/tools.md): every tool, its keys and mouse paths, and the MCP tool reference
 - [docs/plan-features.md](docs/plan-features.md): the feature plan, MCP design and threat model, real-cluster test scripts
+- [docs/plan-background.md](docs/plan-background.md): background mode, the client socket, kns-tui and the herdr plugin
 - [docs/status.md](docs/status.md): detailed status per feature wave
 - [docs/research.md](docs/research.md), [docs/prior-art.md](docs/prior-art.md), [docs/ideas.md](docs/ideas.md): background research and ideas
 

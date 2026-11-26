@@ -1,0 +1,18 @@
+#!/bin/sh
+# Launcher for the kns herdr plugin: finds kns-tui and hands it the entrypoint.
+# Order: $KNS_TUI, the path baked in by `kns-tui herdr install`, PATH, kns.app.
+KNS_TUI_BAKED=""
+for c in "$KNS_TUI" "$KNS_TUI_BAKED" "$(command -v kns-tui 2>/dev/null)" \
+  /Applications/kns.app/Contents/MacOS/kns-tui "$HOME/Applications/kns.app/Contents/MacOS/kns-tui"; do
+  if [ -n "$c" ] && [ -x "$c" ]; then
+    case "$1" in
+      start) exec "$c" start ;;
+      window) exec "$c" open ;;
+      *) exec "$c" herdr "$@" ;;
+    esac
+  fi
+done
+echo "kns-tui not found: install kns.app or set KNS_TUI to the kns-tui binary." >&2
+# keep a pane open long enough to read the message
+[ -t 0 ] && { printf 'press enter to close '; read -r _; }
+exit 1

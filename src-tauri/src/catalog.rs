@@ -354,7 +354,7 @@ pub fn repo_set(c: &Catalog) -> std::collections::HashSet<String> {
     c.systems.iter().flat_map(|s| &s.components).filter_map(|comp| comp.repo.as_ref()).map(|r| r.to_lowercase()).collect()
 }
 
-fn remember_links(c: Option<&Catalog>) {
+pub(crate) fn remember_links(c: Option<&Catalog>) {
     if let Ok(mut l) = LINKS.write() {
         *l = c.map(link_set);
     }

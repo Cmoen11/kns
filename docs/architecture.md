@@ -38,6 +38,9 @@ React UI (webview)  ──invoke()──▶  Rust commands   ──▶ kube-rs �
 | `forward.rs` | `start_forward`, `list_forwards`, `stop_forward` |
 | `rbac.rs` | `can_i` (SelfSubjectAccessReview, cached ~60 s) |
 | `store.rs` | `load_state`, `save_state` (JSON files `<app_config_dir>/<key>.json`, atomic write, key sanitised) |
+| `background.rs` | `--background` start (tray, no webview), keep running, single instance, launch at login |
+| `rpc/` | the client socket: the same commands over NDJSON for `kns-tui` (`docs/plan-background.md`) |
+| `tui/`, `bin/kns-tui.rs` | the terminal frontend and the herdr plugin helpers (no Tauri/kube code linked) |
 
 `stop_stream(id)` cancels any table/log/exec stream.
 

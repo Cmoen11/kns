@@ -237,7 +237,8 @@ pub fn effective_policy(state: &AppState, context: &str) -> Option<McpPolicy> {
 /// credential plugin nor ride on a context the webview merely claims (§5.4). Unit tests have no
 /// cluster, so there the webview list alone decides.
 pub fn connected(state: &AppState, context: &str) -> bool {
-    let listed = crate::uistate::current(state).connected.iter().any(|c| c == context);
+    // A socket client (kns-tui) is the human too, while it stays attached (rpc.rs).
+    let listed = crate::uistate::current(state).connected.iter().any(|c| c == context) || crate::rpc::human_connected(state, context);
     listed && (cfg!(test) || state.has_session(context))
 }
 

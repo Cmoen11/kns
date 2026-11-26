@@ -20,7 +20,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 kube = { version = "5.1.0", features = ["ws", "gzip"] }
@@ -54,6 +54,10 @@ tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
 # auto-update (docs/auto-update.md), also used from Rust only
 tauri-plugin-updater = "2"
+ratatui = "0.30.2"
+crossterm = "0.29.0"
+tauri-plugin-single-instance = "2"
+libc = "0.2.191"
 
 # Dependencies (rustls, hyper, serde_json) are optimised in dev builds too: unoptimised TLS and
 # JSON are many times slower and make `tauri dev` misleading about speed.

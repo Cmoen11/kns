@@ -7,8 +7,9 @@ use crate::{ipc::BackendEvent, state::AppState};
 
 pub const EVENT: &str = "kns://event";
 
-/// Sends `event` to the webview. A no-op before `setup` ran (tests, examples) or without a window.
+/// Sends `event` to the webview and to attached socket clients (rpc.rs). A no-op before `setup` ran (tests, examples) or without a window.
 pub fn emit(state: &AppState, event: BackendEvent) {
+    crate::rpc::broadcast(state, &event);
     if let Some(app) = state.app() {
         let _ = app.emit(EVENT, event);
     }

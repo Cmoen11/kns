@@ -579,6 +579,34 @@ pub fn list(state: &AppState) -> Vec<Proposal> {
     with_store(state, |s| s.list(now_ms()))
 }
 
+/// The review dialog opened (webview or socket client).
+pub fn claim(state: &AppState, id: &str) -> Result<Proposal> {
+    let p = with_store(state, |s| s.claim(id, now_ms()));
+    changed(state);
+    audited(state, p)
+}
+
+/// The review dialog closed without a decision.
+pub fn unclaim(state: &AppState, id: &str) -> Result<Proposal> {
+    let p = with_store(state, |s| s.unclaim(id, now_ms()));
+    changed(state);
+    audited(state, p)
+}
+
+pub async fn approve(state: &AppState, id: &str, choices: ApprovalChoices) -> Result<Proposal> {
+    let p = get(state, id)?;
+    let check = approve_check(state, &p).await?;
+    let p = with_store(state, |s| s.approve(id, choices, &check, now_ms()));
+    changed(state);
+    audited(state, p)
+}
+
+pub fn resolve(state: &AppState, id: &str, resolution: ProposalResolution) -> Result<Proposal> {
+    let p = with_store(state, |s| s.resolve(id, resolution, now_ms()));
+    changed(state);
+    audited(state, p)
+}
+
 /// The agent withdraws its own pending proposal (H2's `cancel_proposal`).
 pub fn cancel(state: &AppState, id: &str, client: &str) -> Result<Proposal> {
     let p = with_store(state, |s| s.cancel(id, client, now_ms()));
@@ -680,7 +708,7 @@ async fn approve_check(state: &AppState, p: &Proposal) -> Result<ApproveCheck> {
 }
 
 pub mod cmd {
-    use super::{AppState, approve_check, audited, changed, now_ms, with_store};
+    use super::AppState;
     use crate::ipc::{ApprovalChoices, Proposal, ProposalResolution, Result};
 
     #[tauri::command]
@@ -690,32 +718,22 @@ pub mod cmd {
 
     #[tauri::command]
     pub fn proposal_claim(state: tauri::State<'_, AppState>, id: String) -> Result<Proposal> {
-        let p = with_store(&state, |s| s.claim(&id, now_ms()));
-        changed(&state);
-        audited(&state, p)
+        super::claim(&state, &id)
     }
 
     #[tauri::command]
     pub fn proposal_unclaim(state: tauri::State<'_, AppState>, id: String) -> Result<Proposal> {
-        let p = with_store(&state, |s| s.unclaim(&id, now_ms()));
-        changed(&state);
-        audited(&state, p)
+        super::unclaim(&state, &id)
     }
 
     #[tauri::command]
     pub async fn proposal_approve(state: tauri::State<'_, AppState>, id: String, choices: ApprovalChoices) -> Result<Proposal> {
-        let p = super::get(&state, &id)?;
-        let check = approve_check(&state, &p).await?;
-        let p = with_store(&state, |s| s.approve(&id, choices, &check, now_ms()));
-        changed(&state);
-        audited(&state, p)
+        super::approve(&state, &id, choices).await
     }
 
     #[tauri::command]
     pub fn proposal_resolve(state: tauri::State<'_, AppState>, id: String, resolution: ProposalResolution) -> Result<Proposal> {
-        let p = with_store(&state, |s| s.resolve(&id, resolution, now_ms()));
-        changed(&state);
-        audited(&state, p)
+        super::resolve(&state, &id, resolution)
     }
 }
 

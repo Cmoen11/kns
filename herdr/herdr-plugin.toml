@@ -1,0 +1,82 @@
+# kns for herdr: Kubernetes through the running kns, in herdr panes.
+#
+# Install:  kns-tui herdr install          (links this plugin with the kns-tui of your kns.app)
+#      or:  herdr plugin install Cmoen11/kns/herdr
+# Keys (~/.config/herdr/config.toml), then `herdr server reload-config`:
+#   [[keys.command]]
+#   key = "prefix+k"
+#   type = "plugin_action"
+#   command = "kns.open"
+#   description = "kns beside this pane"
+id = "kns"
+name = "kns"
+version = "0.1.0"
+min_herdr_version = "0.9.5"
+description = "Kubernetes through kns: live tables, why-is-it-broken, logs and shells as herdr panes"
+platforms = ["macos", "linux"]
+
+# ── panes (argv is fixed here; targets travel as KNS_* variables) ──
+
+[[panes]]
+id = "tui"
+title = "kns"
+placement = "split"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" tui"]
+
+[[panes]]
+id = "popup"
+title = "kns"
+placement = "popup"
+width = "90%"
+height = "85%"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" tui"]
+
+[[panes]]
+id = "tab"
+title = "kns"
+placement = "tab"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" tui"]
+
+[[panes]]
+id = "logs"
+title = "kns logs"
+placement = "split"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" logs"]
+
+[[panes]]
+id = "exec"
+title = "kns shell"
+placement = "split"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" exec"]
+
+# ── actions ──
+
+[[actions]]
+id = "open"
+title = "kns: open beside this pane"
+contexts = ["global", "workspace", "pane"]
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" open-pane tui"]
+
+[[actions]]
+id = "popup"
+title = "kns: open as popup"
+contexts = ["global", "workspace", "pane"]
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" open-pane popup"]
+
+[[actions]]
+id = "tab"
+title = "kns: open in a new tab"
+contexts = ["global", "workspace", "pane"]
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" open-pane tab"]
+
+[[actions]]
+id = "start"
+title = "kns: start in the background"
+contexts = ["global"]
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" start"]
+
+[[actions]]
+id = "window"
+title = "kns: open the kns window"
+contexts = ["global"]
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/kns-herdr\" window"]

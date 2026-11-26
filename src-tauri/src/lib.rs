@@ -64,6 +64,9 @@ pub mod mcp;
 pub mod nshealth;
 // auto-update (docs/auto-update.md)
 pub mod update;
+// running in the background + the client socket (docs/plan-background.md)
+pub mod background;
+pub mod rpc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -92,10 +95,22 @@ pub fn run() {
         }
     }
 
+    let args: Vec<String> = std::env::args().collect();
+    let hidden = background::wants_background(&args);
+
     let state = state::AppState::default();
     let streams = state.clone();
     let setup_state = state.clone();
+    let instance_state = state.clone();
+    let event_state = state.clone();
+    let window_state = state.clone();
     let result = tauri::Builder::default()
+        // must be the first plugin: a second start hands its arguments to this process and exits
+        .plugin(tauri_plugin_single_instance::init(move |_app, argv, _cwd| {
+            if !background::wants_background(&argv) {
+                background::show_window(&instance_state);
+            }
+        }))
         // Used from Rust only: the window has no dialog/opener/notification/updater permission
         // (capabilities/default.json stays core-only).
         .plugin(tauri_plugin_dialog::init())
@@ -135,16 +150,21 @@ pub fn run() {
             });
             // auto-update: first status now, the check loop in release builds with an update key
             update::start(&setup_state);
+            // the client socket for kns-tui and other frontends, then the window (or only the tray)
+            rpc::start(&setup_state);
+            background::setup(&setup_state, app.handle(), hidden);
             // never stay invisible if the page fails to load
-            let handle = app.handle().clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(3));
-                if let Some(w) = handle.get_webview_window("main")
-                    && !w.is_visible().unwrap_or(true)
-                {
-                    let _ = w.show();
-                }
-            });
+            if !hidden {
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    if let Some(w) = handle.get_webview_window("main")
+                        && !w.is_visible().unwrap_or(true)
+                    {
+                        let _ = w.show();
+                    }
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -256,14 +276,36 @@ pub fn run() {
             github::cmd::github_env_images,
             github::cmd::github_compare,
             traffic::cmd::traffic_sample,
+            // background
+            background::cmd::background_status,
+            background::cmd::background_set,
             // auto-update
             update::cmd::update_status,
             update::cmd::update_check,
             update::cmd::update_install,
         ])
-        .run(tauri::generate_context!());
-    if let Err(e) = result {
-        eprintln!("kns failed to start: {e}");
-        std::process::exit(1);
-    }
+        .on_window_event(move |window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                use tauri::Manager;
+                background::window_closed(&window_state, window.app_handle());
+            }
+        })
+        .build(tauri::generate_context!());
+    let app = match result {
+        Ok(app) => app,
+        Err(e) => {
+            eprintln!("kns failed to start: {e}");
+            std::process::exit(1);
+        }
+    };
+    app.run(move |handle, event| match event {
+        // last window closed: stay in the tray when keep-running is on ("Quit kns" passes a code)
+        tauri::RunEvent::ExitRequested { code: None, api, .. } if background::keep_running(&event_state) => api.prevent_exit(),
+        #[cfg(target_os = "macos")]
+        tauri::RunEvent::Reopen { has_visible_windows: false, .. } => background::show_window(&event_state),
+        tauri::RunEvent::Exit => rpc::cleanup(),
+        _ => {
+            let _ = handle;
+        }
+    });
 }

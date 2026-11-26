@@ -80,6 +80,14 @@ impl AppState {
         lock(&self.0.sessions).get(context).is_some_and(|c| matches!(c.get(), Some(Ok(_))))
     }
 
+    /// Contexts with a built, healthy session, sorted.
+    pub fn connected_contexts(&self) -> Vec<String> {
+        let mut out: Vec<String> =
+            lock(&self.0.sessions).iter().filter(|(_, c)| matches!(c.get(), Some(Ok(_)))).map(|(k, _)| k.clone()).collect();
+        out.sort();
+        out
+    }
+
     /// Forgets `session` so the next use re-reads the kubeconfig (running streams keep their client).
     /// A newer session of the same context is left alone.
     pub fn drop_session(&self, session: &Arc<Session>) {
