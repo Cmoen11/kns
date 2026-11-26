@@ -42,6 +42,9 @@ kns window (webview) ─┘   NDJSON, same API       (one process, tray)
   `hello`, `show_window`, `connected_contexts`. Left out: webview-only calls (`publish_ui_state`, `save_state`)
   and calls that open a native dialog (`catalog_choose`, `pack_save`).
 - Closing a connection stops its streams (and with them exec sessions).
+- The same protocol on loopback TCP for clients without Unix sockets (the Herdr app's mods):
+  `rpc/tcp.rs`, off unless turned on, a token in a 0600 `rpc-tcp.json`, the first line
+  `{"auth": token}`. See [herdr.md](herdr.md).
 
 ### Safety rules over the socket
 
@@ -109,7 +112,11 @@ to a new file.
 `.kns.toml` (in the working directory or a parent, up to the git root): `context`, `namespace`, `resource`,
 `selector` pick the first view, so a workspace opens on "its" service.
 
-## 4. herdr plugin (`herdr/`)
+## 4. herdr TUI plugin (`herdr/`)
+
+The Herdr *app* (`dev.herdr.app`) is a different program with mods instead of plugins; kns's panel for
+it is described in [herdr.md](herdr.md). Both are installed from kns: Settings → Herdr → Add to Herdr.
+
 
 herdr plugin v1 (herdr ≥ 0.9.5): panes are declared in `herdr-plugin.toml` and opened with
 `herdr plugin pane open --plugin kns --entrypoint <id> [--env K=V]`. The manifest fixes argv, so targets travel
@@ -124,8 +131,8 @@ as `KNS_CONTEXT`, `KNS_NAMESPACE`, `KNS_POD`, `KNS_CONTAINER`, `KNS_WORKLOAD`.
 - The pods table of a plugin pane reports `$kns` on the workspace row (`herdr workspace report-metadata
   --source plugin:kns --token kns=<ctx>/<ns> <pods> ✗<bad> ~<warn>`, TTL 3 min, refreshed on change or every
   minute, cleared on exit).
-- Install: `kns-tui herdr install` (writes the plugin to `<data_dir>/no.sixm.kns/herdr-plugin` and runs
-  `herdr plugin link`), or `herdr plugin install Cmoen11/kns/herdr`.
+- Install: Settings → Herdr → Add to Herdr, or `kns-tui herdr install` (kns writes the plugin to
+  `<data_dir>/no.sixm.kns/herdr-plugin` and runs `herdr plugin link`), or `herdr plugin install Cmoen11/kns/herdr`.
 
 ## Verified
 
@@ -146,8 +153,6 @@ as `KNS_CONTEXT`, `KNS_NAMESPACE`, `KNS_POD`, `KNS_CONTAINER`, `KNS_WORKLOAD`.
 ## Not done yet
 
 - Windows: no socket (named pipe) and no kns-tui; launch at login on Windows/Linux.
-- A settings toggle in the kns window for keep running / launch at login (only `kns-tui keep-running`,
-  `kns-tui login-item` and the `background_set` command today).
 - TUI: dev sets, traffic/relations/reach views, Secret edit as decoded values (today: base64 YAML, like
   `kubectl edit`), mouse. The protected-name prompt for apply is covered by the socket guard's unit tests,
   not tried by hand.

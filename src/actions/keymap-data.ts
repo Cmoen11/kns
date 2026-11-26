@@ -61,6 +61,7 @@ function rows() {
     a("filter.open", "table containers list logs doc", "/ | Mod+F", "filter", { hint: 90 }),
     a("help.overlay", "global", "? | F1", "help", { hint: 99, menu: "Help/Keyboard Shortcuts" }),
     a("update.command", "global", "", "check for updates", { command: "update", menu: "Help/Check for Updates" }),
+    a("herdr.command", "global", "", "add to Herdr|remove|status", { command: "herdr", menu: "App/Add to Herdr" }),
     a("menu.open", "global", "Shift+F10 | Menu", "menu", { mac: "Shift+F10" }),
     a("context.pick", "global", "Mod+Shift+K", "context", { opens: "dialog", command: "ctx" }),
     // Ctrl+Tab goes to the shell in TERM (§5.3); the leader forms work everywhere

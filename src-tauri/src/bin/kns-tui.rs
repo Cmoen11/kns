@@ -4,6 +4,7 @@
 //! credentials itself. When no kns answers it starts `kns --background`. The modules live in
 //! `src/tui/` and are compiled in directly, so this binary links no Tauri or Kubernetes code.
 #[cfg(unix)]
+#[allow(dead_code)] // shared with kns: not every function is used here
 #[path = "../rpc/path.rs"]
 mod path;
 
@@ -25,6 +26,10 @@ mod exec;
 #[cfg(unix)]
 #[path = "../tui/herdr.rs"]
 mod herdr;
+#[cfg(unix)]
+#[allow(dead_code)] // shared with kns: not every function is used here
+#[path = "../herdr_paths.rs"]
+mod herdr_paths;
 #[cfg(unix)]
 #[path = "../tui/model.rs"]
 mod model;
@@ -67,8 +72,11 @@ usage:
   kns-tui logs [ctx/]ns/pod [-C container] [--previous]            follow logs
   kns-tui logs [ctx/]ns/<resource>/<name> --workload                logs of every pod of a workload
   kns-tui exec [ctx/]ns/pod [-C container] [-- command…]            a shell in a pod
-  kns-tui herdr <tui|logs|exec>        entrypoint for herdr plugin panes (reads KNS_* variables)
-  kns-tui herdr install                 install the herdr plugin (herdr plugin link)
+  kns-tui logs|exec --context <ctx> ns/pod                         a context whose name has a /
+  kns-tui herdr install                 add kns to Herdr: the app's panel and/or the TUI plugin
+  kns-tui herdr uninstall|status        remove it again / what is installed
+  kns-tui herdr <tui|logs|exec>        entrypoint for herdr TUI plugin panes (reads KNS_* variables)
+  kns-tui tcp on|off|status [--json]    kns's loopback endpoint for the Herdr app's panel
   kns-tui call <method> ['{json}']      one backend call, JSON out (streams print until Ctrl+C)
   kns-tui status                        is kns running, socket, clients, background settings
   kns-tui start                         start kns in the background (tray, no window)
@@ -94,6 +102,7 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 kns not reachable.";
             Some("exec") => exec_cmd(&args[1..]),
             Some("herdr") => herdr_cmd(&args[1..]),
             Some("call") => call(&args[1..]),
+            Some("tcp") => tcp(&args[1..]),
             Some("status") => status(),
             Some("start") => start(),
             Some("open") => one("show_window", json!({})).map(|_| ()),
@@ -192,6 +201,7 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 kns not reachable.";
             resource: f.rest.first().cloned(),
             selector: f.get(&["-l", "--selector"]),
             logs: None,
+            previous: false,
             project: cwd_project(),
         };
         if f.has(&["-A", "--all-namespaces"]) {
@@ -221,10 +231,21 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 kns not reachable.";
     }
 
     fn logs(args: &[String]) -> Result<(), Fail> {
-        let f = flags(args, &["-C", "--container"]);
+        let f = flags(args, &["-C", "--container", "-c", "--context"]);
         let spec = f.rest.first().ok_or_else(|| Fail::Usage("logs needs a target".into()))?;
-        let target = target_from(spec, f.has(&["--workload", "-w"]), f.get(&["-C", "--container"]))?;
+        let mut target = target_from(spec, f.has(&["--workload", "-w"]), f.get(&["-C", "--container"]))?;
+        if let Some(c) = f.get(&["-c", "--context"]) {
+            target.context = Some(c);
+        }
+        if f.has(&["--previous", "-p"]) {
+            return previous_ui(target);
+        }
         logs_ui(target)
+    }
+
+    fn previous_ui(target: herdr::Target) -> Result<(), Fail> {
+        let start = Start { context: target.context.clone(), namespace: target.namespace.clone(), logs: Some(target), previous: true, project: cwd_project(), ..Default::default() };
+        app::run(start).map_err(Fail::Down)
     }
 
     fn logs_ui(target: herdr::Target) -> Result<(), Fail> {
@@ -233,9 +254,9 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 kns not reachable.";
     }
 
     fn exec_cmd(args: &[String]) -> Result<(), Fail> {
-        let f = flags(args, &["-C", "--container"]);
+        let f = flags(args, &["-C", "--container", "-c", "--context"]);
         let spec = f.rest.first().ok_or_else(|| Fail::Usage("exec needs [ctx/]ns/pod".into()))?;
-        let default_ctx = current_context();
+        let default_ctx = f.get(&["-c", "--context"]).or_else(current_context);
         let (context, namespace, pod) = exec::parse_target(spec, default_ctx.as_deref()).ok_or_else(|| Fail::Usage(format!("cannot read target \"{spec}\"")))?;
         exec_run(ExecTarget { context, namespace, pod, container: f.get(&["-C", "--container"]), command: f.tail })
     }
@@ -280,10 +301,57 @@ Exit codes: 0 ok, 1 error, 2 usage, 3 kns not reachable.";
                 };
                 exec_run(ExecTarget { context, namespace, pod, container: env.container, command: vec![] })
             }
-            Some("install") => plugin::install().map_err(Fail::Error),
+            Some("install") => herdr_setup("herdr_install"),
+            Some("uninstall") => herdr_setup("herdr_uninstall"),
+            Some("status") => {
+                let v = one("herdr_status", json!({}))?;
+                println!("{}", serde_json::to_string_pretty(&v).unwrap_or_default());
+                Ok(())
+            }
             Some("open-pane") => plugin::open_pane(args.get(1).map(String::as_str).unwrap_or("tui")).map_err(Fail::Error),
             Some(other) => Err(Fail::Usage(format!("unknown herdr entrypoint \"{other}\""))),
         }
+    }
+
+    /// `herdr_install` / `herdr_uninstall`: kns does the work (the same as Settings → Herdr).
+    fn herdr_setup(method: &str) -> Result<(), Fail> {
+        let v = one(method, json!({}))?;
+        for line in v["done"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+            println!("✓ {line}");
+        }
+        for line in v["notes"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+            println!("! {line}");
+        }
+        for line in v["tips"].as_array().into_iter().flatten().filter_map(Value::as_str) {
+            println!("· {line}");
+        }
+        Ok(())
+    }
+
+    /// kns's loopback endpoint for the Herdr app's panel. `status` never starts kns (exit 3 when down).
+    fn tcp(args: &[String]) -> Result<(), Fail> {
+        let json_out = args.iter().any(|a| a == "--json");
+        let sub = args.iter().find(|a| !a.starts_with("--")).map(String::as_str).unwrap_or("status");
+        let v = match sub {
+            "on" => one("rpc_tcp_set", json!({ "enabled": true }))?,
+            "off" => one("rpc_tcp_set", json!({ "enabled": false }))?,
+            "status" => {
+                let (tx, _rx) = mpsc::channel();
+                let c = Client::connect(tx, false)?;
+                c.call("rpc_tcp_status", json!({}))?
+            }
+            other => return Err(Fail::Usage(format!("tcp {other}: use on, off or status"))),
+        };
+        if json_out {
+            println!("{}", serde_json::to_string(&v).unwrap_or_default());
+        } else if v["listening"] == true {
+            println!("on: 127.0.0.1:{} (token in {})", v["port"], v["infoFile"].as_str().unwrap_or("?"));
+        } else if let Some(e) = v["error"].as_str() {
+            println!("not listening: {e}");
+        } else {
+            println!("off");
+        }
+        Ok(())
     }
 
     fn connect() -> Result<(Client, mpsc::Receiver<Msg>), Fail> {

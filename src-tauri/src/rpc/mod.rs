@@ -15,8 +15,11 @@
 //! - A client is the human, like the webview: contexts it connects count as connected for the
 //!   MCP gate (`mcp::connected`) while the connection lives. Mutations honour the context flags
 //!   (`readOnly` refuses, `protected` needs `confirm`).
+//! - `tcp.rs`: the same protocol on loopback TCP behind a token, for clients that cannot open a
+//!   Unix socket (the Herdr app's mods). Off unless turned on.
 pub mod dispatch;
 pub mod path;
+pub mod tcp;
 
 use std::{
     collections::{HashMap, HashSet},
@@ -26,7 +29,11 @@ use std::{
 
 use serde::Serialize;
 use serde_json::json;
-use tokio::sync::{broadcast, mpsc};
+use tokio::{
+    io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt, AsyncWrite, AsyncWriteExt},
+    sync::{broadcast, mpsc},
+};
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     ipc::{BackendError, BackendEvent, Json, Result, Sink},
@@ -34,13 +41,11 @@ use crate::{
 };
 
 /// Largest request line (an `apply_yaml` of a big manifest fits easily).
-#[cfg_attr(not(unix), allow(dead_code))]
 const MAX_LINE: usize = 16 * 1024 * 1024;
 
 // ───────────────────────── shared state ─────────────────────────
 
 #[derive(Default)]
-#[cfg_attr(not(unix), allow(dead_code))]
 struct Slot {
     /// connection id -> contexts its client connected
     humans: Mutex<HashMap<u64, HashSet<String>>>,
@@ -73,7 +78,6 @@ pub fn broadcast(state: &AppState, event: &BackendEvent) {
     }
 }
 
-#[cfg_attr(not(unix), allow(dead_code))]
 fn subscribe(state: &AppState) -> broadcast::Receiver<Json> {
     let s = slot(state);
     let mut bus = lock(&s.bus);
@@ -112,7 +116,6 @@ pub struct Conn {
 }
 
 impl Conn {
-    #[cfg_attr(not(unix), allow(dead_code))]
     fn send<T: Serialize>(&self, msg: &T) -> bool {
         match serde_json::to_string(msg) {
             Ok(line) => self.out.send(line).is_ok(),
@@ -148,6 +151,97 @@ impl<T: Serialize + Send + Sync + 'static> Sink<T> for RpcSink {
             Err(_) => true,
         }
     }
+}
+
+/// Serves one authenticated client until it hangs up or `stop` fires (TCP turned off). The same
+/// for the Unix socket and loopback TCP.
+async fn connection<R, W>(state: AppState, mut lines: R, mut write: W, stop: Option<CancellationToken>)
+where
+    R: AsyncBufRead + Unpin + Send + 'static,
+    W: AsyncWrite + Unpin + Send + 'static,
+{
+    let s = slot(&state);
+    let id = s.clients.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+    lock(&s.humans).insert(id, HashSet::new());
+    let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+    let conn = Arc::new(Conn { id, out: tx, streams: Mutex::new(vec![]) });
+
+    let writer = tauri::async_runtime::spawn(async move {
+        while let Some(mut line) = rx.recv().await {
+            line.push('\n');
+            if write.write_all(line.as_bytes()).await.is_err() {
+                break;
+            }
+        }
+        let _ = write.shutdown().await;
+    });
+
+    conn.send(&json!({ "hello": hello() }));
+    let mut events = subscribe(&state);
+    let ev_conn = conn.clone();
+    let forward_events = tauri::async_runtime::spawn(async move {
+        loop {
+            match events.recv().await {
+                Ok(ev) => {
+                    if !ev_conn.send(&json!({ "backend": ev })) {
+                        break;
+                    }
+                }
+                Err(broadcast::error::RecvError::Lagged(_)) => continue,
+                Err(broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    });
+
+    let stop = stop.unwrap_or_default();
+    let mut buf = Vec::new();
+    loop {
+        buf.clear();
+        let mut limited = (&mut lines).take(MAX_LINE as u64 + 1);
+        let read = tokio::select! {
+            r = limited.read_until(b'\n', &mut buf) => r,
+            _ = stop.cancelled() => break,
+        };
+        match read {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {}
+        }
+        if buf.len() > MAX_LINE {
+            conn.send(&json!({ "id": null, "error": BackendError::invalid("request too large") }));
+            break;
+        }
+        let Ok(text) = std::str::from_utf8(&buf) else { continue };
+        if text.trim().is_empty() {
+            continue;
+        }
+        let msg: Json = match serde_json::from_str(text) {
+            Ok(m) => m,
+            Err(e) => {
+                conn.send(&json!({ "id": null, "error": BackendError::invalid(format!("bad JSON: {e}")) }));
+                continue;
+            }
+        };
+        let (state, conn) = (state.clone(), conn.clone());
+        tauri::async_runtime::spawn(async move {
+            let rid = msg.get("id").cloned().unwrap_or(Json::Null);
+            let method = msg.get("method").and_then(Json::as_str).unwrap_or_default().to_string();
+            let params = msg.get("params").cloned().unwrap_or(json!({}));
+            let reply = match dispatch::call(&state, &conn, &rid, &method, &params).await {
+                Ok(result) => json!({ "id": rid, "result": result }),
+                Err(error) => json!({ "id": rid, "error": error }),
+            };
+            conn.send(&reply);
+        });
+    }
+
+    // Connection gone: its streams stop, its contexts no longer count as human-connected.
+    forward_events.abort();
+    for sid in lock(&conn.streams).drain(..) {
+        state.stop_stream(&sid);
+    }
+    lock(&s.humans).remove(&id);
+    drop(conn);
+    let _ = writer.await;
 }
 
 // ───────────────────────── server ─────────────────────────
@@ -200,12 +294,13 @@ pub fn start(state: &AppState) {
     }
 }
 
-/// Removes the socket file (app exit).
+/// Removes the socket file and the TCP info file (app exit).
 pub fn cleanup() {
     #[cfg(unix)]
     if let Some(p) = path::socket_path() {
         let _ = std::fs::remove_file(p);
     }
+    tcp::cleanup();
 }
 
 #[cfg(unix)]
@@ -213,7 +308,7 @@ mod unix {
     use std::{os::unix::fs::PermissionsExt, path::PathBuf};
 
     use tokio::{
-        io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader},
+        io::BufReader,
         net::{UnixListener, UnixStream},
     };
 
@@ -254,83 +349,8 @@ mod unix {
     }
 
     async fn connection(state: AppState, stream: UnixStream) {
-        let s = slot(&state);
-        let id = s.clients.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-        lock(&s.humans).insert(id, HashSet::new());
-        let (read, mut write) = stream.into_split();
-        let (tx, mut rx) = mpsc::unbounded_channel::<String>();
-        let conn = Arc::new(Conn { id, out: tx, streams: Mutex::new(vec![]) });
-
-        let writer = tauri::async_runtime::spawn(async move {
-            while let Some(mut line) = rx.recv().await {
-                line.push('\n');
-                if write.write_all(line.as_bytes()).await.is_err() {
-                    break;
-                }
-            }
-        });
-
-        conn.send(&json!({ "hello": hello() }));
-        let mut events = subscribe(&state);
-        let ev_conn = conn.clone();
-        let forward_events = tauri::async_runtime::spawn(async move {
-            loop {
-                match events.recv().await {
-                    Ok(ev) => {
-                        if !ev_conn.send(&json!({ "backend": ev })) {
-                            break;
-                        }
-                    }
-                    Err(broadcast::error::RecvError::Lagged(_)) => continue,
-                    Err(broadcast::error::RecvError::Closed) => break,
-                }
-            }
-        });
-
-        let mut lines = BufReader::new(read);
-        let mut buf = Vec::new();
-        loop {
-            buf.clear();
-            match (&mut lines).take(MAX_LINE as u64 + 1).read_until(b'\n', &mut buf).await {
-                Ok(0) | Err(_) => break,
-                Ok(_) => {}
-            }
-            if buf.len() > MAX_LINE {
-                conn.send(&json!({ "id": null, "error": BackendError::invalid("request too large") }));
-                break;
-            }
-            let Ok(text) = std::str::from_utf8(&buf) else { continue };
-            if text.trim().is_empty() {
-                continue;
-            }
-            let msg: Json = match serde_json::from_str(text) {
-                Ok(m) => m,
-                Err(e) => {
-                    conn.send(&json!({ "id": null, "error": BackendError::invalid(format!("bad JSON: {e}")) }));
-                    continue;
-                }
-            };
-            let (state, conn) = (state.clone(), conn.clone());
-            tauri::async_runtime::spawn(async move {
-                let rid = msg.get("id").cloned().unwrap_or(Json::Null);
-                let method = msg.get("method").and_then(Json::as_str).unwrap_or_default().to_string();
-                let params = msg.get("params").cloned().unwrap_or(json!({}));
-                let reply = match dispatch::call(&state, &conn, &rid, &method, &params).await {
-                    Ok(result) => json!({ "id": rid, "result": result }),
-                    Err(error) => json!({ "id": rid, "error": error }),
-                };
-                conn.send(&reply);
-            });
-        }
-
-        // Connection gone: its streams stop, its contexts no longer count as human-connected.
-        forward_events.abort();
-        for sid in lock(&conn.streams).drain(..) {
-            state.stop_stream(&sid);
-        }
-        lock(&s.humans).remove(&id);
-        drop(conn);
-        let _ = writer.await;
+        let (read, write) = stream.into_split();
+        super::connection(state, BufReader::new(read), write, None).await;
     }
 }
 

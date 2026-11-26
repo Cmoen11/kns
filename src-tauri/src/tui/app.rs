@@ -61,6 +61,8 @@ pub struct Start {
     pub selector: Option<String>,
     /// open straight on the logs of this target (herdr logs pane, `kns-tui logs`)
     pub logs: Option<herdr::Target>,
+    /// with `logs`: the previous container's logs (a crash's last words)
+    pub previous: bool,
     pub project: Project,
 }
 
@@ -678,6 +680,7 @@ impl App {
         let selector = self.start.selector.clone().or(p.selector.clone());
         if let Some(target) = self.start.logs.take() {
             self.open_table(res, namespace, selector, None, None);
+            self.previous = std::mem::take(&mut self.start.previous);
             self.logs_for_target(target);
             return;
         }
@@ -2041,7 +2044,7 @@ impl App {
         let left = Line::from(spans);
         let mut right = vec![];
         if let Some(h) = &self.herdr {
-            right.push(Span::styled(if h.is_plugin() { "herdr ✓ " } else { "herdr " }, Style::new().fg(DIM)));
+            right.push(Span::styled(if h.is_plugin() { "herdr ✓ " } else if h.is_app() { "Herdr " } else { "herdr " }, Style::new().fg(DIM)));
         }
         right.push(Span::styled("? help ", Style::new().fg(DIM)));
         f.render_widget(Paragraph::new(left), area);

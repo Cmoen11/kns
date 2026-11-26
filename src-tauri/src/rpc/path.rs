@@ -21,6 +21,15 @@ pub fn socket_path() -> Option<PathBuf> {
     preferred().map(shorten)
 }
 
+/// Where kns writes the loopback TCP port and token when TCP is on (`tcp.rs`): `KNS_TCP_INFO`, else
+/// `<data_dir>/no.sixm.kns/rpc-tcp.json`. The Herdr mod reads it.
+pub fn tcp_info_path() -> Option<PathBuf> {
+    if let Some(p) = std::env::var_os("KNS_TCP_INFO").filter(|p| !p.is_empty()) {
+        return Some(PathBuf::from(p));
+    }
+    dirs::data_dir().map(|d| d.join(IDENTIFIER).join("rpc-tcp.json"))
+}
+
 fn preferred() -> Option<PathBuf> {
     if let Some(p) = std::env::var_os("KNS_SOCKET").filter(|p| !p.is_empty()) {
         return Some(PathBuf::from(p));

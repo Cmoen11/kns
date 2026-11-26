@@ -288,13 +288,19 @@ pub async fn call(state: &AppState, conn: &Conn, sub: &Json, method: &str, p: &J
         "update_check" => ok(update::check(s).await),
         "background_status" => ok(Ok(crate::background::status(s))),
         "background_set" => ok(crate::background::set(s, arg(p, "keepRunning")?, arg(p, "launchAtLogin")?).await),
+        "rpc_tcp_status" => ok(Ok(super::tcp::status(s))),
+        "herdr_status" => ok(Ok(crate::herdr::status(s))),
+        "herdr_install" => ok(crate::herdr::install(s).await),
+        "herdr_uninstall" => ok(crate::herdr::uninstall(s).await),
+        "context_flags" => ok(crate::ctxflags::effective(s, &arg::<String>(p, "context")?)),
+        "rpc_tcp_set" => ok(super::tcp::set(s, arg(p, "enabled")?).await),
         _ => Err(BackendError::new(404, "UnknownMethod", format!("no method \"{method}\""))),
     }
 }
 
 /// Every method name `call` answers (for `hello` and `kns-tui call --list`).
 pub const METHODS: &[&str] = &[
-    "hello", "show_window", "connected_contexts", "background_status", "background_set",
+    "hello", "show_window", "connected_contexts", "background_status", "background_set", "rpc_tcp_status", "rpc_tcp_set", "context_flags", "herdr_status", "herdr_install", "herdr_uninstall",
     "list_contexts", "connect", "aws_sso_login", "aws_sso_status", "discover", "subscribe_table", "stop_stream",
     "get_yaml", "get_json", "get_json_masked", "list_events", "pods_for", "decode_secret",
     "apply_yaml", "delete_object", "patch_object", "scale", "restart", "trigger_cron_job",

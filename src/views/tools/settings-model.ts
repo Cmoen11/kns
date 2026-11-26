@@ -3,7 +3,8 @@
 import { registry, type ActionDef } from "../../actions";
 import { engine, isRebindable, keymap, platform } from "../../keys";
 import { ZOOM_STEPS, contextFlags, setContextFlags, setSettings } from "../../store/settings";
-import type { Catalog, GithubStatus, NameProxyStatus } from "../../ipc/types";
+import type { BackgroundStatus, Catalog, GithubStatus, HerdrStatus, NameProxyStatus } from "../../ipc/types";
+import { backgroundRows, herdrRows } from "./herdr-settings";
 import { scopeTeams, userOf } from "../../catalog/model";
 import { flash } from "../../store/status";
 import type { Mode, Settings } from "../../types";
@@ -109,6 +110,8 @@ export function buildSettingsRows(
   catalog: { catalog: Catalog | null; error: string | null } = { catalog: null, error: null },
   /** the GitHub CLI (`:deploys`); null = not asked yet */
   github: GithubStatus | null = null,
+  /** kns in the background and in Herdr; null = not asked yet (or the mock without them) */
+  integration: { background: BackgroundStatus | null; herdr: HerdrStatus | null; refresh: () => void } = { background: null, herdr: null, refresh: () => {} },
 ): ListRow[] {
   const rows: ListRow[] = [
     { type: "group", key: "g:appearance", label: "Appearance" },
@@ -206,6 +209,8 @@ export function buildSettingsRows(
       choice("nameProxyPort", "Name proxy port", "127.0.0.1 only; also :dev names on <port>", ports.map((n) => ({ value: n, label: String(n) })), names.port, (port) => setNameProxy(names.on, port)),
     );
   }
+
+  rows.push(...backgroundRows(integration.background, integration.refresh), ...herdrRows(integration.herdr, integration.refresh));
 
   const overrides = keymap.overrides();
   let group = "";

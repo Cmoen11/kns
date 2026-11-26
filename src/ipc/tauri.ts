@@ -85,6 +85,11 @@ export const tauriBackend: Backend = {
   canI: (query) => call("can_i", { query }),
 
   loadState: (key) => call("load_state", { key }),
+  backgroundStatus: () => call("background_status"),
+  backgroundSet: (keepRunning, launchAtLogin) => call("background_set", { keepRunning, launchAtLogin: launchAtLogin ?? null }),
+  herdrStatus: () => call("herdr_status"),
+  herdrInstall: () => call("herdr_install"),
+  herdrUninstall: () => call("herdr_uninstall"),
   saveState: (key, value) => call("save_state", { key, value }),
 
   ...fwdTauri,

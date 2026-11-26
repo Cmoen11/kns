@@ -66,6 +66,8 @@ pub mod nshealth;
 pub mod update;
 // running in the background + the client socket (docs/plan-background.md)
 pub mod background;
+pub mod herdr;
+pub mod herdr_paths;
 pub mod rpc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -104,13 +106,18 @@ pub fn run() {
     let instance_state = state.clone();
     let event_state = state.clone();
     let window_state = state.clone();
-    let result = tauri::Builder::default()
-        // must be the first plugin: a second start hands its arguments to this process and exits
-        .plugin(tauri_plugin_single_instance::init(move |_app, argv, _cwd| {
+    let mut builder = tauri::Builder::default();
+    // Must be the first plugin: a second start hands its arguments to this process and exits.
+    // Not with KNS_SOCKET set: that is a second instance on purpose (development, tests), with a
+    // socket of its own.
+    if std::env::var_os("KNS_SOCKET").is_none_or(|s| s.is_empty()) {
+        builder = builder.plugin(tauri_plugin_single_instance::init(move |_app, argv, _cwd| {
             if !background::wants_background(&argv) {
                 background::show_window(&instance_state);
             }
-        }))
+        }));
+    }
+    let result = builder
         // Used from Rust only: the window has no dialog/opener/notification/updater permission
         // (capabilities/default.json stays core-only).
         .plugin(tauri_plugin_dialog::init())
@@ -152,6 +159,8 @@ pub fn run() {
             update::start(&setup_state);
             // the client socket for kns-tui and other frontends, then the window (or only the tray)
             rpc::start(&setup_state);
+            rpc::tcp::setup(&setup_state, app.handle());
+            herdr::refresh_installed();
             background::setup(&setup_state, app.handle(), hidden);
             // never stay invisible if the page fails to load
             if !hidden {
@@ -279,6 +288,9 @@ pub fn run() {
             // background
             background::cmd::background_status,
             background::cmd::background_set,
+            herdr::cmd::herdr_status,
+            herdr::cmd::herdr_install,
+            herdr::cmd::herdr_uninstall,
             // auto-update
             update::cmd::update_status,
             update::cmd::update_check,

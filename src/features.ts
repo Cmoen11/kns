@@ -21,6 +21,7 @@ import { register as text } from "./views/text";
 import { register as traffic } from "./traffic";
 import { register as tools } from "./views/tools";
 import { register as update } from "./update";
+import { register as herdr } from "./herdr";
 
 export function registerFeatures(): void {
   table();
@@ -49,4 +50,6 @@ export function registerFeatures(): void {
   hub();
   // auto-update: `:update` and the bottom-row `update 0.2.0` item
   update();
+  // Herdr: `:herdr add|remove` (Settings → Herdr has the same)
+  herdr();
 }

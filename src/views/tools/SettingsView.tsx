@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { registry } from "../../actions";
 import { LAYERS, useCluster, useScopeLayer, type ViewProps } from "../../foundation";
 import { backend } from "../../ipc";
-import type { GithubStatus } from "../../ipc/types";
+import type { BackgroundStatus, GithubStatus, HerdrStatus } from "../../ipc/types";
 import { keymap } from "../../keys";
 import { useNames } from "../../dev/names";
 import { useSettings } from "../../store/settings";
@@ -39,7 +39,19 @@ export default function SettingsView({ pane, focused }: ViewProps<"settings">) {
     backend.githubStatus().then((s) => live && setGithub(s), () => {});
     return () => void (live = false);
   }, [hasCatalog]);
-  const rows = useMemo(() => buildSettingsRows(settings, names, proxy, catalog, github), [settings, names, proxy, catalog, github, keymapVersion, registryVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+  // background and Herdr: asked on opening and again after each change
+  const [background, setBackground] = useState<BackgroundStatus | null>(null);
+  const [herdr, setHerdr] = useState<HerdrStatus | null>(null);
+  const [integrationAsk, setIntegrationAsk] = useState(0);
+  const refreshIntegration = useCallback(() => setIntegrationAsk((n) => n + 1), []);
+  useEffect(() => {
+    let live = true;
+    backend.backgroundStatus().then((s) => live && setBackground(s), () => {});
+    backend.herdrStatus().then((s) => live && setHerdr(s), () => {});
+    return () => void (live = false);
+  }, [integrationAsk]);
+  const integration = useMemo(() => ({ background, herdr, refresh: refreshIntegration }), [background, herdr, refreshIntegration]);
+  const rows = useMemo(() => buildSettingsRows(settings, names, proxy, catalog, github, integration), [settings, names, proxy, catalog, github, integration, keymapVersion, registryVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [onKeymapRow, setOnKeymapRow] = useState(false);
   const onCurrent = useCallback((row: ItemRow | undefined, filtering: boolean) => setOnKeymapRow(!!row?.actionId && !filtering), []);

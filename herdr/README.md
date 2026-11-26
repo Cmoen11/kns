@@ -1,55 +1,46 @@
-# kns for herdr
+# kns for Herdr
 
-Your Kubernetes clusters in [herdr](https://github.com/herdrdev/herdr) panes, through the kns app running in
-the background: live tables, "why is this broken", events, logs and shells, with kns's protected and read-only
-contexts still enforced.
+Your Kubernetes clusters in [Herdr](https://herdr.dev): a live panel in the Herdr app, logs and shells as
+Herdr panes, with kns's protected and read-only contexts still enforced. Full description:
+[docs/herdr.md](../docs/herdr.md).
 
 ## Install
 
-kns must be installed (it ships `kns-tui`). Then:
+In kns: **Settings → Herdr → Add to Herdr** (or `:herdr add`, or `kns-tui herdr install`). kns installs
+what fits the Herdr you have:
 
-```sh
-/Applications/kns.app/Contents/MacOS/kns-tui herdr install   # writes and links the plugin
-# or, from GitHub:
-herdr plugin install Cmoen11/kns/herdr
-```
+- **Herdr app**: the panel (`app/kns/`, a Herdr mod). Open it from the command palette: **kns: panel
+  beside this pane** or **kns: clusters in a new tab**.
+- **herdr TUI** (≥ 0.9.5): the plugin (`herdr-plugin.toml`, `bin/kns-herdr`), linked with `herdr plugin
+  link`. Bind a key in `~/.config/herdr/config.toml` and run `herdr server reload-config`:
 
-Bind a key in `~/.config/herdr/config.toml` and run `herdr server reload-config`:
+  ```toml
+  [[keys.command]]
+  key = "prefix+k"
+  type = "plugin_action"
+  command = "kns.open"
+  description = "kns beside this pane"
+  ```
 
-```toml
-[[keys.command]]
-key = "prefix+k"
-type = "plugin_action"
-command = "kns.open"
-description = "kns beside this pane"
-```
+  Other actions: `kns.popup`, `kns.tab`, `kns.start` (kns in the background), `kns.window` (the kns window).
 
-Other actions: `kns.popup`, `kns.tab`, `kns.start` (kns in the background), `kns.window` (the kns window).
-
-Optional: keep kns in the tray and start it at login with `kns-tui login-item on`.
+Keep kns running for Herdr when its window is closed: Settings → Background → **Keep running in the
+tray**, **Launch at login** (or `kns-tui login-item on`).
 
 ## Use
 
-- `:` a resource (`:deploy`, `:svc kube-system`, `:pods all`), `c` context, `n` namespace, `/` filter, `o` sort
-  (newest, problems, CPU, memory).
-- `⏎` pods of a workload, `y` YAML, `d` why, `E` events, `v` env.
-- `e` edits in your `$EDITOR` (`KNS_EDITOR`, `VISUAL`, `EDITOR`): save and quit shows the diff and the server's
-  dry run, `⏎` applies, `e` goes back, `r` rebases when the object changed meanwhile. `:apply file.yaml` and
-  `:new deploy` review against the cluster the same way.
-- `i` set image, `h` rollout history (`⏎` diff a revision, `u` roll back).
-- `l` logs and `s` shell open as new herdr panes beside the TUI.
-- `F` port-forward, `r` restart, `S` scale, `D` delete. A protected context asks for its name.
-- `?` all keys.
+- Panel: tabs for the common resources and **More…**, context and namespace chips, filter, sort, 🔔 for
+  failing pods. Click a row for its actions; double-click opens it (pods: logs).
+- Keys (panel focused, and in `kns-tui`): `⏎` open, `l` logs, `s` shell, `y` YAML, `e` edit, `d` why,
+  `E` events, `r` restart, `S` scale, `i` image, `D` delete, `c`/`n` context/namespace, `/` filter.
+- Signed out of AWS: the panel shows **Sign in** (`aws sso login`).
+- A `.kns.toml` in the repo opens the space on its own service:
 
-The workspace row in herdr's sidebar shows `$kns`: context/namespace, pods, failing (`✗`) and not-ready (`~`).
+  ```toml
+  context = "staging"
+  namespace = "billett"
+  resource = "deploy"
+  selector = "app=billett-api"
+  ```
 
-A `.kns.toml` in the repo opens the workspace on its own service:
-
-```toml
-context = "staging"
-namespace = "billett"
-resource = "deploy"
-selector = "app=billett-api"
-```
-
-Design and protocol: [docs/plan-background.md](../docs/plan-background.md).
+Design and protocol: [docs/herdr.md](../docs/herdr.md), [docs/plan-background.md](../docs/plan-background.md).

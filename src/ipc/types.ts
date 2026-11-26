@@ -168,6 +168,53 @@ export interface ApplyOptions {
   force?: boolean;
 }
 
+/** The client socket and loopback endpoint (rpc/mod.rs, rpc/tcp.rs). */
+export interface SocketStatus {
+  path?: string;
+  listening: boolean;
+  clients: number;
+  error?: string;
+}
+
+export interface TcpStatus {
+  enabled: boolean;
+  listening: boolean;
+  port?: number;
+  infoFile?: string;
+  error?: string;
+}
+
+/** kns in the background (background.rs). */
+export interface BackgroundStatus {
+  keepRunning: boolean;
+  startedInBackground: boolean;
+  launchAtLogin: boolean;
+  windowOpen: boolean;
+  socket: SocketStatus;
+}
+
+/** What of kns is set up in Herdr (herdr.rs). */
+export interface HerdrStatus {
+  appFound: boolean;
+  modDir?: string;
+  modInstalled: boolean;
+  /** the installed mod is the one this kns carries */
+  modCurrent: boolean;
+  tuiFound: boolean;
+  tuiPluginWritten: boolean;
+  knsTui?: string;
+  tcp: TcpStatus;
+}
+
+export interface HerdrInstallReport {
+  done: string[];
+  /** what could not be done or needs the person: a non-empty list is a warning */
+  notes: string[];
+  /** where to find things next */
+  tips: string[];
+  status: HerdrStatus;
+}
+
 export interface ApplyResult {
   /** resulting object as YAML (managedFields stripped) */
   yaml: string;
@@ -324,6 +371,15 @@ export interface BaseBackend {
   // persisted UI state (JSON files in the app config dir)
   loadState(key: string): Promise<Json>;
   saveState(key: string, value: Json): Promise<void>;
+
+  // kns in the background and in Herdr (background.rs, herdr.rs; docs/herdr.md)
+  backgroundStatus(): Promise<BackgroundStatus>;
+  /** Keep running in the tray when the window closes; `launchAtLogin` (macOS) when given. */
+  backgroundSet(keepRunning: boolean, launchAtLogin?: boolean): Promise<BackgroundStatus>;
+  herdrStatus(): Promise<HerdrStatus>;
+  /** "Add to Herdr": the Herdr app's panel (mod + loopback endpoint) and/or the herdr TUI plugin. */
+  herdrInstall(): Promise<HerdrInstallReport>;
+  herdrUninstall(): Promise<HerdrInstallReport>;
 }
 
 /**

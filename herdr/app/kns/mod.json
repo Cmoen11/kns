@@ -1,0 +1,13 @@
+{
+  "place": "right",
+  "size": 440,
+  "title": "kns",
+  "focusable": true,
+  "palette": [
+    { "title": "kns: panel beside this pane", "command": "pane.split", "args": { "direction": "right", "mod": "kns" }, "words": "kubernetes k8s pods cluster" },
+    { "title": "kns: clusters in a new tab", "command": "tab.new", "args": { "name": "kns", "mod": "kns", "props": { "tab": true } }, "words": "kubernetes k8s pods" },
+    { "title": "kns: apply a manifest", "command": "kns.new", "words": "kubernetes yaml apply create" },
+    { "title": "kns: reload the table", "command": "kns.refresh", "words": "kubernetes" },
+    { "title": "kns: open the kns window", "command": "kns.window", "words": "kubernetes" }
+  ]
+}

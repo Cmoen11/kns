@@ -100,6 +100,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      # the Herdr mod's pure modules (herdr/app/kns): no Herdr runtime needed
+      - run: node --test herdr/app/kns/mod.test.mjs
       # Rust checks (debug build: uses devUrl, no dist needed); macOS compiles the unix/AppKit paths
       - run: cargo clippy --all-targets -- -D warnings
         working-directory: src-tauri

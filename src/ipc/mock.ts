@@ -22,6 +22,9 @@ import { deriveStatus, isFault } from "../table/status";
 import type {
   ApiResource,
   Backend,
+  BackgroundStatus,
+  HerdrInstallReport,
+  HerdrStatus,
   Column,
   ContextInfo,
   EventRow,
@@ -35,6 +38,21 @@ import type {
   Row,
   TableQuery,
 } from "./types";
+
+
+// background and Herdr (background.rs, herdr.rs): kept in memory
+const background = { keepRunning: true, launchAtLogin: false };
+const herdr = { installed: false };
+function mockBackground(): BackgroundStatus {
+  return { ...background, startedInBackground: false, windowOpen: true, socket: { path: "/tmp/kns.sock", listening: true, clients: 1 } };
+}
+function mockHerdr(): HerdrStatus {
+  return {
+    appFound: true, modDir: "~/.config/herdr-app/mods/kns", modInstalled: herdr.installed, modCurrent: herdr.installed,
+    tuiFound: false, tuiPluginWritten: false, knsTui: "/Applications/kns.app/Contents/MacOS/kns-tui",
+    tcp: herdr.installed ? { enabled: true, listening: true, port: 53124 } : { enabled: false, listening: false },
+  };
+}
 
 const CONTEXTS: ContextInfo[] = [
   { name: "default", cluster: "k3s-home", user: "admin", namespace: "default" },
@@ -557,6 +575,28 @@ export const mockBackend: Backend = {
       /* private mode */
     }
     return delay(undefined, 0);
+  },
+
+  backgroundStatus: () => delay(mockBackground()),
+  backgroundSet: (keepRunning, launchAtLogin) => {
+    background.keepRunning = keepRunning;
+    if (launchAtLogin !== undefined) background.launchAtLogin = launchAtLogin;
+    return delay(mockBackground());
+  },
+  herdrStatus: () => delay(mockHerdr()),
+  herdrInstall: () => {
+    herdr.installed = true;
+    const r: HerdrInstallReport = {
+      done: ["kns listens for Herdr on 127.0.0.1:53124", "the kns mod is in ~/.config/herdr-app/mods/kns", "herdr-app check passed"],
+      notes: [],
+      tips: ["In Herdr's command palette: \"kns: panel beside this pane\" and \"kns: clusters in a new tab\"."],
+      status: mockHerdr(),
+    };
+    return delay(r, 400);
+  },
+  herdrUninstall: () => {
+    herdr.installed = false;
+    return delay({ done: ["removed ~/.config/herdr-app/mods/kns", "turned the TCP endpoint off"], notes: [], tips: [], status: mockHerdr() } as HerdrInstallReport, 200);
   },
 
   ...fwdMock,
