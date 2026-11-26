@@ -482,6 +482,17 @@ An agent connected through MCP cannot change anything itself. Starting a dev set
 - **Claude Code:** `claude mcp add --env KNS_MCP_TOKEN=<token> --transport stdio --scope user kns -- "<path to kns-mcp>"` (the token lands in `~/.claude.json`, as with the HTTP form, and possibly in your shell history). The shim reads the token from that variable only: never from its arguments, and it never prints or logs it.
 - **When kns is closed** or the server is off, every call answers with the reason ("kns is not running", "turn it on with `:mcp on`"); a revoked token answers "kns refused the token (HTTP 401)". `kns-mcp --check` asks kns for its tool list once and says what is wrong.
 
+**Agents without an MCP server (CLI).** The same `kns-mcp` gives the tools as shell commands, for an agent that runs commands but has no MCP server registered (and should not get one). Every command is one request to the same server, with the same token, policies, approvals and audit.
+
+- `kns-mcp guide`: the server's instructions (what an MCP client would show its model).
+- `kns-mcp tools` lists the tools (`--json` for the full schemas); `kns-mcp help <tool>` shows a tool's parameters and an example.
+- `kns-mcp call <tool> key=value nested.key=value list.0.key=value key:=<json>`: `key=value` is a string, made a number or boolean when the tool's schema says so; `key:=` takes raw JSON; a JSON object or `-` (stdin) works too. The result is JSON on stdout (`--compact` for one line, `--raw` for the whole MCP result).
+- `kns-mcp resources` and `kns-mcp read kns://selection` for the resources.
+- Exit codes: 0 ok, 1 the tool answered with an error (its JSON, with `error.code` and `error.hint`, is still on stdout), 2 bad usage, 3 kns could not be reached (not running, server off, no or revoked token).
+- Examples: `kns-mcp call explain_why ref.kind=deploy ref.name=web ref.namespace=shop`, `kns-mcp call check_reach from.kind=deploy from.name=web from.namespace=shop to.kind=svc to.name=db to.namespace=shop port=5432`.
+
+**Agent skill.** `:mcp skill` (or *Install agent skill…* in `:agents`, key `s`) writes a Claude Code skill to `~/.claude/skills/kns/SKILL.md`, so every Claude Code session on this machine knows how to use kns through the CLI, with the path to `kns-mcp` filled in. With *Create a CLI token* ticked, kns also creates a token for the client `kns-cli` and writes it to `rust/cli-token` next to `mcp.json` (mode 0600 on macOS); `kns-mcp` reads it when `KNS_MCP_TOKEN` is not set. Any program running as you can read that file, as with the token in `~/.claude.json`; revoking `kns-cli` in `:agents` deletes it.
+
 ### Policies
 
 Each context has a policy: `off` (the default), `read` (the agent may look), or `propose` (it may also ask for changes). Set them with `:mcp policy …`. A read-only context caps at `read`; a protected context needs you to type its name to allow `propose`, and requests there are confirmed the same way. Agents only see contexts you connected in this session, and kns never logs in to a context because an agent asked.
@@ -533,6 +544,7 @@ The list below is generated from the server's own descriptions; the hub shows th
 | `get_timeline` | read | What happened to an object, in order: events, restarts, rollouts and state changes in the last `sinceMinutes`. |
 | `get_service_info` | read | A Service's ports, ready endpoints, backing workload and detected kind (HTTP, Postgres, Kafka listeners …). |
 | `get_workload_dependencies` | read | What a workload talks to inside the cluster, how a local process would reach each dependency, and the side effects of running it locally (consumer groups, migrations). |
+| `check_reach` | read | Can this pod reach that Service (or pod)? A static check of the chain: Service, port, endpoints, readiness, target port, the NetworkPolicies of both ends and DNS egress. |
 | `list_forwards` | read | Port-forwards kns is running in contexts you may see: target, local address and who owns each. |
 | `list_dev_sets` | read | Saved dev sets (named groups of forwards plus an env export config) in contexts you may see. |
 | `get_proposal` | read | The current state of one of your proposals (`pending`, `reviewing`, `executing`, `approved`, `rejected`, `expired`, `failed`, `cancelled`) and its result. |
@@ -672,6 +684,19 @@ Parameters:
 
 - `container`: Container whose environment is read; omit for the first one.
 - `ref`: A workload (Deployment, StatefulSet, DaemonSet, Job, CronJob, Pod); a Service resolves to its backing workload.
+
+### `check_reach`: Check reach
+
+Can this pod reach that Service (or pod)? A static check of the chain: Service, port, endpoints, readiness, target port, the NetworkPolicies of both ends and DNS egress.
+Each step has `ok` (`true`, `false`, or `null` when kns cannot decide, e.g. a CNI policy kind it does not evaluate or a list it may not read) and a `detail`; the top-level `ok` is `false` when a step fails.
+`from` may be a workload or Service: its first pod is used (`from` in the result names it).
+Nothing is sent over the network; for a real connection attempt from inside the pod, ask the human to run `:reach` in kns.
+
+Parameters:
+
+- `from`: Where the traffic starts: a pod, or a workload / Service / Job (its first pod is used).
+- `port`: Port on the destination: a Service port number or name (a container port for a pod); omit for the Service's first port.
+- `to`: The destination: a Service (preferred) or a pod, in the same context as `from`.
 
 ### `list_forwards`: List forwards
 

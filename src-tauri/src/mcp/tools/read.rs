@@ -11,7 +11,7 @@ use crate::{
     mcp::{
         McpError,
         describe::{
-            DependenciesParams, Format, GetLogsParams, GetObjectParams, ListDevSetsParams, ListEventsParams, ListResourcesParams, NoParams, ProposalParams,
+            CheckReachParams, DependenciesParams, Format, GetLogsParams, GetObjectParams, ListDevSetsParams, ListEventsParams, ListResourcesParams, NoParams, ProposalParams,
             RefArg, RefParams, TimelineParams, WaitProposalParams,
         },
         policy::Need,
@@ -54,6 +54,7 @@ pub async fn run(state: &AppState, client: &str, name: &str, args: &Json, r: &mu
         }
         "get_service_info" => get_service_info(state, parse(args)?, r).await,
         "get_workload_dependencies" => get_workload_dependencies(state, parse(args)?, r).await,
+        "check_reach" => check_reach(state, parse(args)?, r).await,
         "list_forwards" => {
             parse::<NoParams>(args)?;
             list_forwards(state, r).await
@@ -340,6 +341,35 @@ async fn get_service_info(state: &AppState, p: RefParams, r: &mut Redactor) -> R
     let mut v = serde_json::to_value(info).unwrap_or(Value::Null);
     scrub(r, &mut v);
     Ok(Reply::new(v, &["ports", "selector", "kafkaListeners"]))
+}
+
+async fn check_reach(state: &AppState, p: CheckReachParams, r: &mut Redactor) -> R {
+    use crate::{
+        ipc::{Gvr, PortRef},
+        mcp::describe::PortArg,
+    };
+    let (cx, from_obj, _) = target(state, &p.from, r).await?;
+    let (to_cx, to, _) = target(state, &p.to, r).await?;
+    if to_cx.context != cx.context {
+        return Err(McpError::new("Invalid", "`from` and `to` must be in one context"));
+    }
+    let from = if from_obj.gvr.group.is_empty() && from_obj.gvr.resource == "pods" {
+        from_obj
+    } else {
+        let pods = crate::objects::pods_for(state, &from_obj).await.map_err(|e| from_backend(e, r))?;
+        let Some(pod) = pods.into_iter().find(|pod| cx.scope.allows(Some(&pod.namespace))) else {
+            return Err(McpError::new("NotFound", "no pod behind `from`").hint("explain_why says why"));
+        };
+        ObjRef { context: cx.context.clone(), gvr: Gvr::new("", "v1", "pods"), namespace: Some(pod.namespace), name: pod.name }
+    };
+    let port = p.port.map(|p| match p {
+        PortArg::Number(n) => PortRef::Number(n),
+        PortArg::Name(s) => PortRef::Name(s),
+    });
+    let check = crate::reach::reach(state, &from, &to, port).await.map_err(|e| from_backend(e, r))?;
+    let mut v = serde_json::to_value(check).unwrap_or(Value::Null);
+    scrub(r, &mut v);
+    Ok(Reply::new(v, &["steps"]))
 }
 
 async fn get_workload_dependencies(state: &AppState, p: DependenciesParams, r: &mut Redactor) -> R {

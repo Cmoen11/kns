@@ -243,6 +243,7 @@ pub fn run() {
             mcp::cmd::mcp_set_port,
             mcp::cmd::mcp_client_add,
             mcp::cmd::mcp_client_revoke,
+            mcp::cmd::mcp_skill_install,
             mcp::cmd::mcp_policy_set,
             mcp::cmd::mcp_audit_tail,
             // status colours

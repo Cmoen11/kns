@@ -478,6 +478,7 @@ function rows() {
     a("mcp.command", "global", "", "MCP server", { command: "mcp" }),
     a("agents.open", "global", "", "agents", { command: "agents", opens: "view" }),
     a("agents.connect", "agents", "a", "connect an agent…", { opens: "dialog", hint: 10 }),
+    a("agents.installSkill", "agents", "s", "install agent skill…", { opens: "dialog", hint: 13 }),
     a("agents.revoke", "agents", "x", "revoke client", { opens: "dialog", hint: 11 }),
     a("agents.stopServer", "agents", "X", "stop MCP server", { hint: 12 }),
     a("proposals.next", "global", "leader y", "review agent request", { command: "proposals", opens: "dialog" }),

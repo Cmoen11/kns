@@ -7,6 +7,7 @@ export type McpCommand =
   | { kind: "on" }
   | { kind: "off" }
   | { kind: "setup" }
+  | { kind: "skill" }
   | { kind: "status" }
   | { kind: "demo" }
   | { kind: "add"; name: string }
@@ -15,7 +16,7 @@ export type McpCommand =
   | { kind: "policy"; policy: McpPolicy; context?: string; namespaces?: string[] }
   | { kind: "error"; message: string };
 
-export const MCP_USAGE = ":mcp on | off | setup | status | add <name> | revoke <name> | port <n> | policy off|read|propose [context] [ns,ns…]";
+export const MCP_USAGE = ":mcp on | off | setup | skill | status | add <name> | revoke <name> | port <n> | policy off|read|propose [context] [ns,ns…]";
 
 export const CLIENT_NAME = /^[A-Za-z0-9._-]{1,40}$/;
 const NAMESPACE = /^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/;
@@ -27,6 +28,7 @@ export function parseMcpArgs(args: readonly string[]): McpCommand {
     case "on":
     case "off":
     case "setup":
+    case "skill":
     case "status":
     case "demo":
       return rest.length ? { kind: "error", message: `":mcp ${verb}" takes no arguments` } : { kind: verb };

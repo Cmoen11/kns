@@ -49,7 +49,7 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `�
 
 ![An agent asks to start a dev set; the request waits for approval in kns](docs/img/agent-approval.png)
 
-- A local MCP server on `127.0.0.1` (`:mcp setup`) with 18 read tools (status, selection, objects, events, logs, `explain_why`, timeline, dependencies, packs …) and 13 tools that draft dev sets or ask for changes.
+- A local MCP server on `127.0.0.1` (`:mcp setup`) with 19 read tools (status, selection, objects, events, logs, `explain_why`, `check_reach`, timeline, dependencies, packs …) and 13 tools that draft dev sets or ask for changes.
 - An agent never changes anything itself: forwards, env exports, scale, restart, delete, reconcile and apply arrive as requests you review with `leader y`.
 - `leader c` (`:pack`) copies a redacted markdown bundle of the marked objects for pasting into any agent.
 
@@ -95,7 +95,7 @@ What it cannot do: exec or attach, start debug containers, decode Secrets or rea
 
 Approval model: every request opens the manual action's dialog (never by itself, no batch approve, no "always allow"; the primary button ignores input for half a second). Secret keys of an env export start unticked and ticking one means typing the workload name; a protected context means typing its name; a read-only context only offers Reject. Rust checks the choices again before anything runs.
 
-Tokens: one per agent, 32 random bytes, stored only as a SHA-256 hash, revocable from `:agents` (`x`), which also cancels its open requests and stops forwards it owns. The server is off by default, listens on `127.0.0.1` only, rejects any request with an `Origin` header and checks `Host`. Every call is written to an audit log shown in `:agents`. Clients that only speak stdio use the bundled `kns-mcp` shim with the token in `KNS_MCP_TOKEN`; it adds no access of its own.
+Tokens: one per agent, 32 random bytes, stored only as a SHA-256 hash, revocable from `:agents` (`x`), which also cancels its open requests and stops forwards it owns. The server is off by default, listens on `127.0.0.1` only, rejects any request with an `Origin` header and checks `Host`. Every call is written to an audit log shown in `:agents`. Clients that only speak stdio use the bundled `kns-mcp` shim with the token in `KNS_MCP_TOKEN`; it adds no access of its own. Agents without an MCP server use the same tools from the shell (`kns-mcp tools`, `kns-mcp call explain_why ref.kind=deploy ref.name=web ref.namespace=shop`); `:mcp skill` installs a Claude Code skill that teaches them, optionally with a CLI token.
 
 Details: [docs/tools.md](docs/tools.md#agents) and the design in [docs/plan-features.md](docs/plan-features.md) §5.
 

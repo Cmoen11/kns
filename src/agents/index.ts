@@ -9,7 +9,7 @@ import { actionTip, keepFocus } from "../ui";
 import { cleanUntrusted } from "../ui/untrusted";
 import { registerActivityGroup, type GroupRows } from "../sidepanels/groups";
 import type { PanelRow } from "../sidepanels/model";
-import { CONNECT_OVERLAY, POLICY_OVERLAY, PORT_OVERLAY, REVOKE_OVERLAY, setServer } from "./actions";
+import { CONNECT_OVERLAY, POLICY_OVERLAY, PORT_OVERLAY, REVOKE_OVERLAY, SKILL_OVERLAY, setServer } from "./actions";
 import { statusLine } from "./model";
 import { startUiStatePublisher } from "./publish";
 import { startAgentsStore, useAgentActivity, useMcpStatus } from "./store";
@@ -113,12 +113,13 @@ export function register(): void {
   registerView({
     kinds: ["agents"],
     component: () => import("./AgentsView"),
-    toolbar: () => ["agents.connect", "agents.revoke", "agents.stopServer", "|", "filter.open", "hub.help"],
+    toolbar: () => ["agents.connect", "agents.installSkill", "agents.revoke", "agents.stopServer", "|", "filter.open", "hub.help"],
   });
   registerOverlay(CONNECT_OVERLAY, () => import("./ConnectDialog"));
   registerOverlay(REVOKE_OVERLAY, () => import("./RevokeDialog"));
   registerOverlay(POLICY_OVERLAY, () => import("./PolicyDialog"));
   registerOverlay(PORT_OVERLAY, () => import("./PortDialog"));
+  registerOverlay(SKILL_OVERLAY, () => import("./SkillDialog"));
   registerActivityGroup({ id: "agents", label: "Agents", order: 90, useRows: useAgentRows });
   registerToolStatus("mcp", () => statusLine(useMcpStatus()));
   registerOverlay(REVIEW_OVERLAY, () => import("./ProposalDialog"));

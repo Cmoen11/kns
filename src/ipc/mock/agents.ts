@@ -131,6 +131,7 @@ const MOCK_TOOLS: McpStatus["tools"] = [
   ["get_timeline", "Timeline", "What happened to an object, in order: events, restarts, rollouts and state changes in the last `sinceMinutes`."],
   ["get_service_info", "Service info", "A Service's ports, ready endpoints, backing workload and detected kind (HTTP, Postgres, Kafka listeners …)."],
   ["get_workload_dependencies", "Workload dependencies", "What a workload talks to inside the cluster, how a local process would reach each dependency, and the side effects of running it locally."],
+  ["check_reach", "Check reach", "Can this pod reach that Service (or pod)? A static check of the chain: Service, port, endpoints, readiness, target port, the NetworkPolicies of both ends and DNS egress."],
   ["list_forwards", "List forwards", "Port-forwards kns is running in contexts you may see: target, local address and who owns each."],
   ["list_dev_sets", "List dev sets", "Saved dev sets (named groups of forwards plus an env export config) in contexts you may see."],
   ["get_proposal", "Get proposal", "The current state of one of your proposals and its result."],
@@ -339,6 +340,17 @@ export const agentsMock: AgentsBackend = {
     auditEvent(name, rekeyed ? "token replaced" : "token added");
     emitStatus();
     return delay({ copied: true as const, excluded: true });
+  },
+  mcpSkillInstall: (token) => {
+    if (token) {
+      const rekeyed = clients.has("kns-cli");
+      clients.set("kns-cli", { createdAt: nowIso(), calls: 0 });
+      auditEvent("kns-cli", rekeyed ? "token replaced" : "token added");
+      auditEvent("kns-cli", "cli token written");
+    }
+    auditEvent("kns", "agent skill installed", { path: "~/.claude/skills/kns/SKILL.md" });
+    emitStatus();
+    return delay({ path: "/home/you/.claude/skills/kns/SKILL.md", cli: "/opt/kns/kns-mcp", cliFound: true, token });
   },
   mcpClientRevoke: (name) => {
     if (!clients.has(name)) return reject("NotFound", `no MCP client named "${name}"`, 404);

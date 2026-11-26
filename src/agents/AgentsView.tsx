@@ -8,7 +8,7 @@ import { EmptyState } from "../ui";
 import { ListPane } from "../views/tools/ListPane";
 import type { ItemRow, ListRow } from "../views/tools/list-model";
 import { clock } from "../views/tools/open";
-import { CONNECT_OVERLAY, POLICY_OVERLAY, PORT_OVERLAY, setServer } from "./actions";
+import { CONNECT_OVERLAY, POLICY_OVERLAY, PORT_OVERLAY, SKILL_OVERLAY, setServer } from "./actions";
 import { auditCells, auditGlyph, clientDetail, policyContexts, policyOf, policyText, statusLine } from "./model";
 import { refreshStatus, useAudit, useMcpStatus, watchAudit } from "./store";
 
@@ -55,6 +55,12 @@ export default function AgentsView({ pane, focused }: ViewProps<"agents">) {
       key: "connect",
       cells: ["Connect an agent…", "server on, client name, policy, setup command to the clipboard"],
       open: () => showOverlay(CONNECT_OVERLAY, {}),
+    });
+    out.push({
+      type: "item",
+      key: "skill",
+      cells: ["Install agent skill…", "a Claude Code skill (all projects) that uses kns through the kns-mcp CLI, no MCP server to register"],
+      open: () => showOverlay(SKILL_OVERLAY, {}),
     });
 
     out.push({ type: "group", key: "g:clients", label: "Clients" });

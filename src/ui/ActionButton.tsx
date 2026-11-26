@@ -83,6 +83,7 @@ export const ACTION_ICONS: Partial<Record<ActionId, IconName>> = {
   "mcp.command": "plug",
   "agents.open": "agent",
   "agents.connect": "plug",
+  "agents.installSkill": "agent",
   "proposals.next": "agent",
 };
 

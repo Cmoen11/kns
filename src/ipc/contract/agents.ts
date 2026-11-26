@@ -139,6 +139,18 @@ export interface McpClientAdded {
   excluded: boolean;
 }
 
+/** The Claude Code skill for the `kns-mcp` CLI was written (`mcp_skill_install`). */
+export interface McpSkillInstalled {
+  /** where SKILL.md was written (`~/.claude/skills/kns/SKILL.md`) */
+  path: string;
+  /** the `kns-mcp` the skill names */
+  cli: string;
+  /** `kns-mcp` exists there (false in a dev build that has not built it) */
+  cliFound: boolean;
+  /** a CLI token (client `kns-cli`) was created and written next to the MCP settings */
+  token: boolean;
+}
+
 export interface AgentsBackend {
   proposalsList(): Promise<Proposal[]>;
   /** dialog opened: pending -> reviewing */
@@ -156,6 +168,8 @@ export interface AgentsBackend {
   /** Rust copies the setup command through clip.rs; the token never reaches the webview. */
   mcpClientAdd(name: string): Promise<McpClientAdded>;
   mcpClientRevoke(name: string): Promise<void>;
+  /** Writes the Claude Code skill for the CLI; with `token`, also a CLI token only `kns-mcp` reads. The token never reaches the webview. */
+  mcpSkillInstall(token: boolean): Promise<McpSkillInstalled>;
   mcpPolicySet(context: string, policy: McpPolicy, namespaces?: string[]): Promise<void>;
   mcpAuditTail(limit: number): Promise<AuditRow[]>;
 }

@@ -153,6 +153,19 @@ pub struct DependenciesParams {
 #[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
 #[schemars(crate = "rmcp::schemars")]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CheckReachParams {
+    /// Where the traffic starts: a pod, or a workload / Service / Job (its first pod is used).
+    pub from: RefArg,
+    /// The destination: a Service (preferred) or a pod, in the same context as `from`.
+    pub to: RefArg,
+    /// Port on the destination: a Service port number or name (a container port for a pod); omit for the Service's first port.
+    #[serde(default)]
+    pub port: Option<PortArg>,
+}
+
+#[derive(Debug, Clone, Deserialize, schemars::JsonSchema)]
+#[schemars(crate = "rmcp::schemars")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ListDevSetsParams {
     /// Only sets of this context; omit for every context you may see.
     #[serde(default)]
@@ -606,6 +619,10 @@ Use it to check a dependency is ready before planning a dev set."),
     tool!("get_workload_dependencies", "Workload dependencies", Read, DependenciesParams, "What a workload talks to inside the cluster, how a local process would reach each dependency, and the side effects of running it locally (consumer groups, migrations).
 Env values from Secrets are never returned: those rows say `secret` with no value.
 Use this to plan a dev set before `draft_dev_set_from_workload`."),
+    tool!("check_reach", "Check reach", Read, CheckReachParams, "Can this pod reach that Service (or pod)? A static check of the chain: Service, port, endpoints, readiness, target port, the NetworkPolicies of both ends and DNS egress.
+Each step has `ok` (`true`, `false`, or `null` when kns cannot decide, e.g. a CNI policy kind it does not evaluate or a list it may not read) and a `detail`; the top-level `ok` is `false` when a step fails.
+`from` may be a workload or Service: its first pod is used (`from` in the result names it).
+Nothing is sent over the network; for a real connection attempt from inside the pod, ask the human to run `:reach` in kns."),
     tool!("list_forwards", "List forwards", Read, NoParams, "Port-forwards kns is running in contexts you may see: target, local address and who owns each.
 You cannot start or stop forwards with this tool."),
     tool!("list_dev_sets", "List dev sets", Read, ListDevSetsParams, "Saved dev sets (named groups of forwards plus an env export config) in contexts you may see.

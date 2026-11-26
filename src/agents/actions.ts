@@ -16,6 +16,7 @@ export const CONNECT_OVERLAY = "agents.connect";
 export const REVOKE_OVERLAY = "agents.revoke";
 export const POLICY_OVERLAY = "agents.policy";
 export const PORT_OVERLAY = "agents.port";
+export const SKILL_OVERLAY = "agents.skill";
 
 const message = (e: unknown): string => (e as Partial<BackendError>)?.message ?? String(e);
 
@@ -91,6 +92,21 @@ export async function addClient(name: string): Promise<boolean> {
   }
 }
 
+/** Writes the Claude Code skill for the CLI (and, with `token`, a CLI token only kns-mcp reads). */
+export async function installSkill(token: boolean): Promise<boolean> {
+  try {
+    const r = await backend.mcpSkillInstall(token);
+    refreshStatus();
+    const tokenText = r.token ? " · CLI token created" : " · the agent needs KNS_MCP_TOKEN";
+    toast({ kind: "ok", text: `Agent skill installed: ${r.path}${tokenText}. Start a new Claude Code session to load it.` });
+    if (!r.cliFound) toasts.error(`kns-mcp was not found at ${r.cli}: the skill names it, but this build has no CLI there`);
+    return true;
+  } catch (e) {
+    toasts.error(`Install agent skill: ${message(e)}`);
+    return false;
+  }
+}
+
 function openAgents(ctx: ActionContext): void {
   if (!ctx.newPane && paneView()?.kind === "agents") return;
   openView({ kind: "agents" }, { newPane: ctx.newPane });
@@ -111,6 +127,9 @@ async function runMcp(ctx: ActionContext): Promise<void> {
       return;
     case "setup":
       showOverlay(CONNECT_OVERLAY, {});
+      return;
+    case "skill":
+      showOverlay(SKILL_OVERLAY, {});
       return;
     case "on":
       await setServer(true);
@@ -169,6 +188,7 @@ registerActions({
   },
   "agents.open": openAgents,
   "agents.connect": () => showOverlay(CONNECT_OVERLAY, {}),
+  "agents.installSkill": () => showOverlay(SKILL_OVERLAY, {}),
   "agents.revoke": {
     enabled: () => !!cursorClient() || "put the cursor on a client row",
     run: () => {

@@ -38,6 +38,9 @@ pub const DEFAULT_PORT: u16 = 7099;
 /// `mcp::server::PATH`
 pub const PATH: &str = "/mcp";
 pub const TOKEN_ENV: &str = "KNS_MCP_TOKEN";
+/// The CLI token kns writes next to `mcp.json` when the Claude Code skill is installed with one
+/// (`mcp::skill`); read only when `KNS_MCP_TOKEN` is not set.
+pub const TOKEN_FILE: &str = "cli-token";
 /// A larger answer is refused (the server caps results at 256 KiB).
 const MAX_RESPONSE: usize = 16 * 1024 * 1024;
 /// A larger stdin line is answered with an error without being sent (the server takes 1 MiB).
@@ -53,6 +56,12 @@ pub fn default_config_path() -> Option<PathBuf> {
 
 pub fn config_path_in(config_dir: &Path) -> PathBuf {
     config_dir.join(IDENTIFIER).join("rust").join("mcp.json")
+}
+
+/// `rust/cli-token` next to `mcp.json`, if it exists.
+pub fn read_token_file(config: &Path) -> Option<String> {
+    let path = config.with_file_name(TOKEN_FILE);
+    std::fs::read_to_string(path).ok().map(|t| t.trim().to_string()).filter(|t| !t.is_empty() && t.len() < 256)
 }
 
 /// What the shim reads from `mcp.json`.
@@ -109,9 +118,12 @@ impl Shim {
         }
     }
 
-    /// From the environment: the default config path and `KNS_MCP_TOKEN`.
+    /// From the environment: the default config path and `KNS_MCP_TOKEN`, else the token file
+    /// kns wrote next to `mcp.json` for the CLI (`rust/cli-token`).
     pub fn from_env() -> Self {
-        Self::new(default_config_path(), std::env::var(TOKEN_ENV).ok())
+        let config = default_config_path();
+        let token = std::env::var(TOKEN_ENV).ok().filter(|t| !t.trim().is_empty()).or_else(|| config.as_deref().and_then(read_token_file));
+        Self::new(config, token)
     }
 
     fn negotiated(&self) -> Option<String> {
@@ -137,7 +149,7 @@ impl Shim {
         };
         let ids = request_ids(&msg);
         let Some(token) = self.token.as_deref() else {
-            return error_outcome(&ids, "NoToken", "KNS_MCP_TOKEN is not set: give kns-mcp the token from \":mcp setup\" in kns through that environment variable");
+            return error_outcome(&ids, "NoToken", "no token: set KNS_MCP_TOKEN to the token from \":mcp setup\" in kns, or install the agent skill with a CLI token (\":mcp skill\")");
         };
         if !header_safe(token) {
             return error_outcome(&ids, "NoToken", "KNS_MCP_TOKEN contains characters an HTTP header cannot carry");
@@ -436,9 +448,10 @@ const USAGE: &str = "kns-mcp: connects a stdio MCP client to the MCP server of t
 
 Usage: kns-mcp            serve MCP over stdin/stdout (newline-delimited JSON-RPC)
        kns-mcp --check    ask kns for its tool list once and report
+       kns-mcp guide | tools | help <tool> | call <tool> …   the tools as shell commands (kns-mcp --help)
        kns-mcp --help | --version
 
-Environment: KNS_MCP_TOKEN  the agent's token from \":mcp setup\" in kns (required)
+Environment: KNS_MCP_TOKEN  the agent's token from \":mcp setup\" in kns (else the CLI token from \":mcp skill\")
 Reads the port from the kns settings; never connects anywhere but 127.0.0.1.";
 
 /// The program. Returns the exit code.

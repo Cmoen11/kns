@@ -14,6 +14,7 @@ export const agentsTauri: AgentsBackend = {
   mcpSetPort: (port) => call("mcp_set_port", { port }),
   mcpClientAdd: (name) => call("mcp_client_add", { name }),
   mcpClientRevoke: (name) => call("mcp_client_revoke", { name }),
+  mcpSkillInstall: (token) => call("mcp_skill_install", { token }),
   mcpPolicySet: (context, policy, namespaces) => call("mcp_policy_set", { context, policy, namespaces }),
   mcpAuditTail: (limit) => call("mcp_audit_tail", { limit }),
 };

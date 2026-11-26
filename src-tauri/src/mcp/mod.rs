@@ -7,6 +7,8 @@
 //! - `server.rs`: the loopback HTTP listener (axum + rmcp Streamable HTTP, stateless).
 //! - `tools/`: the tool implementations.
 //! - `shim.rs`: the stdio shim `kns-mcp` (`src/bin/kns-mcp.rs`, H3); std-only, no `crate::` paths.
+//! - `skill.rs`: the Claude Code skill for the CLI (`~/.claude/skills/kns/SKILL.md`) and the CLI token.
+//! - `cli.rs`: the same tools as `kns-mcp` shell commands (`tools`, `help`, `call` …), through the shim.
 //!
 //! State lives in `McpState` (`state.ext`), persisted to `rust/mcp.json` (only Rust writes it):
 //! `{schema, enabled, port, clients: [{name, tokenSha256, createdAt}], policies: {ctx: {policy, namespaces?}}}`.
@@ -14,6 +16,7 @@
 //! which every caller treats as "deny".
 pub mod audit;
 pub mod auth;
+pub mod cli;
 pub mod describe;
 pub mod instructions;
 pub mod policy;
@@ -22,6 +25,7 @@ pub mod resources;
 pub mod scope;
 pub mod server;
 pub mod shim;
+pub mod skill;
 #[cfg(test)]
 mod shim_e2e;
 pub mod tools;
@@ -350,23 +354,30 @@ pub async fn client_add(state: &AppState, name: &str) -> Result<bool> {
     if !auth::valid_client_name(name) {
         return Err(BackendError::invalid(format!("invalid client name \"{}\": use 1-40 of A-Z a-z 0-9 . _ -", crate::redact::clean_untrusted(name, 60))));
     }
+    let token = add_token(state, name).await?;
+    let port = config(state).map(|c| c.port).unwrap_or(DEFAULT_PORT);
+    let written = crate::clip::write_secret(&setup_command(port, &token), CLIPBOARD_CLEAR)?;
+    Ok(written.excluded)
+}
+
+/// Creates (or replaces) a client's token and returns it; the old token stops working.
+pub(crate) async fn add_token(state: &AppState, name: &str) -> Result<String> {
     let token = auth::new_token();
     let hash = auth::hash_token(&token);
-    let (port, rekeyed) = update(state, |c| {
+    let rekeyed = update(state, |c| {
         let rekeyed = c.clients.iter().any(|x| x.name == name);
         c.clients.retain(|x| x.name != name);
         c.clients.push(StoredClient { name: name.into(), token_sha256: hash, created_at: iso(now_ms()) });
-        Ok((c.port, rekeyed))
+        Ok(rekeyed)
     })
     .await?;
     lock(&slot(state).limiter).forget(name);
     if rekeyed {
         crate::proposals::cancel_client(state, name, "the client's token was replaced");
     }
-    let written = crate::clip::write_secret(&setup_command(port, &token), CLIPBOARD_CLEAR)?;
     audit_event(state, name, if rekeyed { "token replaced" } else { "token added" }, None);
     emit_status(state);
-    Ok(written.excluded)
+    Ok(token)
 }
 
 /// Removes a client: its token stops working at once, its open proposals are cancelled and the
@@ -383,6 +394,9 @@ pub async fn client_revoke(state: &AppState, name: &str) -> Result<usize> {
     }
     lock(&slot(state).limiter).forget(name);
     lock(&slot(state).inner).stats.remove(name);
+    if name == skill::CLI_CLIENT {
+        skill::forget_token(state);
+    }
     crate::proposals::cancel_client(state, name, "the client's token was revoked");
     let stopped = crate::forward::stop_by_owner(state, name).await.unwrap_or(0);
     audit_event(state, name, "token revoked", Some(serde_json::json!({ "forwardsStopped": stopped })));
@@ -567,6 +581,13 @@ pub mod cmd {
     pub async fn mcp_client_add(state: tauri::State<'_, AppState>, name: String) -> Result<ClientAdded> {
         let excluded = super::client_add(&state, &name).await?;
         Ok(ClientAdded { copied: true, excluded })
+    }
+
+    /// Writes `~/.claude/skills/kns/SKILL.md`; with `token`, also a CLI token in `rust/cli-token`.
+    #[tauri::command]
+    pub async fn mcp_skill_install(state: tauri::State<'_, AppState>, token: bool) -> Result<super::skill::SkillInstalled> {
+        super::ensure_loaded(&state).await?;
+        super::skill::install(&state, token).await
     }
 
     #[tauri::command]
