@@ -115,6 +115,12 @@ export class Panel {
     this.fallback = null;
     this.seen = new Map();
     this.memo = null;
+    // The row list's id. Herdr files a virtual list's scroll position under its id and keeps it
+    // across tables and mod reloads, so a reused id can open a fresh table scrolled past its
+    // end: an empty area until another tab resets it. Each table, and each panel, gets its own.
+    this.listId = `kns-rows-${Math.random().toString(36).slice(2, 8)}`;
+    this.listSeq = 0;
+    this.starting = false;
 
     this.kns.run(cx);
     cx.timer.every(15000, (cx) => this.pollMetrics(cx));
@@ -140,10 +146,16 @@ export class Panel {
   onKns(cx) {
     if (this.kns.ready && this.readyFor !== this.kns.hello) {
       this.readyFor = this.kns.hello;
+      // render() follows space switches; until this first view is set up it must not start a second one
+      this.starting = true;
       cx.spawn(async (cx) => {
-        await this.loadContexts();
-        await this.applySpace(cx, true);
-        cx.notify();
+        try {
+          await this.loadContexts();
+          await this.applySpace(cx, true);
+        } finally {
+          this.starting = false;
+          cx.notify();
+        }
       });
     }
     cx.notify();
@@ -290,6 +302,7 @@ export class Panel {
     this.selected = null;
     this.seen = new Map();
     this.memo = null;
+    this.listSeq++;
     cx.notify();
     if (!this.kns.ready || !this.context) return;
     const query = {
@@ -688,7 +701,7 @@ export class Panel {
   render(cx) {
     const t = theme();
     const space = spaces().find((s) => s.active);
-    if (!this.pinned && space?.id !== this.spaceId && this.kns.ready && this.contexts.length) cx.spawn(async (cx) => { await this.applySpace(cx); cx.notify(); });
+    if (!this.pinned && !this.starting && space?.id !== this.spaceId && this.kns.ready && this.contexts.length) cx.spawn(async (cx) => { await this.applySpace(cx); cx.notify(); });
     if (this.pendingRename) this.renamePending(cx);
     if (this.fallback) {
       const f = this.fallback;
@@ -808,15 +821,16 @@ export class Panel {
       .child(div().w(30).flex_none().text_right().child("AGE"));
 
     const empty = (text) => div().p(12).text_color(t.dim).child(text);
+    const listId = `${this.listId}-${this.listSeq}`;
     const listArea = this.picking ? this.picker(t) : div().flex_1().min_h(0).relative()
       .on_size_change((s, cx) => { this.listHeight = s.height / (settings().zoom ?? 1); })
       // a virtual list needs a definite height: pinned to the area, not sized by a flex chain
       .when(rows.length > 0, (el) => el
         .child(div().absolute().inset_0()
-          .child(v_virtual_list("kns-rows", rows.length, ROW, (i) => rows[i].r.uid, (range) => rows.slice(range.start, range.end).map((y, k) => line(y, range.start + k)))
+          .child(v_virtual_list(listId, rows.length, ROW, (i) => rows[i].r.uid, (range) => rows.slice(range.start, range.end).map((y, k) => line(y, range.start + k)))
             .on_item_click((uid, cx) => this.rowClick(uid, cx))
             .size_full()))
-        .child(Scrollbar.vertical("kns-rows").absolute().inset_0()))
+        .child(Scrollbar.vertical(listId).absolute().inset_0()))
       .when(rows.length === 0, (el) => el.child(empty(
         this.table.state === "syncing" ? "Loading…"
           : this.table.state === "live" ? (this.filter ? "Nothing matches the filter" : "Nothing here")
