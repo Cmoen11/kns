@@ -119,7 +119,9 @@ export type ToolId =
   // pod traffic (src/traffic)
   | "traffic"
   // database browser (src/database)
-  | "database";
+  | "database"
+  // HTTP routes (src/routes)
+  | "routes";
 
 export interface WhyView {
   kind: "why";
@@ -182,6 +184,12 @@ export interface TrafficView {
   /** the container to read through; default: Rust picks one */
   container?: string;
 }
+/** The HTTP routes of a namespace or of every namespace, and where each ends (src/routes). */
+export interface RoutesView {
+  kind: "routes";
+  /** none: every namespace */
+  namespace?: string;
+}
 /** A Postgres or MySQL/MariaDB server in a pod, browsed from kns (src/database). */
 export interface DatabaseView {
   kind: "database";
@@ -202,7 +210,7 @@ export interface HubView {
 }
 
 export type FeatureViewState =
-  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView | TrafficView | DatabaseView;
+  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView | TrafficView | DatabaseView | RoutesView;
 
 export type ViewState = TableView | ContainersView | DocView | LogsView | ShellView | ToolView | FeatureViewState;
 export type ViewKind = ViewState["kind"];

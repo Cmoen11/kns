@@ -17,6 +17,7 @@ import { githubMock } from "./mock/github";
 import { logsMock } from "./mock/logs";
 import { packMock } from "./mock/pack";
 import { trafficMock } from "./mock/traffic";
+import { routesMock } from "./mock/routes";
 import { updateMock } from "./mock/update";
 import { MOCK_CONTEXT_FLAGS, delay, mockState as state } from "./mock/shared";
 import { deriveStatus, isFault } from "../table/status";
@@ -613,6 +614,7 @@ export const mockBackend: Backend = {
   ...catalogMock,
   ...githubMock,
   ...trafficMock,
+  ...routesMock,
   ...dbMock,
 
   // namespace health: a first `syncing`, then the counts every 3s when they changed (the real

@@ -13,6 +13,7 @@ pub mod github;
 pub mod health;
 pub mod logs;
 pub mod pack;
+pub mod routes;
 pub mod traffic;
 pub mod update;
 
@@ -28,6 +29,7 @@ pub use github::*;
 pub use health::*;
 pub use logs::*;
 pub use pack::*;
+pub use routes::*;
 pub use traffic::*;
 pub use update::*;
 

@@ -254,6 +254,19 @@ Can this pod talk to that Service? From a pod, kns checks the chain step by step
 - **Safety:** the checks only read. The probe runs one fixed command (`nc -z`, `wget --spider` or bash `/dev/tcp`, whichever the image has) as an exec after you confirm, and needs `create pods/exec`; without exec rights or tools it offers a debug container instead.
 - **Example:** `:reach web:80` on an `envdemo` pod in `kns-spike`: every step green, then the probe connects. To `db`: the Service has no ready endpoints.
 
+<a id="routes"></a>
+### HTTP routes
+
+Every way into the namespace (or the context) over HTTP, drawn left to right as host and path → Ingress or HTTPRoute → Service and port → pods, with the first broken link marked where a request stops.
+
+- **Keys:** `:routes` (the pane's namespace), `:routes all`, `:routes <namespace>`; also in the palette. In the view `j`/`k` move between routes, `h`/`l` (or the arrows) move between the four steps of a route, `Enter` describes the object of the step (the Ingress or HTTPRoute, the Service, the workload; `Ctrl+Enter` beside), `c` copies the URL, `!` shows only routes with problems, `a` switches between this namespace and all of them, `/` filters, `Mod+R` reads again.
+- **Mouse:** the palette ("HTTP routes"), the toolbar (filter, problems only, all namespaces, copy URL, refresh), a click on a step selects it, a double click opens it, Ctrl/⌘+click opens it beside.
+- **How:** reads the Ingresses and, where the Gateway API is installed, the HTTPRoutes and their Gateways, then the Services, EndpointSlices and pods of the namespaces the routes point at. Each host is a section with its scheme (`https` when an Ingress `tls` entry or an HTTPS listener takes it) and the load balancer address. Each rule match is a rail: the path (`/api/*` prefix, `= /admin` exact, `~` regular expression) with any header or method condition, the route object and what serves it (IngressClass or Gateway), the Service with its port and the pod port it maps to (`:80 → 8080`), and the pods as ready dots with the workload. A rule that splits traffic forks into one rail per backend with its share (`90%` / `10%`); a rule that only redirects ends in `↪ redirect`. The panel at the bottom tells the cursor row as the journey of one request: URL and what the match takes, where it enters, the route and its filters (rewrite, headers), the Service and port, the pods.
+- **Signs:** a dashed red wire with `✕` is where a request stops: a Service that does not exist, a port the Service does not have (struck through), or a Service with no ready endpoints; a yellow wire and hollow dots are pods that are not all ready. A note under the header says what could not be read (Gateway API not installed, a forbidden list); on a shared cluster where you may not list across namespaces, kns looks in your team's namespaces (the [catalog](catalog.md)).
+- **Safety:** only reads (Ingresses, HTTPRoutes, Gateways, Services, EndpointSlices, pods); nothing is sent to the routes themselves.
+- **Not for:** TCP/UDP/GRPC routes, service mesh routing (Istio VirtualService), or what the controller makes of `ImplementationSpecific` paths and annotations; `:why` on an Ingress explains a broken one in detail.
+- **Example:** `:routes all` in the mock: `shop.example.com` through Ingress `web` (nginx) with `/api/*` to `svc api :80 → http` (2 of 3 pods ready) and `= /admin` to a port the Service does not have; `checkout.example.com` through Gateway `infra/public` split 90 / 10 between `checkout` and `checkout-canary`; `pay.example.com/webhooks/*` to a missing Service; `support.example.com` with no ready pods; `www.example.com` only redirects.
+
 <a id="traffic"></a>
 ### Pod traffic
 

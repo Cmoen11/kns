@@ -168,6 +168,16 @@ const scenes = {
     await d.wait(300);
   },
 
+  // :routes all: every HTTP way in, host and path → Ingress or HTTPRoute → Service → pods
+  routes: async (d) => {
+    await d.cmd("pods shop");
+    await d.cmd("routes all");
+    await d.until("checkout.example.com", 15000);
+    // the cursor on the canary share of the checkout split, the Service step
+    await d.key("j", 150);
+    await d.wait(600);
+  },
+
   // Tools hub: every tool with its keys, live status and "Try it"
   "tools-hub": async (d) => {
     await d.cmd("pods shop");

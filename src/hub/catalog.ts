@@ -309,6 +309,19 @@ const entries: ToolEntry[] = [
     kinds: ["traffic"],
   }),
   tool({
+    id: "routes", title: "HTTP routes", group: "Debug",
+    summary: "Every HTTP way in: host/path → Ingress or HTTPRoute → Service → pods",
+    help: {
+      answers: "Reads the Ingresses and Gateway API HTTPRoutes of the namespace (or all) and follows each host and path to its Services: the port, the targetPort it maps to, the ready endpoints and the workload behind them. Canary splits show their weights; a broken link (Service missing, wrong port, no ready pods) is marked where the request stops.",
+      safety: "Only reads: Ingresses, HTTPRoutes, Gateways, Services, EndpointSlices and pods. Nothing is sent to the routes themselves.",
+      example: ":routes in shop: shop.example.com/api goes through Ingress web (nginx) to svc api :80 → 8080, 2 of 3 pods ready.",
+    },
+    actions: ["res.routes"],
+    commands: [":routes", ":routes all"],
+    try: { action: "res.routes", needs: "none" },
+    kinds: ["routes"],
+  }),
+  tool({
     id: "database", title: "Database", group: "Debug",
     summary: "Browse the Postgres or MySQL/MariaDB database in a pod: tables, rows, SQL",
     help: {
@@ -605,7 +618,7 @@ export const toolStatusHook = (id: ToolId): ToolStatusHook | undefined => status
 /** Tools with nothing to report: they act once on what you point at. */
 export const STATUSLESS: ReadonlySet<ToolId> = new Set<ToolId>([
   "palette", "panes", "describe-edit", "favourites", "filter", "status-colors",
-  "why", "crash", "timeline", "sparklines", "reach", "relations", "traffic", "database",
+  "why", "crash", "timeline", "sparklines", "reach", "relations", "traffic", "database", "routes",
   "logs-merged", "logs-structured", "logs-patterns", "snippets", "kubectl",
   "env", "conn-string", "mirrord", "pack",
 ]);

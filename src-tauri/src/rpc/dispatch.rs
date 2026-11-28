@@ -284,6 +284,7 @@ pub async fn call(state: &AppState, conn: &Conn, sub: &Json, method: &str, p: &J
         "github_env_images" => ok(github::env_images(&arg::<String>(p, "repo")?, &arg::<String>(p, "imageFile")?).await),
         "github_compare" => ok(github::compare(&arg::<String>(p, "repo")?, &arg::<String>(p, "base")?, &arg::<String>(p, "head")?).await),
         "traffic_sample" => ok(traffic::sample(s, &arg(p, "req")?).await),
+        "route_map" => ok(crate::routes::route_map(s, &arg(p, "req")?).await),
         "update_status" => ok(Ok(update::status(s))),
         "update_check" => ok(update::check(s).await),
         "background_status" => ok(Ok(crate::background::status(s))),
@@ -315,7 +316,7 @@ pub const METHODS: &[&str] = &[
     "field_owners", "revisions", "debug_container", "debug_copy", "debug_pods_list", "debug_pod_delete", "snippet_run", "context_pack",
     "mcp_status", "mcp_set_enabled", "mcp_set_port", "mcp_client_revoke", "mcp_policy_set", "mcp_audit_tail",
     "subscribe_ns_health", "catalog_load", "catalog_open", "github_status", "github_env_images", "github_compare",
-    "traffic_sample", "update_status", "update_check",
+    "traffic_sample", "route_map", "update_status", "update_check",
 ];
 
 #[cfg(test)]
