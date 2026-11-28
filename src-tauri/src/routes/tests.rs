@@ -159,3 +159,45 @@ fn workload_of_pods() {
     assert_eq!(workload_of(&json!({"metadata": {"ownerReferences": [{"kind": "ReplicaSet", "name": "bare"}]}})).as_deref(), Some("ReplicaSet/bare"));
     assert_eq!(workload_of(&json!({"metadata": {}})), None);
 }
+
+#[test]
+fn grpcroute_methods_headers_and_backends() {
+    let mut o = objects();
+    o.add_list(
+        "gateways",
+        &json!({"items": [{"metadata": {"namespace": "infra", "name": "public"}, "spec": {"listeners": [{"name": "https", "port": 443, "protocol": "HTTPS"}]}}]}),
+    );
+    o.add_list(
+        "grpcroutes",
+        &json!({"items": [{
+            "metadata": {"namespace": "shop", "name": "orders"},
+            "spec": {
+                "parentRefs": [{"name": "public", "namespace": "infra"}],
+                "hostnames": ["api.example.com"],
+                "rules": [
+                    {"matches": [{"method": {"service": "shop.v1.Orders"}}], "backendRefs": [{"name": "api", "port": 80}]},
+                    {"matches": [{"method": {"service": "shop.v1.Orders", "method": "Cancel"}, "headers": [{"name": "x-tenant", "value": "acme"}]}],
+                     "backendRefs": [{"name": "nope", "port": 9090}]},
+                    {"matches": [{"method": {"type": "RegularExpression", "service": "grpc\\.health.*"}}], "backendRefs": [{"name": "api", "port": "http"}]},
+                    {"backendRefs": [{"name": "api", "port": 80}]}
+                ]
+            }
+        }]}),
+    );
+    let e = build(&o);
+    let got: Vec<_> = e.iter().map(|x| (x.source.kind.as_str(), x.match_type.as_str(), x.path.as_str(), x.tls)).collect();
+    assert_eq!(
+        got,
+        vec![
+            ("GRPCRoute", "gRPC", "*", true),
+            ("GRPCRoute", "RegularExpression", "grpc\\.health.*/*", true),
+            ("GRPCRoute", "gRPC", "shop.v1.Orders/*", true),
+            ("GRPCRoute", "gRPC", "shop.v1.Orders/Cancel", true),
+        ]
+    );
+    let cancel = &e[3];
+    assert_eq!(cancel.conditions, vec!["header x-tenant: acme".to_string()]);
+    assert_eq!(cancel.backends[0].problem.as_deref(), Some("Service nope not found"));
+    assert_eq!((e[2].backends[0].ready, e[2].backends[0].target_port.as_deref()), (2, Some("8080")));
+    assert_eq!(e[0].source.via.as_deref(), Some("gateway infra/public"));
+}

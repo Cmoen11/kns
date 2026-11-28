@@ -32,11 +32,11 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `�
 - `D` diffs two marked rows; `:diff prev` and `:diff applied`; `O` field owners and `:drift` in YAML (fields a Flux reconcile will fight over).
 - `B` debug container, `:x` exec snippets, `:kubectl` copies the equivalent kubectl command.
 - Flux: `R` reconcile, `T` suspend/resume, `Mod+Shift+R` reconcile with source.
-- HTTP routes: `:routes` draws every way in over HTTP as host and path → Ingress or Gateway API HTTPRoute → Service and port → pods, with canary splits, redirects, and a red cross where a request stops (missing Service, wrong port, no ready pods).
+- HTTP routes: `:routes` draws every way in over HTTP and gRPC as host and path → Ingress, Gateway API HTTPRoute or GRPCRoute → Service and port → pods, with canary splits, redirects, and a red cross where a request stops (missing Service, wrong port, no ready pods).
 - Pod traffic: `:traffic` on a pod or deployment shows who it talks to, in and out (Services, pods by workload, nodes, external addresses) and what it listens on, from its socket table read every few seconds.
 - Argo CD: objects an Application applied say so (describe, `:relations`, field owners, `:drift`, a warning before an edit Argo will revert), read from the tracking annotation, so it works without access to the Applications. Where they are served: `:argo` with sync and health status, `W`, `R` refresh, `Y` sync.
 
-![:routes all: every HTTP way in, host and path → Ingress or HTTPRoute → Service → pods, with the journey of the selected request below](docs/img/routes.png)
+![:routes: every HTTP way in, host and path → Ingress or HTTPRoute → Service → pods, with the journey of the selected request below](docs/img/routes.png)
 
 ### Database
 

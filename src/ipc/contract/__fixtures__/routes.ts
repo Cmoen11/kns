@@ -83,6 +83,30 @@ export const map = {
       "tls": false
     },
     {
+      "backends": [
+        {
+          "namespace": "shop",
+          "port": "9090",
+          "ready": 2,
+          "service": "orders",
+          "targetPort": "grpc",
+          "total": 2,
+          "workload": "Deployment/orders"
+        }
+      ],
+      "host": "api.example.com",
+      "matchType": "gRPC",
+      "path": "shop.v1.Orders/*",
+      "source": {
+        "address": "lb-1.example",
+        "kind": "GRPCRoute",
+        "name": "orders",
+        "namespace": "shop",
+        "via": "gateway infra/public"
+      },
+      "tls": true
+    },
+    {
       "backends": [],
       "filters": [
         "redirect → https (301)"

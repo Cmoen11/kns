@@ -124,14 +124,23 @@ export const flatRows = (groups: readonly HostGroup[]): RouteRow[] => groups.fla
 
 /** `https://shop.example.com/api`; a route for any host uses its address when it has one. */
 export function entryUrl(e: RouteEntry): string {
-  const scheme = e.tls ? "https" : "http";
+  const grpc = e.source.kind === "GRPCRoute";
+  const scheme = grpc ? (e.tls ? "grpcs" : "grpc") : e.tls ? "https" : "http";
   const host = e.host === "*" ? e.source.address ?? "<address>" : e.host.replace(/^\*\./, "any.");
+  if (grpc) return `${scheme}://${host}${e.matchType === "gRPC" && e.path !== "*" ? `/${e.path}` : ""}`;
   const path = e.matchType === "RegularExpression" ? "/" : e.path.startsWith("/") ? e.path : `/${e.path}`;
   return `${scheme}://${host}${path}`;
 }
 
 /** What the path match takes, in words. */
 export function matchWords(e: RouteEntry): string {
+  if (e.source.kind === "GRPCRoute") {
+    if (e.matchType === "RegularExpression") return `gRPC methods matching ${e.path}`;
+    if (e.path === "*") return "every gRPC method";
+    if (e.path.endsWith("/*")) return `every method of ${e.path.slice(0, -2)}`;
+    if (e.path.startsWith("*/")) return `method ${e.path.slice(2)} of any service`;
+    return `only the gRPC method ${e.path}`;
+  }
   switch (e.matchType) {
     case "Prefix":
       return e.path === "/" ? "every path" : `${e.path} and every path under it`;
@@ -148,6 +157,7 @@ export function matchWords(e: RouteEntry): string {
 
 /** The short path label of the request cell: `/api/*`, `= /admin`, `~ ^/v[0-9]`, `default`. */
 export function pathLabel(e: RouteEntry): string {
+  if (e.source.kind === "GRPCRoute") return e.matchType === "RegularExpression" ? `~ ${e.path}` : e.path;
   switch (e.matchType) {
     case "Prefix":
       return e.path === "/" ? "/*" : `${e.path.replace(/\/$/, "")}/*`;
@@ -183,8 +193,8 @@ export function stepRef(row: RouteRow, step: Step): ObjectRef | undefined {
   switch (step) {
     case 0:
     case 1:
-      return e.source.kind === "HTTPRoute"
-        ? { gvr: { group: "gateway.networking.k8s.io", version: "v1", resource: "httproutes" }, namespace: e.source.namespace, name: e.source.name }
+      return e.source.kind === "HTTPRoute" || e.source.kind === "GRPCRoute"
+        ? { gvr: { group: "gateway.networking.k8s.io", version: "v1", resource: e.source.kind === "HTTPRoute" ? "httproutes" : "grpcroutes" }, namespace: e.source.namespace, name: e.source.name }
         : { gvr: { group: "networking.k8s.io", version: "v1", resource: "ingresses" }, namespace: e.source.namespace, name: e.source.name };
     case 2:
       return b && !/not found|not a Service/.test(b.problem ?? "") ? { gvr: { group: "", version: "v1", resource: "services" }, namespace: b.namespace, name: b.service } : undefined;

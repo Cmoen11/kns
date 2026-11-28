@@ -82,7 +82,7 @@
   border: var(--k-hair) solid var(--k-line); border-radius: var(--k-radius);
   color: var(--k-text-muted); font-size: var(--k-type-label-s); text-transform: uppercase;
 }
-.rt-kind[data-kind="HTTPRoute"] { border-style: dashed; }
+.rt-kind[data-kind="HTTPRoute"], .rt-kind[data-kind="GRPCRoute"] { border-style: dashed; }
 .rt-port { flex: none; font-variant-numeric: tabular-nums; color: var(--k-text-3); }
 .rt-port[data-h="error"] { color: var(--k-st-error); text-decoration: line-through; }
 .rt-svc[data-h="error"] .rt-name { color: var(--k-st-error); }

@@ -84,7 +84,7 @@ function Row({ row, index, focus, step, allNs }: { row: RouteRow; index: number;
       <span className="rt-cell rt-route" data-step={1} data-cur={cur(1)} {...(row.first ? tip(`${e.source.kind} ${e.source.namespace}/${e.source.name}${e.source.via ? `\nvia ${e.source.via}` : ""}${filters.length ? `\n${filters.join("\n")}` : ""}`, { plain: true, delay: CLIP_DELAY }) : {})}>
         {row.first && (
           <>
-            <span className="rt-kind" data-kind={e.source.kind}>{e.source.kind === "HTTPRoute" ? "route" : "ing"}</span>
+            <span className="rt-kind" data-kind={e.source.kind}>{e.source.kind === "HTTPRoute" ? "route" : e.source.kind === "GRPCRoute" ? "grpc" : "ing"}</span>
             <span className="rt-name">{nsOf(e.source.namespace)}{t(e.source.name)}</span>
             {b && filters.length > 0 && <span className="rt-tag">{t(filters[0])}{filters.length > 1 ? ` +${filters.length - 1}` : ""}</span>}
           </>
@@ -318,7 +318,7 @@ export default function RoutesView({ pane, view, focused, visible }: ViewProps<"
     <PaneSlot name="chips">{filtering ? <FilterBar value={filter} onChange={setFilter} /> : <FilterChip mode="FILTER" value={filter} onRemove={() => setFilter("")} />}</PaneSlot>
   );
 
-  if (load.state === "loading") return <div className="rt">{head}<EmptyState compact>reading the Ingresses and HTTPRoutes of {where}</EmptyState></div>;
+  if (load.state === "loading") return <div className="rt">{head}<EmptyState compact>reading the Ingresses, HTTPRoutes and GRPCRoutes of {where}</EmptyState></div>;
   if (load.state === "error") return <div className="rt">{head}<EmptyState compact title="Could not read the routes">{t(load.message)}</EmptyState></div>;
 
   return (
@@ -335,7 +335,7 @@ export default function RoutesView({ pane, view, focused, visible }: ViewProps<"
       )}
       {map && map.entries.length === 0 ? (
         <EmptyState compact title="No HTTP routes">
-          No Ingress or HTTPRoute in {where}. {namespace ? "a shows every namespace." : ""}
+          No Ingress, HTTPRoute or GRPCRoute in {where}.{namespace ? " Press a to see every namespace." : ""}
         </EmptyState>
       ) : rows.length === 0 ? (
         <EmptyState compact>{problemsOnly && !filter ? "No problems: every route reaches ready pods" : `Nothing matches “${filter}”`}</EmptyState>

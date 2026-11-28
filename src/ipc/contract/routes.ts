@@ -1,5 +1,5 @@
 // HTTP routes (`:routes`, docs/tools.md#routes): every way into the cluster over HTTP that
-// Ingresses and Gateway API HTTPRoutes describe, one entry per host and path match, each followed to
+// Ingresses and Gateway API HTTPRoutes and GRPCRoutes describe, one entry per host and path match, each followed to
 // the Services it ends at (port, targetPort, ready endpoints, workload). Only reads.
 // Mirror: src-tauri/src/contract/routes.rs (types), src-tauri/src/routes.rs (command).
 
@@ -13,7 +13,7 @@ export interface RoutesRequest {
 
 /** The object that declares a route. */
 export interface RouteSource {
-  kind: "Ingress" | "HTTPRoute" | (string & {});
+  kind: "Ingress" | "HTTPRoute" | "GRPCRoute" | (string & {});
   namespace: string;
   name: string;
   /** what serves it: the IngressClass (`nginx`) or the Gateway (`gateway infra/public`) */
@@ -49,7 +49,7 @@ export interface RouteEntry {
   host: string;
   tls: boolean;
   path: string;
-  /** Prefix, Exact, RegularExpression, ImplementationSpecific, or default (an Ingress default backend) */
+  /** Prefix, Exact, RegularExpression, ImplementationSpecific, default (an Ingress default backend), or gRPC (`path` is `service/method`, `*` for any) */
   matchType: string;
   /** further conditions of an HTTPRoute match: `header x-canary: 1`, `method POST` */
   conditions?: string[];

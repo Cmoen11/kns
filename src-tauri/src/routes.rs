@@ -1,7 +1,7 @@
 //! `:routes`: the HTTP routes of a namespace or a context, and where each one ends
 //! (docs/tools.md#routes).
 //!
-//! Reads Ingresses and, where the Gateway API is served, HTTPRoutes and their Gateways, then follows
+//! Reads Ingresses and, where the Gateway API is served, HTTPRoutes, GRPCRoutes and their Gateways, then follows
 //! each host and path match to its Services: the Service and its port, the `targetPort` the port maps
 //! to, the EndpointSlices behind it (ready / all) and the workload of their pods. The first broken
 //! link of each backend is named (Service missing, port not on the Service, no ready endpoints), so
@@ -65,6 +65,7 @@ fn lb_address(o: &Json) -> Option<String> {
 pub struct Objects {
     pub ingresses: Vec<Json>,
     pub httproutes: Vec<Json>,
+    pub grpcroutes: Vec<Json>,
     /// (namespace, name) → Gateway
     pub gateways: HashMap<(String, String), Json>,
     /// (namespace, name) → Service
@@ -97,6 +98,7 @@ impl Objects {
             match resource {
                 "ingresses" => self.ingresses.push(o.clone()),
                 "httproutes" => self.httproutes.push(o.clone()),
+                "grpcroutes" => self.grpcroutes.push(o.clone()),
                 "gateways" => {
                     self.gateways.insert(key, o.clone());
                 }
@@ -253,7 +255,7 @@ pub fn ingress_entries(o: &Objects, ing: &Json) -> Vec<RouteEntry> {
     out
 }
 
-// ───────────────────────── HTTPRoute ─────────────────────────
+// ───────────────────────── HTTPRoute and GRPCRoute ─────────────────────────
 
 /// The Gateway listeners a parentRef attaches to: (hostname, is HTTPS).
 fn listeners<'a>(o: &'a Objects, route_ns: &str, parent: &Json) -> (Option<&'a Json>, Vec<(Option<String>, bool)>) {
@@ -345,7 +347,44 @@ fn shares(weights: &[u32]) -> Vec<Option<u32>> {
     weights.iter().map(|w| Some(if sum == 0 { 0 } else { ((*w as f64) * 100.0 / sum as f64).round() as u32 })).collect()
 }
 
+/// The method match of a GRPCRoute as (match type, `service/method`): `shop.v1.Orders/Get`,
+/// `shop.v1.Orders/*`, `*/Get`, `*` for every method.
+fn grpc_method(m: &Json) -> (String, String) {
+    let mm = &m["method"];
+    let (svc, method) = (mm["service"].as_str().filter(|x| !x.is_empty()), mm["method"].as_str().filter(|x| !x.is_empty()));
+    let path = match (svc, method) {
+        (Some(sv), Some(me)) => format!("{sv}/{me}"),
+        (Some(sv), None) => format!("{sv}/*"),
+        (None, Some(me)) => format!("*/{me}"),
+        (None, None) => "*".into(),
+    };
+    let t = if mm["type"].as_str() == Some("RegularExpression") { "RegularExpression" } else { "gRPC" };
+    (t.into(), text(&path))
+}
+
+/// The path match of an HTTPRoute as (match type, path).
+fn http_path(m: &Json) -> (String, String) {
+    match m["path"].as_object() {
+        Some(p) => {
+            let t = p.get("type").and_then(Json::as_str).unwrap_or("PathPrefix");
+            (if t == "PathPrefix" { "Prefix".to_string() } else { text(t) }, p.get("value").and_then(Json::as_str).map(text).unwrap_or_else(|| "/".into()))
+        }
+        None => ("Prefix".into(), "/".into()),
+    }
+}
+
 pub fn httproute_entries(o: &Objects, route: &Json) -> Vec<RouteEntry> {
+    gateway_route_entries(o, route, "HTTPRoute")
+}
+
+pub fn grpcroute_entries(o: &Objects, route: &Json) -> Vec<RouteEntry> {
+    gateway_route_entries(o, route, "GRPCRoute")
+}
+
+/// HTTPRoutes and GRPCRoutes share parents, hostnames, backendRefs and filters; only their
+/// matches differ (a path, or a gRPC service and method).
+fn gateway_route_entries(o: &Objects, route: &Json, kind: &str) -> Vec<RouteEntry> {
+    let grpc = kind == "GRPCRoute";
     let ns = ns_of(route);
     let spec = &route["spec"];
     let parents = arr(&spec["parentRefs"]);
@@ -386,7 +425,7 @@ pub fn httproute_entries(o: &Objects, route: &Json) -> Vec<RouteEntry> {
         }
         hs
     };
-    let source = RouteSource { kind: "HTTPRoute".into(), namespace: ns.to_string(), name: name_of(route).to_string(), via, address };
+    let source = RouteSource { kind: kind.into(), namespace: ns.to_string(), name: name_of(route).to_string(), via, address };
 
     let mut out = Vec::new();
     for rule in arr(&spec["rules"]) {
@@ -412,13 +451,7 @@ pub fn httproute_entries(o: &Objects, route: &Json) -> Vec<RouteEntry> {
         let default_match = [Json::Null];
         let matches = if arr(&rule["matches"]).is_empty() { &default_match[..] } else { arr(&rule["matches"]) };
         for m in matches {
-            let (match_type, path) = match m["path"].as_object() {
-                Some(p) => {
-                    let t = p.get("type").and_then(Json::as_str).unwrap_or("PathPrefix");
-                    (if t == "PathPrefix" { "Prefix".to_string() } else { text(t) }, p.get("value").and_then(Json::as_str).map(text).unwrap_or_else(|| "/".into()))
-                }
-                None => ("Prefix".into(), "/".into()),
-            };
+            let (match_type, path) = if grpc { grpc_method(m) } else { http_path(m) };
             for (host, tls) in &hosts {
                 out.push(RouteEntry {
                     source: source.clone(),
@@ -438,7 +471,9 @@ pub fn httproute_entries(o: &Objects, route: &Json) -> Vec<RouteEntry> {
 
 /// Every entry, sorted by host (`*` last), then by path.
 pub fn build(o: &Objects) -> Vec<RouteEntry> {
-    let mut out: Vec<RouteEntry> = o.ingresses.iter().flat_map(|i| ingress_entries(o, i)).chain(o.httproutes.iter().flat_map(|r| httproute_entries(o, r))).collect();
+    let mut out: Vec<RouteEntry> = o.ingresses.iter().flat_map(|i| ingress_entries(o, i)).chain(o.httproutes.iter().flat_map(|r| httproute_entries(o, r)))
+        .chain(o.grpcroutes.iter().flat_map(|r| grpcroute_entries(o, r)))
+        .collect();
     out.sort_by(|a, b| {
         (a.host == "*")
             .cmp(&(b.host == "*"))
@@ -481,13 +516,13 @@ pub async fn route_map(state: &AppState, req: &RoutesRequest) -> Result<RouteMap
     // the Gateway API is a CRD: its version comes from discovery
     let discovery = session.discovery(None).await.ok();
     let served = |resource: &str| discovery.as_ref().and_then(|d| d.preferred.iter().find(|r| r.gvr.group == GATEWAY_GROUP && r.gvr.resource == resource).map(|r| r.gvr.clone()));
-    let (httproutes, gateways) = (served("httproutes"), served("gateways"));
-    if httproutes.is_none() {
-        notes.push("Gateway API (HTTPRoute) is not installed: Ingresses only".into());
+    let (httproutes, grpcroutes, gateways) = (served("httproutes"), served("grpcroutes"), served("gateways"));
+    if httproutes.is_none() && grpcroutes.is_none() {
+        notes.push("Gateway API (HTTPRoute, GRPCRoute) is not installed: Ingresses only".into());
     }
 
     let mut lists: Vec<(Gvr, Option<&str>)> = vec![(Gvr::new("networking.k8s.io", "v1", "ingresses"), scope)];
-    if let Some(g) = httproutes {
+    for g in [httproutes, grpcroutes].into_iter().flatten() {
         lists.push((g, scope));
     }
     // Gateways often live in another namespace (infra): always across namespaces
@@ -502,8 +537,9 @@ pub async fn route_map(state: &AppState, req: &RoutesRequest) -> Result<RouteMap
         .ingresses
         .iter()
         .chain(objects.httproutes.iter())
+        .chain(objects.grpcroutes.iter())
         .map(|o| ns_of(o).to_string())
-        .chain(objects.httproutes.iter().flat_map(|r| arr(&r["spec"]["rules"]).iter().flat_map(|rule| arr(&rule["backendRefs"]).iter().filter_map(|b| b["namespace"].as_str().map(str::to_string)))))
+        .chain(objects.httproutes.iter().chain(objects.grpcroutes.iter()).flat_map(|r| arr(&r["spec"]["rules"]).iter().flat_map(|rule| arr(&rule["backendRefs"]).iter().filter_map(|b| b["namespace"].as_str().map(str::to_string)))))
         .collect();
     backend_ns.sort();
     backend_ns.dedup();

@@ -168,12 +168,13 @@ const scenes = {
     await d.wait(300);
   },
 
-  // :routes all: every HTTP way in, host and path → Ingress or HTTPRoute → Service → pods
+  // :routes: every HTTP and gRPC way in, host and path → Ingress or HTTPRoute → Service → pods
   routes: async (d) => {
     await d.cmd("pods shop");
-    await d.cmd("routes all");
-    await d.until("checkout.example.com", 15000);
-    // the cursor on the canary share of the checkout split, the Service step
+    await d.cmd("routes");
+    await d.until("api.example.com", 15000);
+    // the cursor on the gRPC Refund method, whose Service has no ready pods
+    await d.key("j", 150);
     await d.key("j", 150);
     await d.wait(600);
   },

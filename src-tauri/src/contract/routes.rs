@@ -1,5 +1,5 @@
 //! HTTP routes: mirror of `src/ipc/contract/routes.ts`. Every way into the cluster over HTTP that
-//! Ingresses and Gateway API HTTPRoutes describe, one entry per host and path match, each with the
+//! Ingresses and Gateway API HTTPRoutes and GRPCRoutes describe, one entry per host and path match, each with the
 //! Services it ends at and how many of their endpoints are ready. Produced by `crate::routes`.
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub struct RoutesRequest {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RouteSource {
-    /// `Ingress` or `HTTPRoute`
+    /// `Ingress`, `HTTPRoute` or `GRPCRoute`
     pub kind: String,
     pub namespace: String,
     pub name: String,
@@ -68,7 +68,8 @@ pub struct RouteEntry {
     /// served over TLS (an Ingress tls entry for the host, an HTTPS listener of the Gateway)
     pub tls: bool,
     pub path: String,
-    /// `Prefix`, `Exact`, `RegularExpression`, `ImplementationSpecific`, or `default` (an Ingress default backend)
+    /// `Prefix`, `Exact`, `RegularExpression`, `ImplementationSpecific`, `default` (an Ingress
+    /// default backend), or `gRPC` (a GRPCRoute method match; `path` is `service/method`, `*` for any)
     pub match_type: String,
     /// further conditions of an HTTPRoute match: `header x-canary: 1`, `method POST`, `query v=2`
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -135,6 +136,16 @@ mod tests {
                             RouteBackend { namespace: "shop".into(), service: "checkout".into(), port: "http".into(), target_port: None, weight: Some(90), workload: None, external_name: None, ready: 0, total: 0, problem: Some("Service not found".into()) },
                             RouteBackend { namespace: "shop".into(), service: "legacy".into(), port: "80".into(), target_port: Some("80".into()), weight: Some(10), workload: None, external_name: Some("legacy.example.net".into()), ready: 0, total: 0, problem: None },
                         ],
+                    },
+                    RouteEntry {
+                        source: RouteSource { kind: "GRPCRoute".into(), namespace: "shop".into(), name: "orders".into(), via: Some("gateway infra/public".into()), address: Some("lb-1.example".into()) },
+                        host: "api.example.com".into(),
+                        tls: true,
+                        path: "shop.v1.Orders/*".into(),
+                        match_type: "gRPC".into(),
+                        conditions: vec![],
+                        filters: vec![],
+                        backends: vec![RouteBackend { namespace: "shop".into(), service: "orders".into(), port: "9090".into(), target_port: Some("grpc".into()), weight: None, workload: Some("Deployment/orders".into()), external_name: None, ready: 2, total: 2, problem: None }],
                     },
                     RouteEntry { source: ing, host: "*".into(), tls: false, path: "/".into(), match_type: "default".into(), conditions: vec![], filters: vec!["redirect → https (301)".into()], backends: vec![] },
                 ],

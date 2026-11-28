@@ -38,11 +38,14 @@ const ctl = () => {
   return p ? controllers.get(p) : undefined;
 };
 
-/** `:routes` (the pane's namespace), `:routes all`, `:routes shop`. */
+/**
+ * `:routes` (every namespace: routes are few, and the pane's namespace is often one without any),
+ * `:routes shop`, `:routes .` (the pane's namespace). `a` in the view narrows to the row's namespace.
+ */
 function openRoutes(ctx: ActionContext): void {
   const arg = ctx.args?.[0];
   const here = paneNamespace();
-  const namespace = arg === "all" || arg === "*" || arg === "-A" ? undefined : arg || (here && here !== "*" ? here : undefined);
+  const namespace = !arg || arg === "all" || arg === "*" || arg === "-A" ? undefined : arg === "." ? (here && here !== "*" ? here : undefined) : arg;
   const cur = paneView();
   if (!ctx.newPane && cur?.kind === "routes" && cur.namespace === namespace) return;
   openView({ kind: "routes", namespace }, ctx.newPane ? { newPane: ctx.newPane } : {});

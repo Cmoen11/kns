@@ -1,5 +1,5 @@
 // Mock of RoutesBackend (contract/routes.ts): a small shop behind an nginx Ingress and a Gateway API
-// Gateway, with one of each kind of trouble so the view has something to point at: a canary split,
+// Gateway (HTTP and gRPC), with one of each kind of trouble so the view has something to point at: a canary split,
 // a header match with a rewrite, a redirect-only rule, an endpoint that is not ready, a Service
 // port that does not exist, a missing Service, a support desk with no ready pods and an
 // ExternalName Service.
@@ -17,9 +17,17 @@ const entry = (source: RouteSource, host: string, path: string, backends: RouteB
   source, host, tls: host !== "*" && !host.endsWith(".internal"), path, matchType: "Prefix", backends, ...extra,
 });
 
+const grpc = (namespace: string, name: string): RouteSource => ({ ...http(namespace, name), kind: "GRPCRoute" });
 const web = ing("shop", "web");
 const checkout = http("shop", "checkout");
 const ENTRIES: RouteEntry[] = [
+  // gRPC through the same Gateway: every method of the Orders service, one method pinned to a tenant, and the health check
+  entry(grpc("shop", "orders-grpc"), "api.example.com", "grpc.health.v1.Health/*", [be("shop", "orders", "9090", "grpc", "Deployment/orders", 3, 3)], { matchType: "gRPC" }),
+  entry(grpc("shop", "orders-grpc"), "api.example.com", "shop.v1.Orders/*", [be("shop", "orders", "9090", "grpc", "Deployment/orders", 3, 3)], { matchType: "gRPC" }),
+  entry(grpc("shop", "orders-grpc"), "api.example.com", "shop.v1.Orders/Refund", [be("shop", "refunds", "9090", "grpc", "Deployment/refunds", 0, 1, { problem: "no ready endpoints (0/1)" })], {
+    matchType: "gRPC",
+    conditions: ["header x-tenant: acme"],
+  }),
   entry(http("shop", "checkout"), "checkout.example.com", "/", [
     be("shop", "checkout", "80", "8080", "Deployment/checkout", 3, 3, { weight: 90 }),
     be("shop", "checkout-canary", "80", "8080", "Deployment/checkout-canary", 1, 1, { weight: 10 }),

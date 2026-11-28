@@ -63,6 +63,20 @@ describe("routes model", () => {
     expect(redirect.map((s) => s.title)).toEqual(["Request", "Enters", "Ingress"]);
   });
 
+  it("gRPC: method labels, words, URL and the route object", () => {
+    const g = (path: string, matchType = "gRPC"): RouteEntry => entry("api.example.com", path, [be("orders", 3, 3)], { matchType, source: { kind: "GRPCRoute", namespace: "shop", name: "orders", via: "gateway infra/public" } });
+    expect(pathLabel(g("shop.v1.Orders/*"))).toBe("shop.v1.Orders/*");
+    expect(pathLabel(g("grpc\\..*", "RegularExpression"))).toBe("~ grpc\\..*");
+    expect(entryUrl(g("shop.v1.Orders/Get"))).toBe("grpcs://api.example.com/shop.v1.Orders/Get");
+    expect(entryUrl(g("*"))).toBe("grpcs://api.example.com");
+    const rows = flatRows(groupHosts(map([g("shop.v1.Orders/*"), g("shop.v1.Orders/Get"), g("*")])));
+    expect(journey(rows[0])[0].lines[1]).toBe("matches every method of shop.v1.Orders");
+    expect(journey(rows[1])[0].lines[1]).toBe("matches only the gRPC method shop.v1.Orders/Get");
+    expect(journey(rows[2])[0].lines[1]).toBe("matches every gRPC method");
+    expect(journey(rows[0]).map((s) => s.title)[2]).toBe("GRPCRoute");
+    expect(stepRef(rows[0], 1)?.gvr).toEqual({ group: "gateway.networking.k8s.io", version: "v1", resource: "grpcroutes" });
+  });
+
   it("opens the object of each step", () => {
     const rows = flatRows(groupHosts(M));
     expect(stepRef(rows[0], 1)?.gvr.resource).toBe("ingresses");
