@@ -58,6 +58,11 @@ ratatui = "0.30.2"
 crossterm = "0.29.0"
 tauri-plugin-single-instance = "2"
 libc = "0.2.191"
+# database view (database.rs): Postgres and MySQL/MariaDB over a private tunnel to the pod
+tokio-postgres = "0.7.18"
+tokio-postgres-rustls = "0.14"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+mysql_async = { version = "0.37", default-features = false, features = ["minimal-rust"] }
 
 # Dependencies (rustls, hyper, serde_json) are optimised in dev builds too: unoptimised TLS and
 # JSON are many times slower and make `tauri dev` misleading about speed.

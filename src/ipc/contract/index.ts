@@ -2,6 +2,7 @@
 // Re-exported from ../types.ts, so `import type { DevSet } from "../ipc"` works everywhere.
 export * from "./agents";
 export * from "./catalog";
+export * from "./db";
 export * from "./debug";
 export * from "./dev";
 export * from "./diag";

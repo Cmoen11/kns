@@ -35,6 +35,14 @@ Keys below are the defaults (all rebindable). `Mod` is `Ctrl` on Windows and `âŒ
 - Pod traffic: `:traffic` on a pod or deployment shows who it talks to, in and out (Services, pods by workload, nodes, external addresses) and what it listens on, from its socket table read every few seconds.
 - Argo CD: objects an Application applied say so (describe, `:relations`, field owners, `:drift`, a warning before an edit Argo will revert), read from the tracking annotation, so it works without access to the Applications. Where they are served: `:argo` with sync and health status, `W`, `R` refresh, `Y` sync.
 
+### Database
+
+![Database view: a Postgres pod opened from the pod list, its tables, rows and a JSON value](docs/img/database.png)
+
+- Right-click a Postgres or MySQL/MariaDB pod (or its StatefulSet, Deployment, Service, CloudNativePG cluster) â†’ **open database**, or `:db` on any row. kns finds the server from the pod spec, reads the user and password from the pod's env and Secrets (also CloudNativePG, Zalando and Crunchy secrets) and connects over a private port-forward; the password never reaches the window.
+- Tables by schema, rows page by page with sorting, columns and indexes, a cell viewer (JSON pretty-printed), and a SQL editor with completion (`Mod+Enter` runs the statement under the cursor).
+- Read-only by default (one statement in a read-only transaction that is rolled back); **writes on** asks first, is refused in a read-only context and asks for the database name in a protected one.
+
 ### Local development
 
 ![Env view of a Deployment: secret values masked, in-cluster addresses rewritten to local forwards, side effects flagged](docs/img/env.png)

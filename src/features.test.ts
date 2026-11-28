@@ -26,7 +26,7 @@ beforeAll(async () => {
 const KINDS: ViewKind[] = [
   "table", "containers", "doc", "logs", "shell", "attach", "portforwards", "home", "settings", "aliases", "messages",
   // feature kinds (docs/plan-features.md §2.8), placeholders until their owners build them
-  "traps", "agents", "why", "timeline", "diff", "patterns", "env", "devsets", "text", "relations", "reach", "hub", "deploys", "traffic",
+  "traps", "agents", "why", "timeline", "diff", "patterns", "env", "devsets", "text", "relations", "reach", "hub", "deploys", "traffic", "database",
 ];
 
 /** Actions that have no handler on purpose (docs/frontend.md §16). Anything else must be built. */

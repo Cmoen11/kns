@@ -97,7 +97,7 @@ export function RowBar({ model, pane, width, rowH, ref }: RowBarProps) {
             // the row the bar is on now (it may have moved since this render)
             const row = model.display?.rows.get(uid.current);
             const ns = model.src.namespaceColumn ? (row?.namespace ?? null) : null;
-            if (model.point(uid.current)) openMenu({ at: menuAnchor(e.currentTarget), items: rowMenu(ns), pane });
+            if (model.point(uid.current)) openMenu({ at: menuAnchor(e.currentTarget), items: rowMenu(ns, pane), pane });
           }}
         >
           <Icon name="more" />

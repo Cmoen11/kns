@@ -19,6 +19,7 @@ import { register as logs } from "./views/logs";
 import { register as shell } from "./views/shell";
 import { register as text } from "./views/text";
 import { register as traffic } from "./traffic";
+import { register as database } from "./database";
 import { register as tools } from "./views/tools";
 import { register as update } from "./update";
 import { register as herdr } from "./herdr";
@@ -47,6 +48,8 @@ export function registerFeatures(): void {
   agents();
   // pod traffic: `:traffic`
   traffic();
+  // database browser: right-click a Postgres/MySQL pod, `:db`
+  database();
   hub();
   // auto-update: `:update` and the bottom-row `update 0.2.0` item
   update();

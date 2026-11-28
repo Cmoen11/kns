@@ -8,6 +8,7 @@
 import type {
   AgentsBackend,
   CatalogBackend,
+  DbBackend,
   DebugBackend,
   DevBackend,
   DiagBackend,
@@ -401,4 +402,5 @@ export type Backend = BaseBackend &
   UpdateBackend &
   CatalogBackend &
   GithubBackend &
-  TrafficBackend;
+  TrafficBackend &
+  DbBackend;

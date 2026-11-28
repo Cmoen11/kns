@@ -18,6 +18,7 @@ pub mod multins;
 pub mod catalog;
 pub mod github;
 pub mod traffic;
+pub mod database;
 
 // feature foundation (A1, docs/plan-features.md §2.1)
 pub mod clip;
@@ -285,6 +286,14 @@ pub fn run() {
             github::cmd::github_env_images,
             github::cmd::github_compare,
             traffic::cmd::traffic_sample,
+            database::cmd::db_detect,
+            database::cmd::db_connect,
+            database::cmd::db_use,
+            database::cmd::db_close,
+            database::cmd::db_schema,
+            database::cmd::db_table,
+            database::cmd::db_rows,
+            database::cmd::db_query,
             // background
             background::cmd::background_status,
             background::cmd::background_set,

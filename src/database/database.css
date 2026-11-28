@@ -1,0 +1,69 @@
+/* The database view (src/database). Tokens only. */
+.db-view { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--k-bg-pane); color: var(--k-text-2); container-type: inline-size; }
+.db-muted { color: var(--k-text-3); }
+.db-strong { color: var(--k-text); }
+.db-error { color: var(--k-st-error); white-space: pre-wrap; }
+.db-pad { padding: var(--k-luft-1) var(--k-luft-15); }
+.db-spacer { flex: 1; }
+
+.db-bar { flex: none; display: flex; align-items: center; gap: var(--k-luft-2); min-height: var(--k-h-row); padding: 0 var(--k-luft-15); border-bottom: var(--k-hair) solid var(--k-line); background: var(--k-bg-header); white-space: nowrap; overflow: hidden; }
+.db-engine { color: var(--k-text); }
+.db-where { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.db-select { font: inherit; color: var(--k-text-2); background: var(--k-bg-input); border: var(--k-hair) solid var(--k-line); border-radius: var(--k-radius); height: var(--k-h-line); max-width: 28ch; }
+.db-mode { font: inherit; cursor: pointer; color: var(--k-text-2); background: transparent; border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius); padding: 0 var(--k-luft-1); height: var(--k-h-line); }
+.db-mode[data-on] { color: var(--k-st-warn); border-color: var(--k-st-warn); }
+.db-notes { flex: none; padding: var(--k-luft-05) var(--k-luft-15); color: var(--k-st-warn); border-bottom: var(--k-hair) solid var(--k-line); }
+
+.db-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(160px, 22%) minmax(0, 1fr); }
+@container (max-width: 520px) { .db-body { grid-template-columns: minmax(120px, 35%) minmax(0, 1fr); } }
+
+.db-side { display: flex; flex-direction: column; min-height: 0; border-right: var(--k-hair) solid var(--k-line); }
+.db-filter { flex: none; margin: var(--k-luft-1); height: var(--k-h-row); padding: 0 var(--k-luft-1); color: var(--k-text); background: var(--k-bg-input); border: var(--k-hair) solid var(--k-line); border-radius: var(--k-radius); }
+.db-filter:focus { outline: none; border-color: var(--k-focus); }
+.db-tree { flex: 1; min-height: 0; overflow: auto; padding-bottom: var(--k-luft-2); }
+.db-schema, .db-table { display: flex; align-items: center; gap: var(--k-luft-1); width: 100%; height: var(--k-h-row); padding: 0 var(--k-luft-15) 0 var(--k-luft-1); border: none; background: transparent; color: var(--k-text-2); font: inherit; text-align: left; cursor: pointer; white-space: nowrap; }
+.db-schema { color: var(--k-text-3); }
+.db-table { padding-left: calc(var(--k-luft-1) + var(--k-luft-25)); }
+.db-schema:hover, .db-table:hover { background: var(--k-row-hover); }
+.db-table[aria-selected="true"] { background: var(--k-row-focus-idle); color: var(--k-text); }
+.db-view[data-pane-focused] .db-table[aria-selected="true"] { background: var(--k-row-focus); box-shadow: inset var(--k-ring) 0 0 var(--k-accent); }
+.db-caret { width: var(--k-luft-2); text-align: center; color: var(--k-text-3); }
+.db-tname { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.db-count { margin-left: auto; padding-left: var(--k-luft-1); color: var(--k-text-3); }
+
+.db-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.db-tabs { flex: none; border-bottom: var(--k-hair) solid var(--k-line); }
+.db-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.db-pane[hidden] { display: none; }
+
+.db-grid-scroll { flex: 1; min-height: 0; overflow: auto; }
+.db-grid { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+.db-grid th, .db-grid td { height: var(--k-h-row); padding: 0 var(--k-luft-15); border-bottom: var(--k-hair) solid var(--k-line); border-right: var(--k-hair) solid var(--k-line); white-space: nowrap; max-width: 48ch; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+.db-grid th { position: sticky; top: 0; z-index: 1; background: var(--k-bg-header); color: var(--k-text); font-weight: 500; }
+.db-grid th[data-sortable] { cursor: pointer; }
+.db-grid th[data-sortable]:hover { background: var(--k-row-hover); }
+.db-coltype { margin-left: var(--k-luft-1); color: var(--k-text-3); font-weight: 400; }
+.db-sort { margin-left: var(--k-luft-05); color: var(--k-accent); }
+.db-grid td { color: var(--k-text-2); cursor: default; }
+.db-grid tbody tr:hover td { background: var(--k-row-hover); }
+.db-grid td[data-null] { color: var(--k-text-muted); font-style: italic; }
+.db-grid .db-rownum { position: sticky; left: 0; color: var(--k-text-3); background: var(--k-bg-header); text-align: right; min-width: var(--k-luft-6); }
+.db-grid th.db-rownum { z-index: 2; }
+
+.db-pager, .db-runbar { flex: none; display: flex; align-items: center; gap: var(--k-luft-15); min-height: calc(var(--k-h-row) + var(--k-luft-1)); padding: 0 var(--k-luft-15); border-top: var(--k-hair) solid var(--k-line); }
+.db-sql .db-runbar { border-bottom: var(--k-hair) solid var(--k-line); }
+.db-sql-editor { flex: none; height: 30%; min-height: calc(5 * var(--k-h-line)); overflow: hidden; }
+.db-sql-editor .cm-editor { height: 100%; }
+.db-structure .db-section { padding: var(--k-luft-2) var(--k-luft-15) var(--k-luft-05); color: var(--k-text-3); }
+.db-index { padding: var(--k-luft-05) var(--k-luft-15); white-space: pre-wrap; }
+
+.db-cell { flex: none; max-height: 40%; display: flex; flex-direction: column; border-top: var(--k-hair) solid var(--k-divider); }
+.db-cell-head { display: flex; align-items: center; gap: var(--k-luft-15); padding: 0 var(--k-luft-15); min-height: var(--k-h-row); background: var(--k-bg-header); }
+.db-cell-value { margin: 0; padding: var(--k-luft-1) var(--k-luft-15); overflow: auto; white-space: pre-wrap; word-break: break-all; color: var(--k-text); user-select: text; }
+.db-cell-value[data-null] { color: var(--k-text-muted); font-style: italic; }
+
+.db-login { display: flex; flex-direction: column; gap: var(--k-luft-15); max-width: 360px; margin: var(--k-luft-6) auto; padding: 0 var(--k-luft-3); }
+.db-field { display: flex; flex-direction: column; gap: var(--k-luft-05); }
+.db-field input { height: var(--k-h-control); padding: 0 var(--k-luft-15); color: var(--k-text); background: var(--k-bg-input); border: var(--k-hair) solid var(--k-frame); border-radius: var(--k-radius); }
+.db-field input:focus { outline: none; border-color: var(--k-focus); }
+.db-login-actions { display: flex; justify-content: flex-end; }

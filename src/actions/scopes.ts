@@ -17,7 +17,7 @@ export const SCOPES = [
   "can.logs", "can.shell", "can.scale", "can.restart", "can.setImage", "can.forward", "can.usedBy", "can.env",
   "flux", "flux.managed", "argo", "argo.app",
   // feature view kinds (docs/plan-features.md §2.7, §2.8)
-  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "deploys", "traffic",
+  "hub", "why", "timeline", "diff", "patterns", "env", "devsets", "traps", "relations", "agents", "text", "deploys", "traffic", "database",
   // modes that replace NORMAL in a pane
   "edit", "review", "review.conflict", "review.secret", "review.flux",
   "term", "term.placeholder",
@@ -226,6 +226,9 @@ export function viewScopes(v: ViewScopeInfo): ScopeId[] {
       return [v.kind, "list", "pane"];
     case "reach":
       return ["list", "pane"];
+    // its own keys only: the tree, grid and SQL editor take the pointer and text input
+    case "database":
+      return ["database", "pane"];
     default:
       return ["pane"];
   }
@@ -282,6 +285,7 @@ export function knownSegments(): ScopeId[][] {
   base(viewScopes({ kind: "shell", live: false }));
   for (const kind of ["home", "aliases", "messages", "portforwards", "settings"] as const) base(viewScopes({ kind }));
   for (const kind of FEATURE_LIST_KINDS) base(viewScopes({ kind }));
+  base(viewScopes({ kind: "database" }));
   for (const layer of Object.values(LAYERS)) out.push([...layer.scopes]);
   out.push(["newpane"]);
   return out;

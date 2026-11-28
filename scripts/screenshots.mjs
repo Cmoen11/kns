@@ -152,6 +152,22 @@ const scenes = {
     await d.wait(1500);
   },
 
+  // Database view: right-click a Postgres pod → open database; tables, rows and a JSON cell
+  database: async (d) => {
+    await d.cmd("pods payments");
+    await d.row("postgres");
+    await d.cmd("db");
+    await d.until("orders", 15000);
+    await d.page.locator(".db-table", { hasText: "orders" }).first().click();
+    await d.wait(600);
+    await d.page.locator(".db-grid td", { hasText: "gift" }).first().click();
+    await d.wait(600);
+    // the click scrolled the grid to the cell: show the first columns
+    await d.page.locator(".db-grid-scroll").first().evaluate((e) => (e.scrollLeft = 0));
+    await d.park();
+    await d.wait(300);
+  },
+
   // Tools hub: every tool with its keys, live status and "Try it"
   "tools-hub": async (d) => {
     await d.cmd("pods shop");

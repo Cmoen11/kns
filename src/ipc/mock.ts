@@ -5,6 +5,7 @@
 import { agentsMock } from "./mock/agents";
 import { appState, argoManaged, mockApplication, NO_ARGO_CONTEXT, trackingAnnotation } from "./mock/argo";
 import { TEAM_CONTEXT, TEAM_NAMESPACES, catalogMock, mockForbidden } from "./mock/catalog";
+import { dbMock } from "./mock/db";
 import { debugMock } from "./mock/debug";
 import { devMock } from "./mock/dev";
 import { installKnsMock } from "./mock/devtools";
@@ -612,6 +613,7 @@ export const mockBackend: Backend = {
   ...catalogMock,
   ...githubMock,
   ...trafficMock,
+  ...dbMock,
 
   // namespace health: a first `syncing`, then the counts every 3s when they changed (the real
   // backend sends at most one per second, only on change)

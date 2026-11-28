@@ -5,6 +5,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { agentsTauri } from "./tauri/agents";
 import { catalogTauri } from "./tauri/catalog";
 import { call, toError } from "./tauri/call";
+import { dbTauri } from "./tauri/db";
 import { debugTauri } from "./tauri/debug";
 import { devTauri } from "./tauri/dev";
 import { diagTauri } from "./tauri/diag";
@@ -105,5 +106,6 @@ export const tauriBackend: Backend = {
   ...catalogTauri,
   ...githubTauri,
   ...trafficTauri,
+  ...dbTauri,
   ...updateTauri,
 };

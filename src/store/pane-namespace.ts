@@ -35,6 +35,8 @@ export function viewNamespace(v: ViewState | undefined, follow: (pane: PaneId) =
       return v.namespace || undefined;
     case "traffic":
       return nsOf(v.pod);
+    case "database":
+      return nsOf(v.ref);
     case "diff":
       return "ref" in v.left ? nsOf(v.left.ref) : nsOf(v.left.revision.owner);
     case "logs":

@@ -1,7 +1,9 @@
 // What the mouse can reach in a table (docs/frontend.md §17): the actions of the row bar, the
 // row menu, the bulk bar and the pane toolbar. Lists of action ids only; an action that is not
 // built or not in the pane's scopes (shell on a deployment, scale on a pod) drops out by itself.
-import type { ActionId, IconName, MenuEntry, ToolbarAction, ToolbarItem } from "../foundation";
+import { looksLikeDatabase } from "../database/model";
+import { getSelection, type ActionId, type IconName, type MenuEntry, type ToolbarAction, type ToolbarItem } from "../foundation";
+import type { PaneId } from "../types";
 
 const i = (action: ActionId, icon?: IconName): ToolbarAction => (icon ? { action, icon } : { action });
 
@@ -38,7 +40,7 @@ export const ROW_ACTIONS: readonly ToolbarAction[] = [
  */
 export const ROW_MENU_GROUPS: readonly (readonly ActionId[])[] = [
   ["nav.open", "res.describe", "res.yaml", "res.edit", "res.why", "res.timeline"],
-  ["res.logs", "res.logsPrevious", "pod.shell", "pod.attach", "pf.start", "secret.decode", "dev.fromWorkload", "res.reach", "res.trap", "snippet.run"],
+  ["res.logs", "res.logsPrevious", "pod.shell", "pod.attach", "res.database", "pf.start", "secret.decode", "dev.fromWorkload", "res.reach", "res.trap", "snippet.run"],
   [
     "workload.scale", "workload.restart", "cronjob.trigger", "cronjob.suspend", "flux.reconcile", "flux.reconcileWithSource",
     "flux.suspendResume", "node.cordon", "node.uncordon", "pod.debug",
@@ -53,13 +55,16 @@ const RELATED = 3;
 /**
  * The row menu: the groups with a rule between them (a group none of whose actions applies to
  * this kind leaves no rule behind). In an all-namespaces table it has "show only this namespace"
- * (`namespace.pick <ns>`).
+ * (`namespace.pick <ns>`). "open database" is offered on rows named like a database (`:db` works
+ * on any pod, workload or Service).
  */
-export function rowMenu(ns: string | null): readonly MenuEntry[] {
+export function rowMenu(ns: string | null, pane?: PaneId): readonly MenuEntry[] {
   const out: MenuEntry[] = [];
+  const row = pane ? getSelection(pane).focused : null;
+  const offered = (id: ActionId) => id !== "res.database" || (row !== null && looksLikeDatabase(row));
   ROW_MENU_GROUPS.forEach((group, g) => {
     if (g > 0) out.push("|");
-    out.push(...group);
+    out.push(...group.filter(offered));
     if (g === RELATED && ns !== null) out.push({ action: "namespace.pick", label: `show only namespace ${ns}`, args: [ns], binding: -1 });
   });
   return out;

@@ -267,6 +267,20 @@ Who a pod talks to, in and out: Services, other pods (by workload), nodes and ad
 - **Not for:** short connections that open and close between two readings, byte counts, or traffic of the node itself; use flow logs (VPC Flow Logs, Hubble) or your APM for those.
 - **Example:** `:traffic` on `deploy/orders` in the mock: outbound to `svc payments/postgres` and `svc kafka/kafka`, now and then `svc kube-system/kube-dns` (udp 53) and an external address on 443 (sometimes stuck connecting); inbound from `deployment web` on 8080 and `statefulset monitoring/prometheus` on 9090. In `games` the image has no `cat`.
 
+<a id="database"></a>
+### Database
+
+Browse the Postgres or MySQL/MariaDB database that runs in a pod, inside kns: schemas and tables, rows page by page, columns and indexes, and a SQL editor. kns finds the server and logs in for you.
+
+- **Mouse:** right-click a pod, StatefulSet, Deployment or Service named like a database (`postgres-0`, `orders-db`, `mariadb`, a CloudNativePG cluster) → **open database**. It opens in a pane beside the table.
+- **Commands:** `:db` on any pod, workload or Service row (or in a pod's containers view); also in the palette ("open database"). **In the view:** click a table on the left; click a column header to sort (again for descending, a third time for none); click a cell to see its whole value (JSON pretty-printed) and copy it; double-click a table to put a `SELECT` in the SQL tab. `Mod+Enter` runs the highlighted part, or the statement under the cursor, in the SQL tab; `Mod+R` reloads; `:db writes` turns writes on or off.
+- **How it finds the server:** the container whose image is a database server (`postgres`, `bitnami/postgresql`, `cloudnative-pg/postgresql`, `timescaledb`, `postgis`, `pgvector`, `spilo`, `mysql`, `mariadb`, `percona-server`; not exporters, poolers, operators or admin UIs), else one with the engine's env (`POSTGRES_*`, `MYSQL_*`, `MARIADB_*`), else one listening on 5432 / 3306. A workload or Service is opened through a running pod, the primary when the pod is labelled as one (CloudNativePG, Zalando, Crunchy, Bitnami).
+- **How it logs in:** from the container's env as Kubernetes resolves it, Secret references included: `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` (and Bitnami's `POSTGRESQL_*`, `PGUSER` / `PGPASSWORD`), `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_ROOT_PASSWORD` (and `MARIADB_*`), `*_FILE` pointing into a mounted Secret; and the Secrets Postgres operators write (CloudNativePG `<cluster>-app` and `-superuser`, Zalando and Crunchy user secrets). The users are tried in order; when none works the view asks for a user and password. Pick another user in the bar ("connect as"), another Postgres database in the database picker.
+- **Tunnel:** a port-forward to the pod that only this connection uses; nothing listens on your machine for Postgres, and MySQL gets a loopback port that takes exactly one connection. Postgres TLS is used when the server offers it.
+- **Safety:** read-only by default: a statement must be one statement of a reading kind (`SELECT`, `WITH`, `VALUES`, `TABLE`, `SHOW`, `EXPLAIN`, `DESCRIBE`) and runs in a read-only transaction that is rolled back, with a 60 s statement timeout. **writes on** (the bar's button, asks first) runs SQL-tab statements read-write and commits them; never in a read-only context, and a protected context asks for the database name (checked in Rust too). Passwords are read in the Rust backend and never reach the window; the view shows where each one comes from. Needs `create pods/portforward`, and `get secrets` for credentials from Secrets.
+- **Not for:** Redis, MongoDB and other engines; editing rows in the grid (use `UPDATE` with writes on); very large exports (results stop at 5000 rows, cells at 16 KiB).
+- **Example:** right-click `postgres-…` in the mock → open database: `public.orders` with 1234 rows, sort by `total`, click a `meta` cell for its JSON. In the SQL tab, `delete from orders` is refused until writes are on. In `staging` the stored password is wrong: log in as `app` / `secret`.
+
 <a id="relations"></a>
 ### Relations
 

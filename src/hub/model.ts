@@ -17,7 +17,7 @@ const ICON: Partial<Record<ToolId, IconName>> = {
   palette: "search", panes: "split-right", logs: "logs", shell: "shell", "describe-edit": "describe",
   "port-forward": "plug", favourites: "star", filter: "filter",
   why: "why", crash: "fault", timeline: "timeline", journal: "history", trap: "trap", sparklines: "clock",
-  reach: "reach", relations: "relations", traffic: "plug", rollout: "restart", debug: "bug", snippets: "play", kubectl: "copy",
+  reach: "reach", relations: "relations", traffic: "plug", database: "columns", rollout: "restart", debug: "bug", snippets: "play", kubectl: "copy",
   "logs-merged": "logs", "logs-structured": "columns", "logs-patterns": "pattern",
   diff: "diff", owners: "edit",
   devsets: "env", env: "env", names: "link", "conn-string": "link", mirrord: "external",

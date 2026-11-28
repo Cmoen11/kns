@@ -309,6 +309,19 @@ const entries: ToolEntry[] = [
     kinds: ["traffic"],
   }),
   tool({
+    id: "database", title: "Database", group: "Debug",
+    summary: "Browse the Postgres or MySQL/MariaDB database in a pod: tables, rows, SQL",
+    help: {
+      answers: "Finds the database server in the pod (image, env, port), reads its user and password from the pod's env and Secrets (also CloudNativePG, Zalando and Crunchy secrets) and opens it over a private tunnel. Tables by schema, rows page by page, columns and indexes, and a SQL editor.",
+      safety: "Read-only by default: one statement at a time in a read-only transaction that is rolled back. Writes are turned on per view, never in a read-only context, and a protected context asks for the database name. Passwords never reach the window.",
+      example: "Right-click a postgres pod → open database",
+    },
+    actions: ["res.database"],
+    commands: [":db"],
+    try: { action: "res.database", needs: "row" },
+    kinds: ["database"],
+  }),
+  tool({
     id: "relations", title: "Relations", group: "Debug",
     summary: "What owns this object, what it owns, what selects and mounts it",
     help: {
@@ -592,7 +605,7 @@ export const toolStatusHook = (id: ToolId): ToolStatusHook | undefined => status
 /** Tools with nothing to report: they act once on what you point at. */
 export const STATUSLESS: ReadonlySet<ToolId> = new Set<ToolId>([
   "palette", "panes", "describe-edit", "favourites", "filter", "status-colors",
-  "why", "crash", "timeline", "sparklines", "reach", "relations", "traffic",
+  "why", "crash", "timeline", "sparklines", "reach", "relations", "traffic", "database",
   "logs-merged", "logs-structured", "logs-patterns", "snippets", "kubectl",
   "env", "conn-string", "mirrord", "pack",
 ]);

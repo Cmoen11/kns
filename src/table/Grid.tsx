@@ -262,7 +262,7 @@ export function Grid({ model, source, focused, visible }: GridProps) {
     const kept = model.markedRefs().length > 0 && !model.marks.has(hit.uid) ? new Set(model.marks) : null;
     if (kept) model.clearMarks();
     const restore = kept ? () => model.restoreMarks(kept) : undefined;
-    if (!model.point(hit.uid) || !openMenu({ at, items: rowMenu(ns), pane, onCancel: restore })) restore?.();
+    if (!model.point(hit.uid) || !openMenu({ at, items: rowMenu(ns, pane), pane, onCancel: restore })) restore?.();
   };
   // the one row action bar follows the pointer; the hovered row keeps its hover look under the bar
   const hover = (el: Element | null) => {

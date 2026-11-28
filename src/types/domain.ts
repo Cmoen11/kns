@@ -117,7 +117,9 @@ export type ToolId =
   // status colours package
   | "ns-health" | "action-log" | "status-colors"
   // pod traffic (src/traffic)
-  | "traffic";
+  | "traffic"
+  // database browser (src/database)
+  | "database";
 
 export interface WhyView {
   kind: "why";
@@ -180,6 +182,12 @@ export interface TrafficView {
   /** the container to read through; default: Rust picks one */
   container?: string;
 }
+/** A Postgres or MySQL/MariaDB server in a pod, browsed from kns (src/database). */
+export interface DatabaseView {
+  kind: "database";
+  /** what was opened: a pod, workload, Service or CloudNativePG cluster */
+  ref: ObjectRef;
+}
 /** What each environment of a catalog system runs, from its ops repository (docs/catalog.md). */
 export interface DeploysView {
   kind: "deploys";
@@ -194,7 +202,7 @@ export interface HubView {
 }
 
 export type FeatureViewState =
-  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView | TrafficView;
+  | WhyView | TimelineView | DiffView | PatternsView | EnvView | DevSetsView | TextView | RelationsView | ReachView | HubView | DeploysView | TrafficView | DatabaseView;
 
 export type ViewState = TableView | ContainersView | DocView | LogsView | ShellView | ToolView | FeatureViewState;
 export type ViewKind = ViewState["kind"];

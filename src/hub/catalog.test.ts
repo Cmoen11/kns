@@ -9,7 +9,7 @@ const ALL_IDS = [
   "why", "crash", "timeline", "journal", "trap", "sparklines", "reach", "relations", "rollout",
   "diff", "owners", "logs-merged", "logs-structured", "logs-patterns", "debug", "snippets", "kubectl",
   "devsets", "env", "names", "conn-string", "mirrord", "pack", "mcp", "proposals",
-  "ns-health", "action-log", "status-colors", "traffic",
+  "ns-health", "action-log", "status-colors", "traffic", "database",
 ];
 
 const rowIds = new Set(KEYMAP_ROWS.map((r) => r.id as string));
