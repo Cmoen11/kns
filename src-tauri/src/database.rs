@@ -618,7 +618,8 @@ where
         cfg.password(p);
     }
     let mut make = pg_tls()?;
-    let tls = <tokio_postgres_rustls::MakeRustlsConnect as MakeTlsConnect<S>>::make_tls_connect(&mut make, "localhost").map_err(|e| BackendError::internal(e.to_string()))?;
+    // the error type is Infallible
+    let Ok(tls) = <tokio_postgres_rustls::MakeRustlsConnect as MakeTlsConnect<S>>::make_tls_connect(&mut make, "localhost");
     let connected = timeout(CONNECT_TIMEOUT, cfg.connect_raw(stream, tls)).await;
     let (client, connection) = match connected {
         Ok(r) => r.map_err(pg_err)?,
