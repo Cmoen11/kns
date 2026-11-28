@@ -53,6 +53,40 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "release=$release" >> "$GITHUB_OUTPUT"
 
+  # Tests and lints, in parallel with the release build (build) so a run waits for the longer of
+  # the two, not both; release needs both. macOS compiles the unix/AppKit paths, Windows its own.
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      # the Herdr mod's pure modules (herdr/app/kns): no Herdr runtime needed
+      - run: node --test herdr/app/kns/mod.test.mjs
+      # Rust checks (debug build: uses devUrl, no dist needed)
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: src-tauri
+      - run: cargo test
+        working-directory: src-tauri
+
   build:
     needs: version
     strategy:
@@ -92,21 +126,11 @@ jobs:
           cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
           targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test
-      # the Herdr mod's pure modules (herdr/app/kns): no Herdr runtime needed
-      - run: node --test herdr/app/kns/mod.test.mjs
-      # Rust checks (debug build: uses devUrl, no dist needed); macOS compiles the unix/AppKit paths
-      - run: cargo clippy --all-targets -- -D warnings
-        working-directory: src-tauri
-      - run: cargo test
-        working-directory: src-tauri
       # Updater bundles (.sig, macOS .app.tar.gz) need the signing key; without it (forks) the
       # build still runs but cannot be released.
       # macOS code signing and notarization (Developer ID). tauri build imports APPLE_CERTIFICATE
@@ -194,7 +218,7 @@ jobs:
 
   release:
     if: needs.version.outputs.release == 'true'
-    needs: [version, build]
+    needs: [version, check, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
